@@ -1,0 +1,67 @@
+name: Build and Test (Staging)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [staging]
+
+jobs:
+  check_commit:
+    name: Check commit message
+    runs-on: ubuntu-latest
+    outputs:
+      type: ${{ steps.conventional.outputs.type }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check conventional commit prefix
+        id: conventional
+        run: |
+          echo "🔍 Checking commit message for Conventional Commit format..."
+          git fetch origin
+          
+          COMMIT_MSG=$(git log --no-merges -1 --pretty=%s)
+          echo "Commit message: $COMMIT_MSG"
+
+          if [[ "$COMMIT_MSG" =~ ^(feat|fix|perf|refactor|test|build|chore|ci)(\(.+\))?:\  ]]; then
+            TYPE=${BASH_REMATCH[1]}
+            echo "✅ Valid commit type detected: $TYPE" 
+            echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Invalid commit message format"
+            exit 1
+          fi
+
+  build_and_test:
+    name: Build and test
+    needs: check_commit
+    if: needs.check_commit.outputs.type != 'chore' && needs.check_commit.outputs.type != 'ci'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Run spotless formatting check
+        run: ./gradlew spotlessCheck --no-daemon --quiet
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon --quiet
+
+      - name: Assemble debug build
+        run: ./gradlew assembleDebug --no-daemon

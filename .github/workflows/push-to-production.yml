@@ -1,0 +1,21 @@
+name: Push to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Create new production release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0
+
+      - name: Fast-forward main to staging
+        run: |
+          git fetch origin staging
+          git merge --ff-only origin/staging
+          git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git main
