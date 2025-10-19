@@ -1,7 +1,6 @@
 package com.example.gathr.presentation
 
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -10,15 +9,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -27,10 +28,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.gathr.R
-import com.example.gathr.ui.theme.AppColors
+import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(paddingValues: PaddingValues, onLoaded: () -> Unit) {
     val colorStops = listOf(
         0.5f to Color(0xFF412962),
         0.85f to Color(0xFF73483A),
@@ -45,33 +46,27 @@ fun SplashScreen() {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.10f,
+        targetValue = 1.12f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 800,
+                durationMillis = 700,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 2000,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "angle"
-    )
+
+    LaunchedEffect(Unit) {
+        delay(3000L)
+        onLoaded()
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundBrush),
+            .background(backgroundBrush)
+            .padding(paddingValues),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -80,7 +75,6 @@ fun SplashScreen() {
             modifier = Modifier
                 .size(200.dp)
                 .scale(scale)
-                .rotate(angle)
         )
 
         Image(
@@ -88,7 +82,7 @@ fun SplashScreen() {
             contentDescription = "Brand Name",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 50.dp)
+                .padding(bottom = 35.dp)
         )
     }
 }
@@ -96,5 +90,9 @@ fun SplashScreen() {
 @Preview
 @Composable
 private fun SplashScreenPreview() {
-    MaterialTheme { SplashScreen() }
+    MaterialTheme {
+        Scaffold { paddingValues ->
+            SplashScreen(paddingValues, onLoaded = {  } )
+        }
+    }
 }
