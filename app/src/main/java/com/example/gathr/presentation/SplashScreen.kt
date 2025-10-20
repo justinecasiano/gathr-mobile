@@ -1,5 +1,6 @@
 package com.example.gathr.presentation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -10,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +33,11 @@ import com.example.gathr.R
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(paddingValues: PaddingValues, onLoaded: () -> Unit) {
+fun SplashScreen(
+    paddingValues: PaddingValues,
+    isWhiteBackground: Boolean = false,
+    onLoaded: () -> Unit
+) {
     val colorStops = listOf(
         0.5f to Color(0xFF412962),
         0.85f to Color(0xFF73483A),
@@ -65,8 +71,11 @@ fun SplashScreen(paddingValues: PaddingValues, onLoaded: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundBrush)
-            .padding(paddingValues),
+            .padding(paddingValues)
+            .then(
+                if (isWhiteBackground) Modifier.background(Color.White)
+                else Modifier.background(backgroundBrush)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Image(
@@ -77,8 +86,13 @@ fun SplashScreen(paddingValues: PaddingValues, onLoaded: () -> Unit) {
                 .scale(scale)
         )
 
+        val logo = if (isWhiteBackground)
+            R.drawable.gathr_text
+        else
+            R.drawable.gathr_text_white
+
         Image(
-            painter = painterResource(id = R.drawable.gathr_text_white),
+            painter = painterResource(id = logo),
             contentDescription = "Brand Name",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -92,7 +106,10 @@ fun SplashScreen(paddingValues: PaddingValues, onLoaded: () -> Unit) {
 private fun SplashScreenPreview() {
     MaterialTheme {
         Scaffold { paddingValues ->
-            SplashScreen(paddingValues, onLoaded = {  } )
+            SplashScreen(paddingValues, onLoaded = { })
         }
+//        Scaffold { paddingValues ->
+//            SplashScreen(paddingValues, isWhiteBackground = true, onLoaded = { })
+//        }
     }
 }
