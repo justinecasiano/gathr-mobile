@@ -2,8 +2,6 @@ name: Build and Release (Staging and Production)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [staging, main]
 
 permissions:
   contents: write
