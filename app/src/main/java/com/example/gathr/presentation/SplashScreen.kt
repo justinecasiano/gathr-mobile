@@ -96,7 +96,7 @@ fun SplashScreen(
             contentDescription = "Brand Name",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 35.dp)
+                .padding(bottom = 30.dp)
         )
     }
 }

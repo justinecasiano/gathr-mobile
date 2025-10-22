@@ -147,7 +147,7 @@ fun SignUpScreen() {
                                 color = Color(0xFF261A36),
                                 RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
                             )
-                            .padding(start = 20.dp, end = 20.dp, bottom = 35.dp),
+                            .padding(start = 20.dp, end = 20.dp, bottom = 30.dp),
                         contentAlignment = Alignment.BottomCenter
                     ) {
                         ElevatedButton(

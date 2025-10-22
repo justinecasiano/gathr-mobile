@@ -48,9 +48,9 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
 
     Column(
         modifier = Modifier
-            .padding(paddingValues)
             .fillMaxSize()
-            .background(backgroundBrush),
+            .background(backgroundBrush)
+            .padding(paddingValues),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(150.dp))
@@ -81,7 +81,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
             color = Color.White
         )
         Column(
-            modifier = Modifier.fillMaxSize().padding(bottom = 35.dp),
+            modifier = Modifier.fillMaxSize().padding(bottom = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom
         ) {
@@ -93,7 +93,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
                 textStyle = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = Color.Black
                 ),
             )
@@ -107,7 +107,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
                 textStyle = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = Color.White
                 ),
             )
