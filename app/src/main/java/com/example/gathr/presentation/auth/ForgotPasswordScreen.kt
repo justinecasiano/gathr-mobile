@@ -5,14 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,72 +24,62 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.gathr.core.ui.CustomInputField
+import com.example.gathr.core.ui.ClearTextField
 import com.example.gathr.core.ui.ElevatedButton
-import com.example.gathr.core.ui.PasswordField
 import com.example.gathr.core.ui.ScreenWithTopBarButton
+import com.example.gathr.core.ui.StatusView
 import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun SignUpScreen(
+fun ForgotPasswordScreen(
     paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
-    onNavigateLogin: () -> Unit,
-    onNavigateAfterSignUp: () -> Unit
 ) {
-    var isChecked by remember { mutableStateOf(false) }
-
     ScreenWithTopBarButton(
         containerColor = Color(0xFF261A36),
         topBarColor = Color(0xFF261A36),
         titleColor = Color(0xFFBFB6CA),
         iconColor = Color(0xFFBFB6CA),
-        isBackButton = true,
+        isBackButton = false,
         onClick = onNavigateBack,
         content = {
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Create Account", modifier = Modifier.fillMaxWidth(), style = TextStyle(
+                    "Forgot Password?", modifier = Modifier.fillMaxWidth(), style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
-                        fontSize = 24.sp,
-                        textAlign = TextAlign.Center,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color(0xFFF6F6F6)
                     )
                 )
-                Spacer(modifier = Modifier.size(5.dp))
-                Row {
-                    Box(modifier = Modifier.fillMaxWidth(0.48f)) {
-                        CustomInputField(placeholder = "First Name")
-                    }
-                    Spacer(modifier = Modifier.width(5.dp))
-                    CustomInputField(placeholder = "Last Name")
-                }
-                CustomInputField(placeholder = "Email")
-                CustomInputField(placeholder = "@Username")
-                PasswordField()
-                PasswordField(placeholder = "Confirm Password")
-                Row(
-                    verticalAlignment = Alignment.Top,
-                ) {
-//                    Checkbox(
-//                        checked = isChecked, // 2. Pass the current state
-//                        onCheckedChange = { newCheckedState -> // 3. Update state on change
-//                            isChecked = newCheckedState
-//                        }
-//                    )
-                }
+                ClearTextField(
+                    "umak@umak.edu.ph",
+                    placeholder = "Email",
+                )
+                Text(
+                    "Enter your email address to receive a link to reset your password.",
+                    modifier = Modifier.fillMaxWidth(),
+                    style = TextStyle(
+                        fontFamily = AppFonts.instrumentSans,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White,
+                    )
+                )
             }
             Box(
                 modifier = Modifier
@@ -101,26 +88,10 @@ fun SignUpScreen(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxHeight(0.30f)
+                        .fillMaxHeight(0.23f)
                         .fillMaxSize()
                         .padding(top = 80.dp)
                 ) {
-                    TextButton(
-                        onClick = onNavigateLogin,
-                        modifier = Modifier
-                    ) {
-                        Text(
-                            "I ALREADY HAVE AN ACCOUNT",
-                            modifier = Modifier.fillMaxWidth(),
-                            style = TextStyle(
-                                fontFamily = AppFonts.instrumentSans,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center,
-                                color = Color(0xFFF7906E)
-                            )
-                        )
-                    }
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -144,8 +115,9 @@ fun SignUpScreen(
                         ElevatedButton(
                             buttonColor = AppColors.primary,
                             outlineColor = AppColors.primaryDark,
-                            text = "SIGN UP",
-                            onClick = onNavigateAfterSignUp,
+                            text = "NEXT",
+                            isEnabled = true,
+                            onClick = {},
                             bottomBorderThickness = 5.dp,
                             textStyle = TextStyle(
                                 fontFamily = AppFonts.instrumentSans,
@@ -162,14 +134,38 @@ fun SignUpScreen(
     )
 }
 
+@Composable
+fun PasswordResetStatus(modifier: Modifier = Modifier) {
+    StatusView(
+        title = "Password Reset Link",
+        buttonText = "GO BACK TO LOGIN",
+        isBackButton = false,
+        onClick = {},
+        message = {
+            Text(
+                buildAnnotatedString {
+                    append("We have sent a change password link to your email ")
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("umak@umak.edu.ph")
+                    }
+                },
+                style = TextStyle(
+                    fontFamily = AppFonts.instrumentSans,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 15.sp,
+                    color = Color.White
+                )
+            )
+        })
+}
+
 @Preview
 @Composable
-private fun SignUpScreenPreview() {
+private fun ForgotPasswordPreview() {
     Scaffold { paddingValues ->
-        SignUpScreen(
+        ForgotPasswordScreen(
             paddingValues,
             onNavigateBack = {},
-            onNavigateLogin = {},
-            onNavigateAfterSignUp = {})
+        )
     }
 }

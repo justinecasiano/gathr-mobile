@@ -35,10 +35,15 @@ fun ScreenWithTopBarButton(
     titleColor: Color,
     iconColor: Color = Color.Black,
     title: String = "",
-    titleStyle: TextStyle? = null,
+    titleStyle: TextStyle = TextStyle(
+        color = titleColor,
+        fontFamily = AppFonts.rethinkSans,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+    ),
     isBackButton: Boolean = true,
     onClick: () -> Unit,
-    actions: @Composable (RowScope.() -> Unit),
+    actions: @Composable (RowScope.() -> Unit) = {},
     content: @Composable () -> Unit
 ) {
     Scaffold(
@@ -47,15 +52,7 @@ fun ScreenWithTopBarButton(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        title,
-                        style = titleStyle ?: TextStyle(
-                            color = titleColor,
-                            fontFamily = AppFonts.rethinkSans,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                        )
-                    )
+                    Text(title, style = titleStyle)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = topBarColor,

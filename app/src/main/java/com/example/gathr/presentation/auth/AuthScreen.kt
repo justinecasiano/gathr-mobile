@@ -34,7 +34,11 @@ import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
+fun AuthScreen(
+    paddingValues: PaddingValues,
+    onNavigateSignUp: () -> Unit,
+    onNavigateLogin: () -> Unit
+) {
 
     val colorStops = listOf(
         0f to Color(0xFF6E4C9C),
@@ -81,7 +85,9 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
             color = Color.White
         )
         Column(
-            modifier = Modifier.fillMaxSize().padding(bottom = 30.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom
         ) {
@@ -90,6 +96,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
                 outlineColor = AppColors.secondaryDark,
                 modifier = Modifier.padding(horizontal = 40.dp),
                 text = "GET STARTED",
+                onClick = onNavigateSignUp,
                 textStyle = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
                     fontWeight = FontWeight.Bold,
@@ -103,6 +110,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
                 outlineColor = Color(0xFF574272),
                 modifier = Modifier.padding(horizontal = 40.dp),
                 text = "I ALREADY HAVE AN ACCOUNT",
+                onClick = onNavigateLogin,
                 isContrast = false,
                 textStyle = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
@@ -120,7 +128,7 @@ fun AuthScreen(paddingValues: PaddingValues, onNavigate: () -> Unit) {
 private fun AuthScreenPreview() {
     MaterialTheme {
         Scaffold { paddingValues ->
-            AuthScreen(paddingValues, onNavigate = { })
+            AuthScreen(paddingValues, onNavigateLogin = { }, onNavigateSignUp = {})
         }
     }
 }

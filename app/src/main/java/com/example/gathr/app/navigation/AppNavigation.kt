@@ -1,6 +1,7 @@
 package com.example.gathr.app.navigation
 
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
@@ -18,33 +19,25 @@ object AppRoutes {
 }
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(paddingValues: PaddingValues) {
     val navController = rememberNavController()
 
-    Scaffold() { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = AppRoutes.SPLASH_SCREEN,
+    NavHost(
+        navController = navController,
+        startDestination = AppRoutes.SPLASH_SCREEN,
+    ) {
+        composable(
+            AppRoutes.SPLASH_SCREEN,
+            enterTransition = { scaleIn() },
         ) {
-            composable(
-                AppRoutes.SPLASH_SCREEN,
-                enterTransition = { scaleIn() },
-            ) {
-                SplashScreen(paddingValues) {
-                    navController.navigate(AppRoutes.AUTH_SCREEN) {
-                        popUpTo(AppRoutes.SPLASH_SCREEN) { inclusive = true }
-                    }
+            SplashScreen(paddingValues) {
+                navController.navigate(AppRoutes.AUTH_SCREEN) {
+                    popUpTo(AppRoutes.SPLASH_SCREEN) { inclusive = true }
                 }
             }
-            composable(
-                AppRoutes.AUTH_SCREEN,
-                enterTransition = { slideInRight() },
-                popEnterTransition = { slideInRight() },
-                popExitTransition = { slideOutLeft() }
-            ) {
-                AuthScreen(paddingValues) {
-                }
-            }
+        }
+        composable(AppRoutes.AUTH_SCREEN) {
+            AuthNavHost(paddingValues, navController)
         }
     }
 }

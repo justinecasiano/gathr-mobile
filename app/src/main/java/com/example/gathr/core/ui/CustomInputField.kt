@@ -32,6 +32,7 @@ import com.example.gathr.R
 fun CustomInputField(
     text: String = "",
     placeholder: String,
+    modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(15.dp),
     outlineColor: Color = Color(0xFF574272),
     visualTransformation: VisualTransformation? = null,
@@ -39,10 +40,9 @@ fun CustomInputField(
     iconButton: @Composable (() -> Unit)? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val shouldAddIcon = iconButton == null
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .border(
                 width = 2.5.dp,
@@ -75,9 +75,8 @@ fun CustomInputField(
             },
             shape = shape,
             singleLine = true,
-            trailingIcon = if (shouldAddIcon) {
-                { if (text.isNotEmpty()) iconButton?.invoke() }
-            } else null,
+            visualTransformation = visualTransformation ?: VisualTransformation.None,
+            trailingIcon = { if (text.isNotEmpty()) iconButton?.invoke() },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White.copy(alpha = 0.9f),
                 unfocusedTextColor = Color.White.copy(alpha = 0.8f),
@@ -93,6 +92,8 @@ fun CustomInputField(
 fun PasswordField(
     text: String = "",
     placeholder: String = "Password",
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(15.dp),
     outlineColor: Color = Color(0xFF574272),
     iconColor: Color = Color(0xFFF6835E),
     onValueChange: (String) -> Unit = {}
@@ -102,6 +103,8 @@ fun PasswordField(
     CustomInputField(
         text,
         placeholder,
+        modifier = modifier,
+        shape = shape,
         outlineColor = outlineColor,
         onValueChange = onValueChange,
         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -121,6 +124,7 @@ fun PasswordField(
 fun ClearTextField(
     text: String = "",
     placeholder: String = "",
+    modifier: Modifier = Modifier,
     outlineColor: Color = Color(0xFF574272),
     iconColor: Color = Color(0xFFF6835E),
     onValueChange: (String) -> Unit = {},
@@ -129,6 +133,7 @@ fun ClearTextField(
     CustomInputField(
         text,
         placeholder,
+        modifier = modifier,
         outlineColor = outlineColor,
         onValueChange = onValueChange,
         iconButton = {
@@ -157,7 +162,7 @@ fun PreviewCustomInputField() {
             CustomInputField(placeholder = "Last Name")
             CustomInputField(placeholder = "Email")
             CustomInputField(placeholder = "@Username")
-            PasswordField() { }
+            PasswordField { }
             PasswordField(placeholder = "Confirm Password") { }
             PasswordField("Hello") { }
             ClearTextField("Hello") { }

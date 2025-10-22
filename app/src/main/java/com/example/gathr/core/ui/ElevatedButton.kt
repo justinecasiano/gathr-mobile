@@ -1,7 +1,7 @@
 package com.example.gathr.core.ui
 
+import android.graphics.drawable.Icon
 import androidx.compose.animation.core.EaseInOutCubic
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -23,10 +24,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,15 +42,17 @@ import kotlinx.coroutines.launch
 @Composable
 fun ElevatedButton(
     buttonColor: Color,
-    outlineColor: Color,
+    outlineColor: Color = Color.Unspecified,
     text: String,
     textStyle: TextStyle,
     height: Dp = 50.dp,
     modifier: Modifier = Modifier,
     isContrast: Boolean = true,
+    isEnabled: Boolean = true,
     buttonShape: RoundedCornerShape = RoundedCornerShape(14.dp),
     bottomBorderThickness: Dp = 5.dp,
     shouldAddShadow: Boolean = true,
+    icon: @Composable () -> Unit = {},
     onClick: () -> Unit = {}
 ) {
     val shadowEffect =
@@ -59,7 +62,6 @@ fun ElevatedButton(
             blurRadius = 4f
         )
 
-    val style = if (shouldAddShadow) textStyle.copy(shadow = shadowEffect) else textStyle
     var isClicked by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -78,10 +80,15 @@ fun ElevatedButton(
         ),
         label = "bottomPaddingAnimation"
     )
+    val style = textStyle.copy(
+        shadow = if (shouldAddShadow) shadowEffect else Shadow.None,
+//        color = if (isEnabled) disabledTextColor else textStyle.color
+    )
 
     Box(modifier = modifier.fillMaxWidth()) {
         Box(
             modifier = Modifier
+                .alpha(if (isEnabled) 1f else 0.5f)
                 .height(height)
                 .matchParentSize()
                 .background(
@@ -89,9 +96,9 @@ fun ElevatedButton(
                     shape = buttonShape
                 )
         )
-
         OutlinedButton(
             modifier = Modifier
+                .alpha(if (isEnabled) 1f else 0.5f)
                 .height(height)
                 .fillMaxWidth()
                 .then(
@@ -112,13 +119,17 @@ fun ElevatedButton(
                 }
                 onClick()
             },
+            enabled = isEnabled,
             shape = buttonShape,
             border = null,
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = buttonColor,
+                contentColor = Color.Unspecified,
+                disabledContainerColor = buttonColor
             ),
         ) {
-            Text(text, style = style)
+            icon.invoke()
+            Text(text, style = textStyle)
         }
     }
 }
