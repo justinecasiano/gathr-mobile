@@ -40,7 +40,7 @@ fun SplashScreen(
 ) {
     val colorStops = listOf(
         0.5f to Color(0xFF412962),
-        0.85f to Color(0xFF73483A),
+        1f to Color(0xFF73483A),
         1f to Color(0xFF9A5D63),
     )
     val backgroundBrush = Brush.linearGradient(
