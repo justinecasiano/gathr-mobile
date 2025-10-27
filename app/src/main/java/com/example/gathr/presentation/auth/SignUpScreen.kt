@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.sp
 import com.example.gathr.core.ui.CustomInputField
 import com.example.gathr.core.ui.ElevatedButton
 import com.example.gathr.core.ui.PasswordField
-import com.example.gathr.core.ui.ScreenWithTopBarButton
 import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
 
@@ -49,117 +48,133 @@ fun SignUpScreen(
     onNavigateAfterSignUp: () -> Unit
 ) {
     var isChecked by remember { mutableStateOf(false) }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
-    ScreenWithTopBarButton(
-        containerColor = Color(0xFF261A36),
-        topBarColor = Color(0xFF261A36),
-        titleColor = Color(0xFFBFB6CA),
-        iconColor = Color(0xFFBFB6CA),
-        isBackButton = true,
-        onClick = onNavigateBack,
-        content = {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    "Create Account", modifier = Modifier.fillMaxWidth(), style = TextStyle(
-                        fontFamily = AppFonts.rethinkSans,
-                        fontSize = 24.sp,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                )
-                Spacer(modifier = Modifier.size(5.dp))
-                Row {
-                    Box(modifier = Modifier.fillMaxWidth(0.48f)) {
-                        CustomInputField(placeholder = "First Name")
-                    }
-                    Spacer(modifier = Modifier.width(5.dp))
-                    CustomInputField(placeholder = "Last Name")
-                }
-                CustomInputField(placeholder = "Email")
-                CustomInputField(placeholder = "@Username")
-                PasswordField()
-                PasswordField(placeholder = "Confirm Password")
-                Row(
-                    verticalAlignment = Alignment.Top,
-                ) {
-//                    Checkbox(
-//                        checked = isChecked, // 2. Pass the current state
-//                        onCheckedChange = { newCheckedState -> // 3. Update state on change
-//                            isChecked = newCheckedState
-//                        }
+//    ScreenWithTopBarButton(
+//        containerColor = Color(0xFF261A36),
+//        topBarColor = Color(0xFF261A36),
+//        titleColor = Color(0xFFBFB6CA),
+//        iconColor = Color(0xFFBFB6CA),
+//        isBackButton = true,
+//        onClick = onNavigateBack,
+//        content = {
+//            Column(
+//                modifier = Modifier.padding(horizontal = 20.dp),
+//                verticalArrangement = Arrangement.spacedBy(10.dp)
+//            ) {
+//                Text(
+//                    "Create Account", modifier = Modifier.fillMaxWidth(), style = TextStyle(
+//                        fontFamily = AppFonts.rethinkSans,
+//                        fontSize = 24.sp,
+//                        textAlign = TextAlign.Center,
+//                        fontWeight = FontWeight.Bold,
+//                        color = Color.White
 //                    )
-                }
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight(0.30f)
-                        .fillMaxSize()
-                        .padding(top = 80.dp)
-                ) {
-                    TextButton(
-                        onClick = onNavigateLogin,
-                        modifier = Modifier
-                    ) {
-                        Text(
-                            "I ALREADY HAVE AN ACCOUNT",
-                            modifier = Modifier.fillMaxWidth(),
-                            style = TextStyle(
-                                fontFamily = AppFonts.instrumentSans,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                textAlign = TextAlign.Center,
-                                color = Color(0xFFF7906E)
-                            )
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
-                            .dropShadow(
-                                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                                shadow = Shadow(
-                                    radius = 10.dp,
-                                    spread = 6.dp,
-                                    color = Color(0x40000000),
-                                    offset = DpOffset(x = 4.dp, 3.dp)
-                                )
-                            )
-                            .background(
-                                color = Color(0xFF261A36),
-                                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-                            )
-                            .padding(start = 20.dp, end = 20.dp, bottom = 30.dp),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        ElevatedButton(
-                            buttonColor = AppColors.primary,
-                            outlineColor = AppColors.primaryDark,
-                            text = "SIGN UP",
-                            onClick = onNavigateAfterSignUp,
-                            bottomBorderThickness = 5.dp,
-                            textStyle = TextStyle(
-                                fontFamily = AppFonts.instrumentSans,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = Color.White
-                            ),
-                        )
-                    }
-
-                }
-            }
-        }
-    )
+//                )
+//                Spacer(modifier = Modifier.size(5.dp))
+//                Row {
+//                    Box(modifier = Modifier.fillMaxWidth(0.48f)) {
+//                        CustomInputField(
+//                            firstName,
+//                            placeholder = "First Name",
+//                            onValueChange = { it -> firstName = it },
+//                        )
+//                    }
+//                    Spacer(modifier = Modifier.width(5.dp))
+//                    CustomInputField(
+//                        lastName,
+//                        placeholder = "Last Name",
+//                        onValueChange = { it -> lastName = it },
+//                    )
+//                }
+//                CustomInputField(placeholder = "Email")
+//                CustomInputField(placeholder = "@Username")
+//                PasswordField()
+//                PasswordField(placeholder = "Confirm Password")
+//                Row(
+//                    verticalAlignment = Alignment.Top,
+//                ) {
+////                    Checkbox(
+////                        checked = isChecked, // 2. Pass the current state
+////                        onCheckedChange = { newCheckedState -> // 3. Update state on change
+////                            isChecked = newCheckedState
+////                        }
+////                    )
+//                }
+//            }
+//
+//        },
+//        componentOutside = {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxHeight(),
+//                contentAlignment = Alignment.BottomCenter
+//            ) {
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxHeight(0.15f)
+//                        .fillMaxSize()
+//                ) {
+//                    TextButton(
+//                        onClick = onNavigateLogin,
+//                        modifier = Modifier.align(Alignment.CenterHorizontally)
+//                    ) {
+//                        Text(
+//                            "I ALREADY HAVE AN ACCOUNT",
+//                            style = TextStyle(
+//                                fontFamily = AppFonts.instrumentSans,
+//                                fontWeight = FontWeight.Bold,
+//                                fontSize = 13.sp,
+//                                textAlign = TextAlign.Center,
+//                                color = Color(0xFFF7906E)
+//                            )
+//                        )
+//                    }
+//                    Box(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .fillMaxHeight()
+//                            .dropShadow(
+//                                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+//                                shadow = Shadow(
+//                                    radius = 10.dp,
+//                                    spread = 6.dp,
+//                                    color = Color(0x40000000),
+//                                    offset = DpOffset(x = 4.dp, 3.dp)
+//                                )
+//                            )
+//                            .background(
+//                                color = Color(0xFF261A36),
+//                                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+//                            )
+//                            .padding(start = 20.dp, end = 20.dp, bottom = 30.dp),
+//                        contentAlignment = Alignment.BottomCenter
+//                    ) {
+//                        ElevatedButton(
+//                            buttonColor = AppColors.primary,
+//                            outlineColor = AppColors.primaryDark,
+//                            text = "SIGN UP",
+//                            onClick = onNavigateAfterSignUp,
+//                            bottomBorderThickness = 5.dp,
+//                            textStyle = TextStyle(
+//                                fontFamily = AppFonts.instrumentSans,
+//                                fontWeight = FontWeight.Bold,
+//                                fontSize = 14.sp,
+//                                color = Color.White
+//                            ),
+//                        )
+//                    }
+//
+//                }
+//            }
+//        }
+//
+//    )
 }
 
 @Preview
