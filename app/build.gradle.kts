@@ -58,12 +58,12 @@ android {
             keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
             keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
 
-            if (!storeFile?.exists()!! ||
-                storePassword.isNullOrBlank() ||
-                keyAlias.isNullOrBlank() ||
-                keyPassword.isNullOrBlank()) {
-                throw GradleException("❌ Missing or invalid signing config for release build.")
-            }
+//            if (!storeFile?.exists()!! ||
+//                storePassword.isNullOrBlank() ||
+//                keyAlias.isNullOrBlank() ||
+//                keyPassword.isNullOrBlank()) {
+//                throw GradleException("❌ Missing or invalid signing config for release build.")
+//            }
         }
     }
 
