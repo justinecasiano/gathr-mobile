@@ -28,11 +28,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.gathr.R
+import com.example.gathr.ui.theme.AppMisc
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
-    paddingValues: PaddingValues,
     isWhiteBackground: Boolean = false,
     onLoaded: () -> Unit
 ) {
@@ -66,36 +66,38 @@ fun SplashScreen(
         onLoaded()
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .then(
-                if (isWhiteBackground) Modifier.background(Color.White)
-                else Modifier.background(backgroundBrush)
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.gathr_logo),
-            contentDescription = "Pulsing App Logo",
+    Scaffold { paddingValues ->
+        Box(
             modifier = Modifier
-                .size(200.dp)
-                .scale(scale)
-        )
+                .fillMaxSize()
+                .then(
+                    if (isWhiteBackground) Modifier.background(Color.White)
+                    else Modifier.background(backgroundBrush)
+                )
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.gathr_logo),
+                contentDescription = "Pulsing App Logo",
+                modifier = Modifier
+                    .size(200.dp)
+                    .scale(scale)
+            )
 
-        val logo = if (isWhiteBackground)
-            R.drawable.gathr_text
-        else
-            R.drawable.gathr_text_white
+            val logo = if (isWhiteBackground)
+                R.drawable.gathr_text
+            else
+                R.drawable.gathr_text_white
 
-        Image(
-            painter = painterResource(id = logo),
-            contentDescription = "Brand Name",
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 30.dp)
-        )
+            Image(
+                painter = painterResource(id = logo),
+                contentDescription = "Brand Name",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = AppMisc.screenBottomPadding)
+            )
+        }
     }
 }
 
@@ -103,11 +105,6 @@ fun SplashScreen(
 @Composable
 private fun SplashScreenPreview() {
     MaterialTheme {
-        Scaffold { paddingValues ->
-            SplashScreen(paddingValues, onLoaded = { })
-        }
-//        Scaffold { paddingValues ->
-//            SplashScreen(paddingValues, isWhiteBackground = true, onLoaded = { })
-//        }
+        SplashScreen(onLoaded = { })
     }
 }

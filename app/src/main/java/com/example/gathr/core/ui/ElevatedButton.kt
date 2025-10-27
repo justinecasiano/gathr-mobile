@@ -75,7 +75,7 @@ fun ElevatedButton(
     val animatedBottomPadding by animateDpAsState(
         targetValue = targetBottomPadding,
         animationSpec = tween(
-            durationMillis = 400,
+            durationMillis = 300,
             easing = EaseInOutCubic
         ),
         label = "bottomPaddingAnimation"
@@ -113,7 +113,7 @@ fun ElevatedButton(
                 if (!isClicked) {
                     isClicked = true
                     coroutineScope.launch {
-                        delay(400L)
+                        delay(100L)
                         isClicked = false
                     }
                 }

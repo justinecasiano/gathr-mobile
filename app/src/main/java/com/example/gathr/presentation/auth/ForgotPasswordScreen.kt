@@ -36,8 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.core.ui.ClearTextField
 import com.example.gathr.core.ui.ElevatedButton
-import com.example.gathr.core.ui.ScreenWithTopBarButton
-import com.example.gathr.core.ui.StatusView
 import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
 
@@ -46,117 +44,122 @@ fun ForgotPasswordScreen(
     paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
 ) {
-    ScreenWithTopBarButton(
-        containerColor = Color(0xFF261A36),
-        topBarColor = Color(0xFF261A36),
-        titleColor = Color(0xFFBFB6CA),
-        iconColor = Color(0xFFBFB6CA),
-        isBackButton = false,
-        onClick = onNavigateBack,
-        content = {
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    "Forgot Password?", modifier = Modifier.fillMaxWidth(), style = TextStyle(
-                        fontFamily = AppFonts.rethinkSans,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF6F6F6)
-                    )
-                )
-                ClearTextField(
-                    "umak@umak.edu.ph",
-                    placeholder = "Email",
-                )
-                Text(
-                    "Enter your email address to receive a link to reset your password.",
-                    modifier = Modifier.fillMaxWidth(),
-                    style = TextStyle(
-                        fontFamily = AppFonts.instrumentSans,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.White,
-                    )
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight(0.23f)
-                        .fillMaxSize()
-                        .padding(top = 80.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight()
-                            .dropShadow(
-                                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                                shadow = Shadow(
-                                    radius = 10.dp,
-                                    spread = 6.dp,
-                                    color = Color(0x40000000),
-                                    offset = DpOffset(x = 4.dp, 3.dp)
-                                )
-                            )
-                            .background(
-                                color = Color(0xFF261A36),
-                                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
-                            )
-                            .padding(start = 20.dp, end = 20.dp, bottom = 30.dp),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        ElevatedButton(
-                            buttonColor = AppColors.primary,
-                            outlineColor = AppColors.primaryDark,
-                            text = "NEXT",
-                            isEnabled = true,
-                            onClick = {},
-                            bottomBorderThickness = 5.dp,
-                            textStyle = TextStyle(
-                                fontFamily = AppFonts.instrumentSans,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = Color.White
-                            ),
-                        )
-                    }
+    var email by remember { mutableStateOf("") }
 
-                }
-            }
-        }
-    )
+//    ScreenWithTopBarButton(
+//        containerColor = Color(0xFF261A36),
+//        topBarColor = Color(0xFF261A36),
+//        titleColor = Color(0xFFBFB6CA),
+//        iconColor = Color(0xFFBFB6CA),
+//        isBackButton = false,
+//        onClick = onNavigateBack,
+//        content = {
+//            Column(
+//                modifier = Modifier.padding(horizontal = 20.dp),
+//                verticalArrangement = Arrangement.spacedBy(12.dp)
+//            ) {
+//                Text(
+//                    "Forgot Password?", modifier = Modifier.fillMaxWidth(), style = TextStyle(
+//                        fontFamily = AppFonts.rethinkSans,
+//                        fontSize = 20.sp,
+//                        fontWeight = FontWeight.Bold,
+//                        color = Color(0xFFF6F6F6)
+//                    )
+//                )
+//                ClearTextField(
+//                    email,
+//                    onValueChange = { it -> email = it },
+//                    onClick = { email = "" },
+//                    placeholder = "Email",
+//                )
+//                Text(
+//                    "Enter your email address to receive a link to reset your password.",
+//                    modifier = Modifier.fillMaxWidth(),
+//                    style = TextStyle(
+//                        fontFamily = AppFonts.instrumentSans,
+//                        fontSize = 15.sp,
+//                        fontWeight = FontWeight.Normal,
+//                        color = Color.White,
+//                    )
+//                )
+//            }
+//        },
+//        componentOutside = {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxHeight(),
+//                contentAlignment = Alignment.BottomCenter
+//            ) {
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxHeight(0.15f)
+//                        .fillMaxSize()
+//                ) {
+//                    Box(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .fillMaxHeight()
+//                            .dropShadow(
+//                                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+//                                shadow = Shadow(
+//                                    radius = 10.dp,
+//                                    spread = 6.dp,
+//                                    color = Color(0x40000000),
+//                                    offset = DpOffset(x = 4.dp, 3.dp)
+//                                )
+//                            )
+//                            .background(
+//                                color = Color(0xFF261A36),
+//                                RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+//                            )
+//                            .padding(start = 20.dp, end = 20.dp, bottom = 58.dp),
+//                        contentAlignment = Alignment.BottomCenter
+//                    ) {
+//                        ElevatedButton(
+//                            buttonColor = AppColors.primary,
+//                            outlineColor = AppColors.primaryDark,
+//                            text = "NEXT",
+//                            isEnabled = true,
+//                            onClick = {},
+//                            bottomBorderThickness = 5.dp,
+//                            textStyle = TextStyle(
+//                                fontFamily = AppFonts.instrumentSans,
+//                                fontWeight = FontWeight.Bold,
+//                                fontSize = 14.sp,
+//                                color = Color.White
+//                            ),
+//                        )
+//                    }
+//
+//                }
+//            }
+//        }
+//    )
 }
 
 @Composable
 fun PasswordResetStatus(modifier: Modifier = Modifier) {
-    StatusView(
-        title = "Password Reset Link",
-        buttonText = "GO BACK TO LOGIN",
-        isBackButton = false,
-        onClick = {},
-        message = {
-            Text(
-                buildAnnotatedString {
-                    append("We have sent a change password link to your email ")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("umak@umak.edu.ph")
-                    }
-                },
-                style = TextStyle(
-                    fontFamily = AppFonts.instrumentSans,
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 15.sp,
-                    color = Color.White
-                )
-            )
-        })
+//    StatusView(
+//        title = "Password Reset Link",
+//        buttonText = "GO BACK TO LOGIN",
+//        isBackButton = false,
+//        onClick = {},
+//        message = {
+//            Text(
+//                buildAnnotatedString {
+//                    append("We have sent a change password link to your email ")
+//                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+//                        append("umak@umak.edu.ph")
+//                    }
+//                },
+//                style = TextStyle(
+//                    fontFamily = AppFonts.instrumentSans,
+//                    fontWeight = FontWeight.Normal,
+//                    fontSize = 15.sp,
+//                    color = Color.White
+//                )
+//            )
+//        })
 }
 
 @Preview

@@ -12,7 +12,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.diffplug.spotless") version "8.0.0"
-    id("com.google.gms.google-services")
+    alias(libs.plugins.jetbrains.kotlin.serialization)
 }
 
 spotless {
@@ -58,12 +58,12 @@ android {
             keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
             keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
 
-            if (!storeFile?.exists()!! ||
-                storePassword.isNullOrBlank() ||
-                keyAlias.isNullOrBlank() ||
-                keyPassword.isNullOrBlank()) {
-                throw GradleException("❌ Missing or invalid signing config for release build.")
-            }
+//            if (!storeFile?.exists()!! ||
+//                storePassword.isNullOrBlank() ||
+//                keyAlias.isNullOrBlank() ||
+//                keyPassword.isNullOrBlank()) {
+//                throw GradleException("❌ Missing or invalid signing config for release build.")
+//            }
         }
     }
 
@@ -90,25 +90,26 @@ android {
 }
 
 dependencies {
-    implementation(platform("com.google.firebase:firebase-bom:34.4.0"))
-    implementation("com.google.firebase:firebase-analytics")
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.compose.animation.core.lint)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.windowsizeclass)
+    implementation(libs.androidx.adaptive.layout)
+
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.navigation3.runtime)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.geometry)
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    debugImplementation(libs.androidx.ui.tooling)
 }

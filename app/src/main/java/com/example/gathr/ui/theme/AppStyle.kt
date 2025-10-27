@@ -5,6 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.R
 
@@ -20,7 +21,7 @@ object AppColors {
 
 object AppFonts {
     val rethinkSans = FontFamily(Font(R.font.rethink_sans_regular))
-    val instrumentSans= FontFamily(Font(R.font.instrument_sans_regular))
+    val instrumentSans = FontFamily(Font(R.font.instrument_sans_regular))
 }
 
 object AppTextStyles {
@@ -30,4 +31,8 @@ object AppTextStyles {
         fontSize = 40.sp,
         color = Color.Black
     )
+}
+
+object AppMisc {
+    val screenBottomPadding = 30.dp
 }
