@@ -1,5 +1,8 @@
 [versions]
 agp = "8.13.0"
+cameraCore = "1.5.1"
+cameraCamera2 = "1.5.1"
+faceDetection = "16.1.7"
 kotlin = "2.1.21"
 kotlinSerialization = "2.1.21"
 coreKtx = "1.16.0"
@@ -16,6 +19,10 @@ uiGeometry = "1.9.4"
 
 
 [libraries]
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraCamera2" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraCore" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraCore" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraCore" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -31,6 +38,10 @@ androidx-adaptive-layout = { group = "androidx.compose.material3.adaptive", name
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodel" }
+face-detection = { module = "com.google.mlkit:face-detection", version.ref = "faceDetection" }
+koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
+koin-androidx-compose-navigation = { module = "io.insert-koin:koin-androidx-compose-navigation" }
+koin-core = { module = "io.insert-koin:koin-core" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationCore" }
 navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3Runtime" }

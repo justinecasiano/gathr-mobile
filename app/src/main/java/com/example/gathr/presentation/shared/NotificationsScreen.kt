@@ -16,7 +16,7 @@ fun NotificationsScreen() {
 //                .fillMaxWidth(),
 //        ) {
 //            item {
-                Text("Notifications Screen")
+    Text("Notifications Screen")
 //            }
 //        }
 //    }

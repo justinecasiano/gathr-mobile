@@ -9,8 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -32,10 +32,7 @@ import com.example.gathr.ui.theme.AppMisc
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(
-    isWhiteBackground: Boolean = false,
-    onLoaded: () -> Unit
-) {
+fun SplashScreen(isWhiteBackground: Boolean = false, onLoaded: () -> Unit) {
     val colorStops = listOf(
         0.5f to Color(0xFF412962),
         1f to Color(0xFF73483A),
@@ -44,7 +41,7 @@ fun SplashScreen(
     val backgroundBrush = Brush.linearGradient(
         colorStops = colorStops.toTypedArray(),
         start = Offset(x = Float.POSITIVE_INFINITY / 2f, y = 0f),
-        end = Offset(x = Float.POSITIVE_INFINITY / 2f, y = Float.POSITIVE_INFINITY)
+        end = Offset(x = Float.POSITIVE_INFINITY / 2f, y = Float.POSITIVE_INFINITY),
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -54,11 +51,11 @@ fun SplashScreen(
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = 700,
-                easing = FastOutSlowInEasing
+                easing = FastOutSlowInEasing,
             ),
-            repeatMode = RepeatMode.Reverse
+            repeatMode = RepeatMode.Reverse,
         ),
-        label = "scale"
+        label = "scale",
     )
 
     LaunchedEffect(Unit) {
@@ -71,31 +68,35 @@ fun SplashScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .then(
-                    if (isWhiteBackground) Modifier.background(Color.White)
-                    else Modifier.background(backgroundBrush)
+                    if (isWhiteBackground) {
+                        Modifier.background(Color.White)
+                    } else {
+                        Modifier.background(backgroundBrush)
+                    },
                 )
                 .padding(paddingValues),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(id = R.drawable.gathr_logo),
                 contentDescription = "Pulsing App Logo",
                 modifier = Modifier
-                    .size(200.dp)
-                    .scale(scale)
+                    .size(190.dp)
+                    .scale(scale),
             )
 
-            val logo = if (isWhiteBackground)
+            val logo = if (isWhiteBackground) {
                 R.drawable.gathr_text
-            else
+            } else {
                 R.drawable.gathr_text_white
+            }
 
             Image(
                 painter = painterResource(id = logo),
                 contentDescription = "Brand Name",
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = AppMisc.screenBottomPadding)
+                    .padding(bottom = AppMisc.screenBottomPadding),
             )
         }
     }

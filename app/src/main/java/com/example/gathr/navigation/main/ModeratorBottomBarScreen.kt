@@ -1,9 +1,9 @@
-package com.example.gathr.navigation
+package com.example.gathr.navigation.main
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
 import com.example.gathr.R
+import kotlinx.serialization.Serializable
 
 val moderatorBottomBarItems = listOf<ModeratorBottomBarScreen>(
     ModeratorBottomBarScreen.Events,
@@ -40,5 +40,5 @@ val ModeratorBottomBarScreenSaver = Saver<ModeratorBottomBarScreen, String>(
             ModeratorBottomBarScreen.Account::class.simpleName -> ModeratorBottomBarScreen.Account
             else -> ModeratorBottomBarScreen.Pendings
         }
-    }
+    },
 )

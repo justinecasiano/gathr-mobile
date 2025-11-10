@@ -1,5 +1,8 @@
 package com.example.gathr.presentation
 
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -37,127 +40,130 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.example.gathr.navigation.ModeratorBottomBarScreen
-import com.example.gathr.navigation.ModeratorBottomBarScreenSaver
-import com.example.gathr.navigation.ParticipantBottomBarScreen
-import com.example.gathr.navigation.ParticipantBottomBarScreenSaver
-import com.example.gathr.navigation.moderatorBottomBarItems
-import com.example.gathr.navigation.participantBottomBarItems
-import com.example.gathr.presentation.shared.EventsScreen
+import com.example.gathr.navigation.main.ModeratorBottomBarScreen
+import com.example.gathr.navigation.main.ModeratorBottomBarScreenSaver
+import com.example.gathr.navigation.main.ParticipantBottomBarScreen
+import com.example.gathr.navigation.main.ParticipantBottomBarScreenSaver
+import com.example.gathr.navigation.main.moderatorBottomBarItems
+import com.example.gathr.navigation.main.participantBottomBarItems
 import com.example.gathr.presentation.participant.ETicketsScreen
 import com.example.gathr.presentation.participant.MyEvents
-import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.presentation.participant.ProfileScreen
+import com.example.gathr.presentation.shared.EventsScreen
+import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
 fun MainScreen(isParticipant: Boolean = true) {
-    if (isParticipant) ParticipantScreen()
-    else ModeratorScreen()
+    if (isParticipant) {
+        ParticipantScreen()
+    } else {
+        ModeratorScreen()
+    }
 }
 
 @Composable
 fun ParticipantScreen() {
     val backStack = rememberNavBackStack(ParticipantBottomBarScreen.Events)
     var currentBottomBarScreen: ParticipantBottomBarScreen by rememberSaveable(
-        stateSaver = ParticipantBottomBarScreenSaver
+        stateSaver = ParticipantBottomBarScreenSaver,
     ) { mutableStateOf(ParticipantBottomBarScreen.Events) }
 
-    Scaffold(bottomBar = {
-        NavigationBar(
-            containerColor = Color.White,
-            modifier = Modifier
-                .drawWithContent {
-                    drawContent()
-                    drawLine(
-                        color = Color(0xFFD7D7D7),
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                },
-        ) {
-            participantBottomBarItems.forEach { destination ->
-                NavigationBarItem(
-                    modifier = Modifier,
-                    selected = currentBottomBarScreen == destination,
-                    icon = {
-                        if (destination.title == "E-tickets" || destination.title == "Notifications") {
-                            BadgedBox(
-                                badge = {
-                                    Badge(
-                                        containerColor = Color(0xFFF36F44),
-                                        contentColor = Color.White,
-                                        modifier = Modifier
-                                            .border(
-                                                width = 1.5.dp,
-                                                color = Color.Black,
-                                                shape = CircleShape
-                                            )
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color.White,
+                modifier = Modifier
+                    .drawWithContent {
+                        drawContent()
+                        drawLine(
+                            color = Color(0xFFD7D7D7),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, 0f),
+                            strokeWidth = 1.dp.toPx(),
+                        )
+                    },
+            ) {
+                participantBottomBarItems.forEach { destination ->
+                    NavigationBarItem(
+                        modifier = Modifier,
+                        selected = currentBottomBarScreen == destination,
+                        icon = {
+                            if (destination.title == "E-tickets" || destination.title == "Notifications") {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            containerColor = Color(0xFFF36F44),
+                                            contentColor = Color.White,
+                                            modifier = Modifier
+                                                .border(
+                                                    width = 1.5.dp,
+                                                    color = Color.Black,
+                                                    shape = CircleShape,
+                                                ),
+                                        ) { Text(text = "0") }
+                                    },
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(28.dp),
+                                        painter = painterResource(destination.icon),
+                                        contentDescription = "$destination icon",
                                     )
-                                    { Text(text = "0") }
-                                },
-                            ) {
+                                }
+                            } else {
                                 Icon(
                                     modifier = Modifier.size(28.dp),
                                     painter = painterResource(destination.icon),
-                                    contentDescription = "$destination icon"
+                                    contentDescription = "$destination icon",
                                 )
                             }
-                        } else {
-                            Icon(
-                                modifier = Modifier.size(28.dp),
-                                painter = painterResource(destination.icon),
-                                contentDescription = "$destination icon"
+                        },
+                        label = {
+                            Text(
+                                destination.title,
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                ),
                             )
-                        }
-                    },
-                    label = {
-                        Text(
-                            destination.title,
-                            style = TextStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp,
-                            ),
-                        )
-                    },
-                    onClick = {
-                        if (backStack.lastOrNull() != destination) {
-                            if (backStack.lastOrNull() in participantBottomBarItems) {
-                                backStack.removeAt(backStack.lastIndex)
+                        },
+                        onClick = {
+                            if (backStack.lastOrNull() != destination) {
+                                if (backStack.lastOrNull() in participantBottomBarItems) {
+                                    backStack.removeAt(backStack.lastIndex)
+                                }
+                                backStack.add(destination)
+                                currentBottomBarScreen = destination
                             }
-                            backStack.add(destination)
-                            currentBottomBarScreen = destination
-                        }
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = Color.Transparent,
-                        selectedIconColor = Color(0xFFF36F44),
-                        selectedTextColor = Color(0xFFF36F44),
-                        unselectedIconColor = Color(0xFFA5A5A5),
-                        unselectedTextColor = Color(0xFFA5A5A5),
-                        disabledIconColor = Color.Unspecified,
-                        disabledTextColor = Color.Unspecified,
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = Color.Transparent,
+                            selectedIconColor = Color(0xFFF36F44),
+                            selectedTextColor = Color(0xFFF36F44),
+                            unselectedIconColor = Color(0xFFA5A5A5),
+                            unselectedTextColor = Color(0xFFA5A5A5),
+                            disabledIconColor = Color.Unspecified,
+                            disabledTextColor = Color.Unspecified,
+                        ),
                     )
-                )
+                }
             }
-        }
-    }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF8F8F8))
                 .padding(paddingValues),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
+                    rememberViewModelStoreNavEntryDecorator(),
                 ),
                 entryProvider = entryProvider {
                     entry<ParticipantBottomBarScreen.Events> {
@@ -175,9 +181,23 @@ fun ParticipantScreen() {
                     entry<ParticipantBottomBarScreen.Profile> {
                         ProfileScreen()
                     }
-                }
+                },
+                transitionSpec = {
+                    // Slide in from right when navigating forward
+                    slideInHorizontally(initialOffsetX = { it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popTransitionSpec = {
+                    // Slide in from left when navigating back
+                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { it })
+                },
+                predictivePopTransitionSpec = {
+                    // Slide in from left when navigating back
+                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { it })
+                },
             )
-
         }
     }
 }
@@ -186,7 +206,7 @@ fun ParticipantScreen() {
 fun ModeratorScreen() {
     val backStack = rememberNavBackStack(ModeratorBottomBarScreen.Events)
     var currentBottomBarScreen: ModeratorBottomBarScreen by rememberSaveable(
-        stateSaver = ModeratorBottomBarScreenSaver
+        stateSaver = ModeratorBottomBarScreenSaver,
     ) { mutableStateOf(ModeratorBottomBarScreen.Pendings) }
 
     val colorStops = listOf(
@@ -196,7 +216,7 @@ fun ModeratorScreen() {
     val backgroundBrush = Brush.linearGradient(
         colorStops = colorStops.toTypedArray(),
         start = Offset(x = Float.POSITIVE_INFINITY / 2f, y = 0f),
-        end = Offset(x = Float.POSITIVE_INFINITY / 2f, y = Float.POSITIVE_INFINITY)
+        end = Offset(x = Float.POSITIVE_INFINITY / 2f, y = Float.POSITIVE_INFINITY),
     )
 
     val modifierWithBorder = Modifier.drawWithContent {
@@ -205,7 +225,7 @@ fun ModeratorScreen() {
             color = Color(0xFF261A36),
             start = Offset(0f, 0f),
             end = Offset(size.width, 0f),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.dp.toPx(),
         )
     }
 
@@ -217,8 +237,7 @@ fun ModeratorScreen() {
                 modifier = modifierWithBorder
                     .background(backgroundBrush)
                     .padding(horizontal = 25.dp),
-            )
-            {
+            ) {
                 moderatorBottomBarItems.forEach { destination ->
                     NavigationBarItem(
                         modifier = Modifier,
@@ -235,23 +254,22 @@ fun ModeratorScreen() {
                                                 .border(
                                                     width = 1.5.dp,
                                                     color = Color.Black,
-                                                    shape = CircleShape
-                                                )
-                                        )
-                                        { Text(text = "0") }
+                                                    shape = CircleShape,
+                                                ),
+                                        ) { Text(text = "0") }
                                     },
                                 ) {
                                     Icon(
                                         modifier = Modifier.size(28.dp),
                                         painter = painterResource(destination.icon),
-                                        contentDescription = "$destination icon"
+                                        contentDescription = "$destination icon",
                                     )
                                 }
                             } else {
                                 Icon(
                                     modifier = Modifier.size(28.dp),
                                     painter = painterResource(destination.icon),
-                                    contentDescription = "$destination icon"
+                                    contentDescription = "$destination icon",
                                 )
                             }
                         },
@@ -282,25 +300,25 @@ fun ModeratorScreen() {
                             unselectedTextColor = Color.White.copy(alpha = 0.5f),
                             disabledIconColor = Color.Unspecified,
                             disabledTextColor = Color.Unspecified,
-                        )
+                        ),
                     )
                 }
             }
-        }
+        },
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFF312245))
                 .padding(paddingValues),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             NavDisplay(
                 backStack = backStack,
                 onBack = { backStack.removeLastOrNull() },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator()
+                    rememberViewModelStoreNavEntryDecorator(),
                 ),
                 entryProvider = entryProvider {
                     entry<ModeratorBottomBarScreen.Events> {
@@ -315,9 +333,23 @@ fun ModeratorScreen() {
                     entry<ModeratorBottomBarScreen.Account> {
                         ProfileScreen()
                     }
-                }
+                },
+                transitionSpec = {
+                    // Slide in from right when navigating forward
+                    slideInHorizontally(initialOffsetX = { it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popTransitionSpec = {
+                    // Slide in from left when navigating back
+                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { it })
+                },
+                predictivePopTransitionSpec = {
+                    // Slide in from left when navigating back
+                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
+                        slideOutHorizontally(targetOffsetX = { it })
+                },
             )
-
         }
     }
 }
@@ -327,4 +359,3 @@ fun ModeratorScreen() {
 private fun MainScreenPreview() {
     MainScreen()
 }
-

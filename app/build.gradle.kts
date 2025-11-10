@@ -1,5 +1,5 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
@@ -109,6 +109,17 @@ dependencies {
     implementation(libs.navigation3.runtime)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.geometry)
+
+    implementation(project.dependencies.platform("io.insert-koin:koin-bom:4.1.0"))
+    implementation(libs.koin.core)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.androidx.compose.navigation)
+
+    implementation(libs.face.detection)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)

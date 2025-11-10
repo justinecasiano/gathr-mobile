@@ -1,56 +1,20 @@
-package com.example.gathr.presentation.auth
+package com.example.gathr.presentation.auth.login
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.motionEventSpy
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import com.example.gathr.R
-import com.example.gathr.core.ui.CustomInputField
-import com.example.gathr.core.ui.ElevatedButton
-import com.example.gathr.core.ui.PasswordField
-import com.example.gathr.ui.theme.AppColors
-import com.example.gathr.ui.theme.AppFonts
 
 @Composable
 fun LoginScreen(
     paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
     onNavigateForgotPassword: () -> Unit,
-    onNavigateAfterLogin: () -> Unit
+    onNavigateAfterLogin: () -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -182,49 +146,49 @@ fun LoginScreen(
 //    )
 }
 
-@Composable
-fun MergedInputFields(
-    usernameValue: String,
-    passwordValue: String,
-    onUsernameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-) {
-    Column {
-        CustomInputField(
-            text = usernameValue,
-            placeholder = "Email or username",
-            shape = RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp),
-            onValueChange = onUsernameChange
-        )
-        PasswordField(
-            text = passwordValue,
-            modifier = Modifier
-                .offset(y = -3.dp)
-                .zIndex(1f),
-            shape = RoundedCornerShape(bottomStart = 15.dp, bottomEnd = 15.dp),
-            onValueChange = onPasswordChange
-        )
-    }
-}
-
-@Composable
-fun Line(
-    modifier: Modifier = Modifier,
-    lineColor: Color = Color.Black,
-    strokeWidth: Float = 5f
-) {
-    Canvas(modifier = modifier.fillMaxWidth()) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
-
-        drawLine(
-            start = Offset(x = 0f, y = canvasHeight / 2),
-            end = Offset(x = canvasWidth, y = canvasHeight / 2),
-            color = lineColor,
-            strokeWidth = strokeWidth,
-        )
-    }
-}
+// @Composable
+// fun MergedInputFields(
+//    usernameValue: String,
+//    passwordValue: String,
+//    onUsernameChange: (String) -> Unit,
+//    onPasswordChange: (String) -> Unit,
+// ) {
+//    Column {
+//        CustomTextField(
+//            text = usernameValue,
+//            placeholderText = "Email or username",
+//            shape = RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp),
+//            onValueChange = onUsernameChange
+//        )
+//        PasswordField(
+//            text = passwordValue,
+//            modifier = Modifier
+//                .offset(y = -3.dp)
+//                .zIndex(1f),
+//            shape = RoundedCornerShape(bottomStart = 15.dp, bottomEnd = 15.dp),
+//            onValueChange = onPasswordChange
+//        )
+//    }
+// }
+//
+// @Composable
+// fun Line(
+//    modifier: Modifier = Modifier,
+//    lineColor: Color = Color.Black,
+//    strokeWidth: Float = 5f
+// ) {
+//    Canvas(modifier = modifier.fillMaxWidth()) {
+//        val canvasWidth = size.width
+//        val canvasHeight = size.height
+//
+//        drawLine(
+//            start = Offset(x = 0f, y = canvasHeight / 2),
+//            end = Offset(x = canvasWidth, y = canvasHeight / 2),
+//            color = lineColor,
+//            strokeWidth = strokeWidth,
+//        )
+//    }
+// }
 
 @Preview
 @Composable

@@ -1,8 +1,9 @@
 package com.example.gathr.core.ui
 
-import android.graphics.drawable.Icon
 import androidx.compose.animation.core.EaseInOutCubic
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -49,40 +49,40 @@ fun ElevatedButton(
     modifier: Modifier = Modifier,
     isContrast: Boolean = true,
     isEnabled: Boolean = true,
-    buttonShape: RoundedCornerShape = RoundedCornerShape(14.dp),
+    buttonShape: RoundedCornerShape = RoundedCornerShape(20.dp),
     bottomBorderThickness: Dp = 5.dp,
     shouldAddShadow: Boolean = true,
     icon: @Composable () -> Unit = {},
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     val shadowEffect =
         Shadow(
             color = Color.Black.copy(alpha = 0.25f),
             offset = Offset(x = 0f, y = 4f),
-            blurRadius = 4f
+            blurRadius = 4f,
         )
 
     var isClicked by remember { mutableStateOf(false) }
+    var isPressed by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
     val targetBottomPadding = when {
-        isContrast && isClicked -> 0.dp
-        isContrast && !isClicked -> bottomBorderThickness
-        !isContrast && isClicked -> 1.dp
+        isContrast && isPressed -> 0.dp
+        isContrast && !isPressed -> bottomBorderThickness
+        !isContrast && isPressed -> 1.dp
         else -> bottomBorderThickness
     }
 
     val animatedBottomPadding by animateDpAsState(
         targetValue = targetBottomPadding,
         animationSpec = tween(
-            durationMillis = 300,
+            durationMillis = 75,
             easing = EaseInOutCubic
         ),
-        label = "bottomPaddingAnimation"
+        label = "bottomPaddingAnimation",
     )
     val style = textStyle.copy(
         shadow = if (shouldAddShadow) shadowEffect else Shadow.None,
-//        color = if (isEnabled) disabledTextColor else textStyle.color
     )
 
     Box(modifier = modifier.fillMaxWidth()) {
@@ -93,8 +93,8 @@ fun ElevatedButton(
                 .matchParentSize()
                 .background(
                     color = outlineColor,
-                    shape = buttonShape
-                )
+                    shape = buttonShape,
+                ),
         )
         OutlinedButton(
             modifier = Modifier
@@ -102,22 +102,29 @@ fun ElevatedButton(
                 .height(height)
                 .fillMaxWidth()
                 .then(
-                    if (isContrast) Modifier.padding(bottom = if (isClicked) 0.dp else animatedBottomPadding) else Modifier.padding(
-                        start = 1.dp,
-                        end = 1.dp,
-                        top = 1.dp,
-                        bottom = if (isClicked) 1.dp else animatedBottomPadding
-                    )
+                    if (isContrast) {
+                        Modifier.padding(bottom = if (isPressed) 0.dp else animatedBottomPadding)
+                    } else {
+                        Modifier.padding(
+                            start = 1.dp,
+                            end = 1.dp,
+                            top = 1.dp,
+                            bottom = if (isPressed) 1.dp else animatedBottomPadding,
+                        )
+                    },
                 ),
             onClick = {
                 if (!isClicked) {
+                    isPressed = true
                     isClicked = true
                     coroutineScope.launch {
-                        delay(100L)
+                        delay(75)
+                        isPressed = false
+                        delay(75)
+                        onClick()
                         isClicked = false
                     }
                 }
-                onClick()
             },
             enabled = isEnabled,
             shape = buttonShape,
@@ -125,11 +132,11 @@ fun ElevatedButton(
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = buttonColor,
                 contentColor = Color.Unspecified,
-                disabledContainerColor = buttonColor
+                disabledContainerColor = buttonColor,
             ),
         ) {
             icon.invoke()
-            Text(text, style = textStyle)
+            Text(text, style = style)
         }
     }
 }
@@ -147,7 +154,7 @@ private fun ElevatedButtonPreview() {
                 fontFamily = AppFonts.instrumentSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
-                color = Color.Black
+                color = Color.Black,
             ),
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -161,9 +168,8 @@ private fun ElevatedButtonPreview() {
                 fontFamily = AppFonts.instrumentSans,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp,
-                color = Color.White
+                color = Color.White,
             ),
         )
     }
 }
-

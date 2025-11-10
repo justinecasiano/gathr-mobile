@@ -1,9 +1,9 @@
-package com.example.gathr.navigation
+package com.example.gathr.navigation.main
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.navigation3.runtime.NavKey
-import kotlinx.serialization.Serializable
 import com.example.gathr.R
+import kotlinx.serialization.Serializable
 
 val participantBottomBarItems = listOf<ParticipantBottomBarScreen>(
     ParticipantBottomBarScreen.Events,
@@ -46,5 +46,5 @@ val ParticipantBottomBarScreenSaver = Saver<ParticipantBottomBarScreen, String>(
             ParticipantBottomBarScreen.Profile::class.simpleName -> ParticipantBottomBarScreen.Profile
             else -> ParticipantBottomBarScreen.Events
         }
-    }
+    },
 )
