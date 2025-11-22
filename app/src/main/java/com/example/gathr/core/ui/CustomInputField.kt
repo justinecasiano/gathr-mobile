@@ -5,14 +5,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -147,6 +150,124 @@ fun ClearTextField(
             }
         })
 }
+
+@Composable
+fun SearchInputField(
+    text: String = "",
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(15.dp),
+    outlineColor: Color = Color(0xFF574272), // stroke color
+    fillColor: Color = Color(0xFF513872),   // fill color
+    visualTransformation: VisualTransformation? = null,
+    onValueChange: (String) -> Unit = {},
+    iconButton: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null // ✅ added for search icon
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = 2.5.dp,
+                color = if (isFocused) AppColors.primaryDark else outlineColor,
+                shape = shape
+            )
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
+                },
+            textStyle = TextStyle(
+                fontFamily = AppFonts.rethinkSans,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.W500,
+                color = Color.White
+            ),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    style = TextStyle(
+                        fontFamily = AppFonts.rethinkSans,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.W500,
+                        color = Color.White // ✅ solid white placeholder
+                    )
+                )
+            },
+            shape = shape,
+            singleLine = true,
+            visualTransformation = visualTransformation ?: VisualTransformation.None,
+            leadingIcon = {
+                    leadingIcon?.invoke()
+            },
+            trailingIcon = {
+                if (text.isNotEmpty()) iconButton?.invoke()
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = Color.White,
+                unfocusedContainerColor = fillColor, // ✅ fill color
+                focusedContainerColor = fillColor,
+                unfocusedBorderColor = outlineColor, // ✅ stroke color
+                focusedBorderColor = AppColors.primaryDark,
+                focusedLeadingIconColor = Color.White,
+                unfocusedLeadingIconColor = Color.White
+            ),
+        )
+    }
+}
+
+@Composable
+fun SearchClearField(
+    text: String = "",
+    placeholder: String = "Search",
+    modifier: Modifier = Modifier,
+    outlineColor: Color = Color(0xFF574272),
+    fillColor: Color = Color(0xFF513872),
+    iconColor: Color = Color(0xFFF6835E),
+    onValueChange: (String) -> Unit = {},
+    onClearClick: () -> Unit = {},
+) {
+    SearchInputField(
+        text = text,
+        placeholder = placeholder,
+        modifier = modifier,
+        outlineColor = outlineColor,
+        fillColor = fillColor,
+        onValueChange = onValueChange,
+        leadingIcon = {
+
+                Icon(
+                    painter = painterResource(R.drawable.ic_search),
+                    contentDescription = "Search Icon",
+                    modifier = Modifier
+                        .size(15.dp)
+
+                )
+        },
+
+        iconButton = {
+            if (text.isNotEmpty()) {
+                IconButton(onClick = onClearClick) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_clear_search),
+                        contentDescription = "Clear Search Text",
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+            }
+        }
+    )
+}
+
+
 
 @Preview(showBackground = true)
 @Composable
