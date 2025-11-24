@@ -65,6 +65,7 @@ fun MainScreen(viewModel: UserViewModel, onLogout: () -> Unit) {
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
+                UserEffect.NavigateToNext -> {}
                 UserEffect.NavigateBack -> {}
                 UserEffect.NavigateLogout -> onLogout()
             }

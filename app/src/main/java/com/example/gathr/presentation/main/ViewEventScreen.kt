@@ -72,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.R
 import com.example.gathr.core.ui.ElevatedButton
+import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.toPrettyString
@@ -79,13 +80,14 @@ import com.example.gathr.utils.toPrettyString
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewEventScreen(
-    event: Event? = null,
+    event: CreateEvent? = null,
     isOrganizer: Boolean = false,
     buttonText: String = "REGISTER",
     onButtonClick: () -> Unit = {}
 ) {
     Scaffold(topBar = {
         TopAppBar(
+            modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
             title = {},
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent

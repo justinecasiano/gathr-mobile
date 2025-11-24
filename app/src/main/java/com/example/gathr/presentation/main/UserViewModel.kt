@@ -3,11 +3,14 @@ package com.example.gathr.presentation.main
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.presentation.auth.login.LoginEffect
 import com.example.gathr.presentation.auth.login.LoginIntent
+import com.example.gathr.presentation.auth.sign_up.SignUpEffect
+import com.example.gathr.presentation.auth.sign_up.SignUpIntent
 import com.example.gathr.utils.Utils
 import io.github.jan.supabase.auth.Auth
 import kotlinx.coroutines.delay
@@ -34,12 +37,30 @@ class UserViewModel(
 
     fun handleIntent(intent: UserIntent) {
         when (intent) {
-            is UserIntent.EmailChanged -> {}
+            is UserIntent.CreateEventChanged -> _state.update { it.copy(createEvent = intent.value) }
             is UserIntent.ActionErrorChanged -> _state.update { it.copy(actionError = intent.value) }
             is UserIntent.IsLoadingChanged -> _state.update { it.copy(isLoading = intent.value) }
+            is UserIntent.ValidateCreateEvent -> validateCreateEvent()
             is UserIntent.BackClicked -> {}
             is UserIntent.LogoutClicked -> logout()
         }
+    }
+
+    private fun validateCreateEvent() {
+        val currentState = _state.value
+        val createEventValidationState = Utils.validateCreateEvent(currentState.createEvent)
+
+        _state.update {
+            it.copy(createEventValidationState = createEventValidationState)
+        }
+
+        if (!createEventValidationState.hasErrors) {
+            viewModelScope.launch {
+                delay(500)
+                handleIntent(UserIntent.IsLoadingChanged(false))
+                sendEffect(UserEffect.NavigateToNext)
+            }
+        } else handleIntent(UserIntent.IsLoadingChanged(false))
     }
 
     private fun logout() {

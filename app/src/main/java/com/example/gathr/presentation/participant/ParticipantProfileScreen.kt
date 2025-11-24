@@ -22,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -86,8 +87,22 @@ fun ParticipantProfileScreen(
                 fontFamily = rethinkSans,
             )
             Spacer(modifier = Modifier.height(10.dp))
-            ProfileCard(name = userName, initial = initial, school = school)
+            ProfileCard(name = userName, initial = initial, school = school, onClick = {})
             Spacer(modifier = Modifier.height(10.dp))
+            ProfileBanner(
+                onClick = {},
+                title = "Become an event organizer",
+                body = "Begin hosting events for your college",
+                image = R.drawable.organizer_pic
+            )
+            Spacer(Modifier.height(20.dp))
+            ProfileBanner(
+                onClick = {},
+                title = "Staffed events",
+                body = "View all events you've been assigned to here",
+                image = R.drawable.staffed_events_pic
+            )
+            Spacer(modifier = Modifier.height(20.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -141,21 +156,44 @@ fun ParticipantProfileScreen(
 }
 
 @Composable
-fun ProfileCard(name: String, initial: String, school: String) {
+fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(160.dp)
             .clip(RoundedCornerShape(22.dp))
-            .background(Color(0xFFFCFCFC)),
+            .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
-
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .padding(start = 150.dp)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .size(width = 55.dp, height = 28.dp)
+                    .clickable { onClick },
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFF616162).copy(0.2f)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Edit",
+                        color = Color.Black,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = rethinkSans
+                    )
+                }
+            }
+        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
             Box(
                 modifier = Modifier
-                    .size(70.dp)
+                    .size(90.dp)
                     .clip(RoundedCornerShape(50))
                     .background(Color(0xFF473163)),
                 contentAlignment = Alignment.Center
@@ -163,7 +201,7 @@ fun ProfileCard(name: String, initial: String, school: String) {
                 Text(
                     text = initial,
                     color = Color.White,
-                    fontSize = 32.sp,
+                    fontSize = 48.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -208,7 +246,7 @@ fun ProfileBanner(
                 )
             )
             .fillMaxWidth()
-            .height(150.dp),
+            .height(140.dp),
         shape = RoundedCornerShape(20.dp),
     ) {
         Box(
@@ -230,7 +268,7 @@ fun ProfileBanner(
                             )
                         )
                         .padding(horizontal = 10.dp, vertical = 5.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.BottomCenter,
                 ) {
                     Text(
                         text = "Explore",
@@ -241,14 +279,18 @@ fun ProfileBanner(
                     )
                 }
             }
-            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Image(
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier = Modifier.height(105.dp),
                     painter = painterResource(image),
                     contentDescription = "Organizer",
                     contentScale = ContentScale.FillHeight
                 )
-
                 Text(
                     buildAnnotatedString {
                         withStyle(
@@ -265,23 +307,11 @@ fun ProfileBanner(
                     color = Color.Black,
                     fontFamily = rethinkSans,
                     fontWeight = FontWeight.Normal,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
+                    lineHeight = 12.sp,
+                    modifier = Modifier.padding(end = 10.dp)
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ProfileScreenPreview() {
-    Column(Modifier.fillMaxSize()) {
-        ProfileBanner(
-            onClick = {},
-            title = "Become an event organizer",
-            body = "Begin hosting events for your college",
-            image = R.drawable.organizer_pic
-        )
-        Spacer(Modifier.height(20.dp))
     }
 }

@@ -1,9 +1,11 @@
 package com.example.gathr.core.ui
 
+import android.util.Log
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -11,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -41,6 +44,11 @@ fun CustomTextField(
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(15.dp),
     outlineColor: Color = Color(0xFF916AD2),
+    containerColor: Color = Color(0xFF312245),
+    contentColor: Color = Color.White,
+    minLines: Int = 1,
+    maxLines: Int = 1,
+    readOnly: Boolean = false,
     visualTransformation: VisualTransformation? = null,
     onValueChange: (String) -> Unit = {},
     prefix: @Composable (() -> Unit)? = null,
@@ -60,6 +68,8 @@ fun CustomTextField(
         onValueChange = onValueChange,
         isError = isError ?: false,
         prefix = prefix,
+        minLines = minLines,
+        maxLines = maxLines,
         modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { focusState ->
@@ -71,6 +81,7 @@ fun CustomTextField(
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
         ),
+        readOnly = readOnly,
         label =
             if (labelText.isNotBlank()) {
                 {
@@ -80,7 +91,7 @@ fun CustomTextField(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = animatedFontSize.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.White.copy(alpha = 0.5f),
+                            color = contentColor.copy(alpha = 0.5f),
                         ),
                     )
                 }
@@ -93,7 +104,7 @@ fun CustomTextField(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = contentColor.copy(alpha = 0.5f),
                     ),
                 )
             }
@@ -108,30 +119,32 @@ fun CustomTextField(
                             fontFamily = AppFonts.instrumentSans,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
+                            color = AppColors.error
                         ),
                     )
                 }
             } else null,
         shape = shape,
-        singleLine = true,
+        singleLine = maxLines <= 1,
         visualTransformation = visualTransformation ?: VisualTransformation.None,
         trailingIcon = if (text.isNotBlank() && iconButton != null) {
             { iconButton.invoke() }
         } else null,
         colors = OutlinedTextFieldDefaults.colors(
-            cursorColor = Color.White,
+            cursorColor = contentColor,
 
             unfocusedBorderColor = if (isError == false) AppColors.success else outlineColor,
-            focusedBorderColor = if (isError == false) AppColors.success else Color(0xFF916AD2),
+            focusedBorderColor = if (isError == false) AppColors.success else outlineColor,
             errorBorderColor = AppColors.error,
             errorSupportingTextColor = AppColors.error,
 
-            errorTextColor = Color.White,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White.copy(alpha = 0.8f),
+            errorTextColor = contentColor,
+            focusedTextColor = contentColor,
+            unfocusedTextColor = contentColor.copy(0.8f),
 
-            unfocusedContainerColor = Color(0xFF312245),
-            focusedContainerColor = Color(0xFF312245),
+            errorContainerColor = containerColor,
+            unfocusedContainerColor = containerColor,
+            focusedContainerColor = containerColor,
         ),
     )
 }
@@ -169,15 +182,17 @@ fun PasswordField(
         onValueChange = onValueChange,
         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         iconButton = {
-            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                Icon(
-                    modifier = Modifier.size(28.dp),
-                    painter = painterResource(
-                        if (isPasswordVisible) R.drawable.visibility else R.drawable.visibility_off,
-                    ),
-                    contentDescription = "Toggle Password Visibility",
-                    tint = iconColor,
-                )
+            Box(contentAlignment = Alignment.TopEnd) {
+                IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                    Icon(
+                        modifier = Modifier.size(28.dp),
+                        painter = painterResource(
+                            if (isPasswordVisible) R.drawable.visibility else R.drawable.visibility_off,
+                        ),
+                        contentDescription = "Toggle Password Visibility",
+                        tint = iconColor,
+                    )
+                }
             }
         },
     )
@@ -192,6 +207,10 @@ fun ClearTextField(
     isError: Boolean? = null,
     modifier: Modifier = Modifier,
     outlineColor: Color = Color(0xFF916AD2),
+    containerColor: Color = Color(0xFF312245),
+    contentColor: Color = Color.White,
+    minLines: Int = 1,
+    maxLines: Int = 1,
     iconColor: Color = Color(0xFFF6835E),
     onValueChange: (String) -> Unit = {},
     onClick: () -> Unit = {},
@@ -203,7 +222,11 @@ fun ClearTextField(
         isError = isError,
         keyboardOptions = keyboardOptions,
         modifier = modifier,
+        minLines = minLines,
+        maxLines = maxLines,
         outlineColor = outlineColor,
+        containerColor = containerColor,
+        contentColor = contentColor,
         onValueChange = onValueChange,
         iconButton = {
             IconButton(onClick = onClick) {

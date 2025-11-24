@@ -45,6 +45,7 @@ import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.compose.runtime.collectAsState
+import kotlin.toString
 
 @Composable
 fun SplashScreen(
@@ -55,37 +56,13 @@ fun SplashScreen(
     val auth: Auth = koinInject()
     val authRepository: AuthRepository = koinInject()
 
-    val colorStops = listOf(
-        0.5f to Color(0xFF412962),
-        1f to Color(0xFF73483A),
-        1f to Color(0xFF9A5D63),
-    )
-    val backgroundBrush = Brush.linearGradient(
-        colorStops = colorStops.toTypedArray(),
-        start = Offset(x = Float.POSITIVE_INFINITY / 2f, y = 0f),
-        end = Offset(x = Float.POSITIVE_INFINITY / 2f, y = Float.POSITIVE_INFINITY),
-    )
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 700,
-                easing = FastOutSlowInEasing,
-            ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "scale",
-    )
-
     LaunchedEffect(Unit) {
         auth.awaitInitialization()
         userViewModel.getCurrentUser()
         delay(3000L)
         onLoaded(authRepository.isLoggedIn())
     }
+
     val role = userViewModel.state.collectAsState().value.currentUser?.role
 
     when (role) {

@@ -44,6 +44,7 @@ import com.example.gathr.presentation.auth.sign_up.VerifyEmailScreen
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.NetworkConnectivityService
 import io.github.jan.supabase.auth.Auth
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -65,20 +66,23 @@ fun AuthNavigation(onLogin: () -> Unit) {
     val isOnline by networkService.observeNetworkStatus()
         .collectAsStateWithLifecycle(initialValue = true)
 
-    if (!isOnline) {
-        backStack.add(AuthScreen.NoInternet)
-    } else {
-        if (backStack.lastOrNull() == AuthScreen.NoInternet) {
-            backStack.removeLastOrNull()
+    LaunchedEffect(isOnline) {
+        delay(500L)
+        if (!isOnline) {
+            backStack.add(AuthScreen.NoInternet)
+        } else {
+            if (backStack.lastOrNull() == AuthScreen.NoInternet) {
+                backStack.removeLastOrNull()
+            }
         }
-    }
 
-    if (isOnline && isLoggedIn) {
-        Log.d("SUPABASE", "User is authenticated")
-        val lastScreen = backStack.lastOrNull()
-        if (lastScreen == AuthScreen.Landing) {
-            Log.d("SUPABASE", "User logged in, redirecting")
-            onLogin()
+        if (isOnline && isLoggedIn) {
+            Log.d("SUPABASE", "User is authenticated")
+            val lastScreen = backStack.lastOrNull()
+            if (lastScreen == AuthScreen.Landing) {
+                Log.d("SUPABASE", "User logged in, redirecting")
+                onLogin()
+            }
         }
     }
 

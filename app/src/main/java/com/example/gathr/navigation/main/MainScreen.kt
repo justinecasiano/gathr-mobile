@@ -12,7 +12,13 @@ sealed class MainScreen : NavKey {
     data object ViewEvent : MainScreen()
 
     @Serializable
-    data object QrCodeScreen: MainScreen()
+    data object ModifyEvent: MainScreen()
+
+    @Serializable
+    data object AddStaff: MainScreen()
+
+    @Serializable
+    data object QrCode: MainScreen()
 
     @Serializable
     data object QrScanner: MainScreen()

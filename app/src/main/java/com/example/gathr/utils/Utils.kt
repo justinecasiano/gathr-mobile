@@ -7,15 +7,18 @@ import com.example.gathr.presentation.auth.PasswordValidationState
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
+import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.remote.ApiResult
+import com.example.gathr.presentation.main.CreateEventValidationState
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
-import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
 import kotlinx.io.IOException
+import java.time.Clock
+import java.time.Instant
 import java.util.EnumMap
 
 object Utils {
@@ -104,6 +107,59 @@ object Utils {
             hasSpecialChar = hasSpecialChar,
             hasValidationErrors = hasValidationErrors,
             hasConfirmPasswordError = hasConfirmPasswordError
+        )
+    }
+
+    fun validateCreateEvent(event: CreateEvent): CreateEventValidationState {
+        val currentMoment = Instant.now()
+
+        val titleError = if (event.title.trim().length < 5) {
+            "Title is too short (minimum 5 characters)"
+        } else ""
+
+        val descriptionError = if (event.description.trim().length < 10) {
+            "Description is too short (minimum 10 characters)"
+        } else ""
+
+        val locationError = if (event.location.trim().length < 3) {
+            "Location is too short (minimum 3 characters)"
+        } else ""
+
+        val capacityError = if (event.capacity == null || event.capacity <= 2) {
+            "Please enter a valid capacity greater than 2"
+        } else ""
+
+        val backgroundImageError = if (event.backgroundImage.isNullOrBlank()) {
+            "Background image is required"
+        } else ""
+
+        val startDateError = if (event.startDateAndTime < currentMoment) {
+            "Start time cannot be in the past"
+        } else ""
+
+        val endDateError = if (event.endDateAndTime <= event.startDateAndTime) {
+            "End time must be after the start time"
+        } else ""
+
+        val hasErrors = listOf(
+            titleError,
+            descriptionError,
+            locationError,
+            capacityError,
+            backgroundImageError,
+            startDateError,
+            endDateError
+        ).any { it.isNotBlank() }
+
+        return CreateEventValidationState(
+            titleError = titleError,
+            descriptionError = descriptionError,
+            backgroundImageError = backgroundImageError,
+            capacityError = capacityError,
+            locationError = locationError,
+            startDateAndTimeError = startDateError,
+            endDateAndTimeError = endDateError,
+            hasErrors = hasErrors
         )
     }
 

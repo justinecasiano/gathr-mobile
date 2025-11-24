@@ -1,13 +1,16 @@
 package com.example.gathr.data.model
 
 import com.example.gathr.utils.JavaInstantSerializer
+import com.example.gathr.utils.UuidSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
+import java.util.UUID
 
 @Serializable
 data class User(
-    val id: String,
+    @Serializable(with = UuidSerializer::class)
+    val id: UUID,
 
     @SerialName("display_name")
     val displayName: String? = null,
