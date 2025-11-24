@@ -1,5 +1,7 @@
 package com.example.gathr.presentation.auth.sign_up
 
+import com.example.gathr.presentation.auth.PasswordValidationState
+
 data class SignUpState(
     val firstName: String = "",
     val lastName: String = "",
@@ -12,21 +14,12 @@ data class SignUpState(
     val school: String = "",
     val isAlumni: Boolean? = null,
     val emailCode: String = "",
+    val isLoading: Boolean = false,
+    val signUpError: String = "",
 
-    val firstNameError: String = "",
-    val lastNameError: String = "",
     val emailError: String = "",
-    val emailCodeError: String = "",
     val usernameError: String = "",
+    val confirmPasswordError: String = "",
     val passwordValidation: PasswordValidationState = PasswordValidationState(),
-)
-
-data class PasswordValidationState(
-    val hasMinLength: Boolean = false,
-    val hasUppercase: Boolean = false,
-    val hasLowercase: Boolean = false,
-    val hasDigit: Boolean = false,
-    val hasSpecialChar: Boolean = false,
-    val hasValidationErrors: Boolean = false,
-    val hasConfirmPasswordError: Boolean = false
+    val emailCodeError: String = "",
 )

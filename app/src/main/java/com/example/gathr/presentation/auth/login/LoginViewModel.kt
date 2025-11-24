@@ -1,8 +1,13 @@
 package com.example.gathr.presentation.auth.login
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
+import com.example.gathr.presentation.auth.sign_up.SignUpIntent
+import com.example.gathr.utils.Utils
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -24,25 +29,72 @@ class LoginViewModel(
 
     fun handleIntent(intent: LoginIntent) {
         when (intent) {
-            is LoginIntent.EmailAddressChanged -> _state.update { it.copy(email = intent.value) }
-            is LoginIntent.NewPasswordChanged -> _state.update { it.copy(newPassword = intent.value) }
-            is LoginIntent.ConfirmNewPasswordChanged -> _state.update {
-                it.copy(confirmNewPassword = intent.value)
+            is LoginIntent.EmailChanged -> _state.update { it.copy(email = intent.value) }
+            is LoginIntent.PasswordChanged -> _state.update { it.copy(password = intent.value) }
+            is LoginIntent.EmailOrPasswordErrorChanged -> _state.update {
+                it.copy(emailOrPasswordError = intent.value)
             }
 
-            is LoginIntent.BackClicked -> sendEffect(LoginEffect.NavigateToBack)
-            is LoginIntent.NextClicked -> sendEffect(LoginEffect.NavigateToNext)
-            is LoginIntent.SubmitClicked -> {}
+            is LoginIntent.IsLoadingChanged -> _state.update { it.copy(isLoading = intent.value) }
+
+            is LoginIntent.BackClicked -> sendEffect(LoginEffect.NavigateBack)
+            is LoginIntent.ForgotPasswordClicked -> sendEffect(LoginEffect.NavigateToForgotPassword)
+            is LoginIntent.LoginClicked -> login()
         }
     }
 
-    fun checkIfInvalidInput(type: String, value: String): Boolean {
-        return when (type) {
-            "email" -> {
-                value.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()
+    private fun login() {
+        val currentState = _state.value
+        var emailOrPasswordError = Utils.validateInput("emailLogin", currentState.email)
+
+        _state.update {
+            it.copy(emailOrPasswordError = emailOrPasswordError)
+        }
+
+        if (emailOrPasswordError.isNotBlank()) {
+            handleIntent(LoginIntent.IsLoadingChanged(false))
+            return
+        }
+
+        viewModelScope.launch {
+            val doesExist = authRepository.checkIfEmailExists(currentState.email)
+
+            emailOrPasswordError = when (doesExist) {
+                is ApiResult.Success -> {
+                    if (!doesExist.data) "User not found" else ""
+                }
+
+                is ApiResult.Error -> {
+                    doesExist.message
+                }
             }
 
-            else -> false
+            _state.update {
+                it.copy(emailOrPasswordError = emailOrPasswordError)
+            }
+
+            if (emailOrPasswordError.isNotBlank()) {
+                handleIntent(LoginIntent.IsLoadingChanged(false))
+            } else {
+                val signInResult = authRepository.signIn(currentState.email, currentState.password)
+
+                when (signInResult) {
+                    is ApiResult.Success -> {}
+                    is ApiResult.Error -> {
+                        emailOrPasswordError = signInResult.message
+                    }
+                }
+
+                _state.update {
+                    it.copy(emailOrPasswordError = emailOrPasswordError)
+                }
+
+                if (_state.value.emailOrPasswordError.isBlank()) {
+                    delay(500)
+                    sendEffect(LoginEffect.NavigateToNext)
+                }
+                handleIntent(LoginIntent.IsLoadingChanged(false))
+            }
         }
     }
 

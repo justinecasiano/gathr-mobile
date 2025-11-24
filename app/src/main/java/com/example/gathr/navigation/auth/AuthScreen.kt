@@ -9,6 +9,9 @@ sealed class AuthScreen : NavKey {
     data object Landing : AuthScreen()
 
     @Serializable
+    data object NoInternet : AuthScreen()
+
+    @Serializable
     data object VerifyHuman : AuthScreen()
 
     @Serializable
@@ -36,11 +39,14 @@ sealed class AuthScreen : NavKey {
     data object ForgotPassword : AuthScreen()
 
     @Serializable
-    data object ResetConfirmation : AuthScreen()
+    data object ResetLink : AuthScreen()
+
+    @Serializable
+    data object VerifyResetPassword: AuthScreen()
 
     @Serializable
     data object ResetPassword : AuthScreen()
 
     @Serializable
-    data object PasswordReset : AuthScreen()
+    data object PasswordChanged : AuthScreen()
 }

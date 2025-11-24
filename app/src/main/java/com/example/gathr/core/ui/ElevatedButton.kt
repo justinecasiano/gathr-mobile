@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -47,6 +48,7 @@ fun ElevatedButton(
     textStyle: TextStyle,
     height: Dp = 50.dp,
     modifier: Modifier = Modifier,
+    shouldFill: Boolean = true,
     isContrast: Boolean = true,
     isEnabled: Boolean = true,
     buttonShape: RoundedCornerShape = RoundedCornerShape(20.dp),
@@ -55,12 +57,11 @@ fun ElevatedButton(
     icon: @Composable () -> Unit = {},
     onClick: () -> Unit = {},
 ) {
-    val shadowEffect =
-        Shadow(
-            color = Color.Black.copy(alpha = 0.25f),
-            offset = Offset(x = 0f, y = 4f),
-            blurRadius = 4f,
-        )
+    val shadowEffect = Shadow(
+        color = Color.Black.copy(alpha = 0.25f),
+        offset = Offset(x = 0f, y = 4f),
+        blurRadius = 4f,
+    )
 
     var isClicked by remember { mutableStateOf(false) }
     var isPressed by remember { mutableStateOf(false) }
@@ -76,8 +77,7 @@ fun ElevatedButton(
     val animatedBottomPadding by animateDpAsState(
         targetValue = targetBottomPadding,
         animationSpec = tween(
-            durationMillis = 75,
-            easing = EaseInOutCubic
+            durationMillis = 75, easing = EaseInOutCubic
         ),
         label = "bottomPaddingAnimation",
     )
@@ -85,7 +85,7 @@ fun ElevatedButton(
         shadow = if (shouldAddShadow) shadowEffect else Shadow.None,
     )
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    Box(modifier = modifier.then(if (shouldFill) Modifier.fillMaxWidth() else Modifier)) {
         Box(
             modifier = Modifier
                 .alpha(if (isEnabled) 1f else 0.5f)
@@ -100,7 +100,11 @@ fun ElevatedButton(
             modifier = Modifier
                 .alpha(if (isEnabled) 1f else 0.5f)
                 .height(height)
-                .fillMaxWidth()
+                .then(
+                    if (shouldFill) {
+                        Modifier.fillMaxWidth()
+                    } else Modifier
+                )
                 .then(
                     if (isContrast) {
                         Modifier.padding(bottom = if (isPressed) 0.dp else animatedBottomPadding)

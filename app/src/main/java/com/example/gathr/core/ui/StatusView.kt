@@ -45,7 +45,7 @@ import com.example.gathr.ui.theme.AppFonts
 fun StatusScreen(
     title: String,
     buttonText: String,
-    hasTopBar: Boolean = true,
+//    hasTopBar: Boolean = true,
     message: @Composable () -> Unit,
     @DrawableRes id: Int = R.drawable.parachute,
     onNavigateBack: () -> Unit = {},
@@ -59,28 +59,29 @@ fun StatusScreen(
         )
         Scaffold(
             containerColor = Color.Transparent,
-            topBar = if (hasTopBar) {
-                {
-                    CenterAlignedTopAppBar(
-                        title = {},
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                        ),
-                        navigationIcon = {
-                            IconButton(onClick = onNavigateBack) {
-                                Icon(
-                                    modifier = Modifier.size(32.dp),
-                                    tint = Color(0xFFBFB6CA),
-                                    painter = painterResource(R.drawable.arrow_back),
-                                    contentDescription = "Back"
-                                )
-                            }
-                        },
-                    )
-                }
-            } else {
-                {}
-            },
+//            topBar = if (hasTopBar) {
+//                {
+//                    CenterAlignedTopAppBar(
+//                        modifier = Modifier.padding(top = 10.dp, start = 10.dp),
+//                        title = {},
+//                        colors = TopAppBarDefaults.topAppBarColors(
+//                            containerColor = Color.Transparent,
+//                        ),
+//                        navigationIcon = {
+//                            IconButton(onClick = onNavigateBack) {
+//                                Icon(
+//                                    modifier = Modifier.size(37.dp),
+//                                    tint = Color(0xFFBFB6CA),
+//                                    painter = painterResource(R.drawable.arrow_back),
+//                                    contentDescription = "Back"
+//                                )
+//                            }
+//                        },
+//                    )
+//                }
+//            } else {
+//                {}
+//            },
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -93,14 +94,14 @@ fun StatusScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Column {
-                        Spacer(modifier = Modifier.height(40.dp))
+                        Spacer(modifier = Modifier.height(100.dp))
                         Text(
                             title,
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 48.sp,
-                                lineHeight = 35.sp,
+                                lineHeight = 40.sp,
                                 color = Color.White
                             )
                         )
@@ -138,15 +139,12 @@ fun StatusScreen(
 @Composable
 private fun StatusScreenPreview() {
     StatusScreen(
-        title = "Verification Code Sent",
+        title = "Password changed",
         buttonText = "NEXT",
         message = {
             Text(
                 buildAnnotatedString {
-                    append("We have sent a verification code to your email ")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("gathr2025@gmail.com")
-                    }
+                    append("You may now sign in to your account")
                 },
                 style = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
@@ -157,74 +155,61 @@ private fun StatusScreenPreview() {
             )
         },
     )
-}
-
-//@Preview
-//@Composable
-//private fun StatusViewPreview() {
-////    StatusView(
-////        title = "No Account Found",
-////        buttonText = "GO BACK TO LOGIN",
-////        isBackButton = false,
-////        onClick = {},
-////        message = {
-////            Text(
-////                buildAnnotatedString {
-////                    append("We couldn't find an account associated with ")
-////                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-////                        append("umak@umak.edu.ph")
-////                    }
-////                },
-////                style = TextStyle(
-////                    fontFamily = AppFonts.instrumentSans,
-////                    fontWeight = FontWeight.Normal,
-////                    fontSize = 15.sp,
-////                    color = Color.White
-////                )
-////            )
-////        })
-//
 //    StatusScreen(
-//        title = "Verification Code Sent",
-//        buttonText = "VERIFY EMAIL",
-//        hasBackButton = true,
-//        onClick = {},
+//        title = "Reset Password",
+//        buttonText = "NEXT",
 //        message = {
 //            Text(
 //                buildAnnotatedString {
 //                    append("We have sent a verification code to your email ")
 //                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-//                        append("umak@umak.edu.ph")
+//                        append("gathr2025@gmail.com")
 //                    }
 //                },
 //                style = TextStyle(
 //                    fontFamily = AppFonts.instrumentSans,
 //                    fontWeight = FontWeight.Normal,
-//                    fontSize = 15.sp,
+//                    fontSize = 16.sp,
 //                    color = Color.White
 //                )
 //            )
-//        })
-//
-////    StatusView(
-////        title = "Password Reset Link",
-////        buttonText = "GO BACK TO LOGIN",
-////        isBackButton = false,
-////        onClick = {},
-////        message = {
-////            Text(
-////                buildAnnotatedString {
-////                    append("We have sent a change password link to your email ")
-////                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-////                        append("umak@umak.edu.ph")
-////                    }
-////                },
-////                style = TextStyle(
-////                    fontFamily = AppFonts.instrumentSans,
-////                    fontWeight = FontWeight.Normal,
-////                    fontSize = 15.sp,
-////                    color = Color.White
-////                )
-////            )
-////        })
-//}
+//        },
+//    )
+//    StatusScreen(
+//        title = "Account created",
+//        buttonText = "NEXT",
+//        message = {
+//            Text(
+//                buildAnnotatedString {
+//                    append("You may now sign in to your account")
+//                },
+//                style = TextStyle(
+//                    fontFamily = AppFonts.instrumentSans,
+//                    fontWeight = FontWeight.Normal,
+//                    fontSize = 16.sp,
+//                    color = Color.White
+//                )
+//            )
+//        },
+//    )
+//    StatusScreen(
+//        title = "Verification Code Sent",
+//        buttonText = "NEXT",
+//        message = {
+//            Text(
+//                buildAnnotatedString {
+//                    append("We have sent a verification code to your email ")
+//                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+//                        append("gathr2025@gmail.com")
+//                    }
+//                },
+//                style = TextStyle(
+//                    fontFamily = AppFonts.instrumentSans,
+//                    fontWeight = FontWeight.Normal,
+//                    fontSize = 16.sp,
+//                    color = Color.White
+//                )
+//            )
+//        },
+//    )
+}

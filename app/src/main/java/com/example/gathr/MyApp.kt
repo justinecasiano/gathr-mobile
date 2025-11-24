@@ -1,7 +1,7 @@
 package com.example.gathr
 
 import android.app.Application
-import com.example.gathr.di.signUpModule
+import com.example.gathr.di.appModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -12,7 +12,7 @@ class MyApp : Application() {
         startKoin {
             androidContext(this@MyApp)
             modules(
-                listOf(signUpModule)
+                listOf(appModule)
             )
         }
     }

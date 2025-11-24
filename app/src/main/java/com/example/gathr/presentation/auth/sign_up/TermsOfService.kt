@@ -74,6 +74,7 @@ import com.example.gathr.R
 import com.example.gathr.core.ui.BottomButton
 import com.example.gathr.core.ui.CustomTextField
 import com.example.gathr.core.ui.ElevatedButton
+import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.ui.theme.AppMisc
@@ -131,14 +132,15 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
 
     Scaffold(topBar = {
         CenterAlignedTopAppBar(
+            modifier = Modifier.padding(top = 10.dp, start = 10.dp),
             title = {},
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color(0xFF261A36),
+                containerColor = Color.Transparent,
             ),
             navigationIcon = {
                 IconButton(onClick = { onIntent(SignUpIntent.BackClicked) }) {
                     Icon(
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(37.dp),
                         tint = Color(0xFFBFB6CA),
                         painter = painterResource(R.drawable.arrow_back),
                         contentDescription = "Back"
@@ -148,7 +150,7 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
         )
     }, floatingActionButton = {
         AnimatedVisibility(
-            visible = isFabVisible,
+            visible = isFabVisible && !state.isLoading,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
@@ -189,7 +191,9 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                         .padding(horizontal = 20.dp),
                 ) {
                     Text(
-                        "Terms of Service", modifier = Modifier.fillMaxWidth(), style = TextStyle(
+                        "Terms of Service",
+                        modifier = Modifier.fillMaxWidth(),
+                        style = TextStyle(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 24.sp,
                             textAlign = TextAlign.Center,
@@ -211,7 +215,12 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                                     Color(0xFF574272).copy(alpha = 0.5f),
                                     shape = RoundedCornerShape(15.dp)
                                 )
-                                .padding(top = 18.dp, bottom = 18.dp, start = 15.dp, end = 15.dp)
+                                .padding(
+                                    top = 18.dp,
+                                    bottom = 18.dp,
+                                    start = 15.dp,
+                                    end = 15.dp
+                                )
                         ) {
                             Text("1. Accounts", style = boldTextStyle)
                             Spacer(modifier = Modifier.height(3.dp))
@@ -252,7 +261,7 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                             BulletItem("Harassment, bullying, or threatening content")
                             BulletItem("Events or actions that violate school rules or laws")
                             BulletItem("Unauthorized access to other users’ information")
-                            BulletItem("Attempts to disrupt or exploit the ServiceEvents or actions that violate school rules or laws")
+                            BulletItem("Attempts to disrupt or exploit the Service")
                             Spacer(modifier = Modifier.height(9.dp))
                             Text(
                                 "Violations may lead to account restrictions or removal.",
@@ -344,7 +353,9 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                 onTextButtonClick = { onIntent(SignUpIntent.LoginClicked) },
                 buttonText = "ACCEPT",
                 isButtonEnabled = hasScrolledDown,
-                onButtonClick = { onIntent(SignUpIntent.NextOfTermsOfServiceClicked) },
+                onButtonClick = {
+//                    onIntent(SignUpIntent.NextOfTermsOfServiceClicked)
+                },
             )
         }
     }

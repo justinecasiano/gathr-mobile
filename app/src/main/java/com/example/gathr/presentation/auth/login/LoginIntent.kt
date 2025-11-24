@@ -1,15 +1,20 @@
 package com.example.gathr.presentation.auth.login
 
-sealed interface LoginIntent{
-    data class EmailAddressChanged(val value: String) : LoginIntent
-    data class NewPasswordChanged(val value: String) : LoginIntent
-    data class ConfirmNewPasswordChanged(val value: String) : LoginIntent
+import com.example.gathr.presentation.auth.sign_up.SignUpIntent
+
+sealed interface LoginIntent {
+    data class EmailChanged(val value: String) : LoginIntent
+    data class PasswordChanged(val value: String) : LoginIntent
+    data class EmailOrPasswordErrorChanged(val value: String) : LoginIntent
+    data class IsLoadingChanged(val value: Boolean) : LoginIntent
+
     data object BackClicked : LoginIntent
-    data object NextClicked : LoginIntent
-    data object SubmitClicked : LoginIntent
+    data object ForgotPasswordClicked : LoginIntent
+    data object LoginClicked : LoginIntent
 }
 
 sealed interface LoginEffect {
-    data object NavigateToBack: LoginEffect
-    data object NavigateToNext: LoginEffect
+    data object NavigateBack : LoginEffect
+    data object NavigateToForgotPassword : LoginEffect
+    data object NavigateToNext : LoginEffect
 }

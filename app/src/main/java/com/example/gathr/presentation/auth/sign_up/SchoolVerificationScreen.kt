@@ -109,6 +109,7 @@ fun SchoolVerificationContent(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
+                modifier = Modifier.padding(top = 10.dp, start = 10.dp),
                 title = {},
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF261A36),
@@ -116,7 +117,7 @@ fun SchoolVerificationContent(
                 navigationIcon = {
                     IconButton(onClick = { onIntent(SignUpIntent.BackClicked) }) {
                         Icon(
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(37.dp),
                             tint = Color(0xFFBFB6CA),
                             painter = painterResource(R.drawable.arrow_back),
                             contentDescription = "Back"

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,6 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -31,7 +35,9 @@ fun CustomTextField(
     text: String = "",
     labelText: String,
     supportingText: String = "",
+    placeHolderText: String = "",
     isError: Boolean? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(15.dp),
     outlineColor: Color = Color(0xFF916AD2),
@@ -54,27 +60,44 @@ fun CustomTextField(
         onValueChange = onValueChange,
         isError = isError ?: false,
         prefix = prefix,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { focusState ->
                 isFocused = focusState.isFocused
             },
+        keyboardOptions = keyboardOptions,
         textStyle = TextStyle(
             fontFamily = AppFonts.rethinkSans,
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
         ),
-        label = {
-            Text(
-                labelText,
-                style = TextStyle(
-                    fontFamily = AppFonts.rethinkSans,
-                    fontSize = animatedFontSize.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.5f),
-                ),
-            )
-        },
+        label =
+            if (labelText.isNotBlank()) {
+                {
+                    Text(
+                        labelText,
+                        style = TextStyle(
+                            fontFamily = AppFonts.rethinkSans,
+                            fontSize = animatedFontSize.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.5f),
+                        ),
+                    )
+                }
+            } else null,
+        placeholder = if (placeHolderText.isNotBlank()) {
+            {
+                Text(
+                    placeHolderText,
+                    style = TextStyle(
+                        fontFamily = AppFonts.rethinkSans,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.5f),
+                    ),
+                )
+            }
+        } else null,
         supportingText =
             if (isError != null && isError && supportingText.isNotBlank()) {
                 {
@@ -117,6 +140,8 @@ fun CustomTextField(
 fun PasswordField(
     text: String = "",
     labelText: String = "Create Password",
+    supportingText: String = "",
+    placeHolderText: String = "",
     isError: Boolean? = null,
     modifier: Modifier = Modifier,
     shape: RoundedCornerShape = RoundedCornerShape(15.dp),
@@ -129,7 +154,15 @@ fun PasswordField(
     CustomTextField(
         text,
         labelText,
+        supportingText,
+        placeHolderText = placeHolderText,
         isError = isError,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Unspecified,
+            autoCorrectEnabled = false,
+            keyboardType = KeyboardType.Email,
+            imeAction = ImeAction.Unspecified
+        ),
         modifier = modifier,
         shape = shape,
         outlineColor = outlineColor,
@@ -155,6 +188,7 @@ fun ClearTextField(
     text: String = "",
     labelText: String = "",
     supportingText: String = "",
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     isError: Boolean? = null,
     modifier: Modifier = Modifier,
     outlineColor: Color = Color(0xFF916AD2),
@@ -167,6 +201,7 @@ fun ClearTextField(
         labelText,
         supportingText,
         isError = isError,
+        keyboardOptions = keyboardOptions,
         modifier = modifier,
         outlineColor = outlineColor,
         onValueChange = onValueChange,

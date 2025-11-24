@@ -1,24 +1,39 @@
 package com.example.gathr.navigation
 
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
+import android.util.Log
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.gathr.data.model.User
+import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.navigation.auth.AuthNavigation
-import com.example.gathr.presentation.MainScreen
+import com.example.gathr.navigation.main.MainNavigation
+import com.example.gathr.presentation.main.MainScreen
 import com.example.gathr.presentation.SplashScreen
+import com.example.gathr.presentation.auth.NoInternetScreen
+import com.example.gathr.presentation.main.UserViewModel
+import com.example.gathr.utils.NetworkConnectivityService
+import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun RootNavigation() {
-    val backStack = rememberNavBackStack(RootScreen.Auth)
+    val userViewModel: UserViewModel = koinViewModel()
+    val startingDestination = RootScreen.Splash
+    val backStack = rememberNavBackStack(startingDestination)
+
+    val networkService: NetworkConnectivityService = koinInject()
+    val isOnline by networkService.observeNetworkStatus()
+        .collectAsStateWithLifecycle(initialValue = true)
 
     NavDisplay(
         backStack = backStack,
@@ -28,20 +43,35 @@ fun RootNavigation() {
             rememberViewModelStoreNavEntryDecorator(),
         ),
         entryProvider = entryProvider {
-            entry<RootScreen.Splash> {
-                SplashScreen(onLoaded = {
-                    backStack.removeLastOrNull()
-                    backStack.add(RootScreen.Auth)
-                })
+            entry<RootScreen.Splash>
+            {
+                SplashScreen(
+                    userViewModel = userViewModel,
+                    onLoaded = { isLoggedIn ->
+                        backStack.removeLastOrNull()
+                        if (isLoggedIn && isOnline) {
+                            backStack.add(RootScreen.Main)
+                        } else {
+                            backStack.add(RootScreen.Auth)
+                        }
+                    },
+                )
             }
             entry<RootScreen.Auth> {
-                AuthNavigation()
+                AuthNavigation(onLogin = {
+                    backStack.removeLastOrNull()
+                    backStack.add(RootScreen.Splash)
+                })
             }
             entry<RootScreen.Main> {
-                MainScreen()
+                MainNavigation(
+                    userViewModel = userViewModel,
+                    onLogout = {
+                        backStack.removeLastOrNull()
+                        backStack.add(RootScreen.Auth)
+                    })
             }
         },
-
         transitionSpec = {
             // Slide in from right when navigating forward
             slideInHorizontally(initialOffsetX = { it }) togetherWith

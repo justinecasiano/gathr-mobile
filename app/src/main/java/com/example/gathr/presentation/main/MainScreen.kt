@@ -1,5 +1,6 @@
-package com.example.gathr.presentation
+package com.example.gathr.presentation.main
 
+import android.util.Log
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -19,6 +20,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,35 +37,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.navigation.main.ModeratorBottomBarScreen
 import com.example.gathr.navigation.main.ModeratorBottomBarScreenSaver
 import com.example.gathr.navigation.main.ParticipantBottomBarScreen
 import com.example.gathr.navigation.main.ParticipantBottomBarScreenSaver
 import com.example.gathr.navigation.main.moderatorBottomBarItems
 import com.example.gathr.navigation.main.participantBottomBarItems
+import com.example.gathr.presentation.moderator.ModeratorProfileScreen
 import com.example.gathr.presentation.participant.ETicketsScreen
-import com.example.gathr.presentation.participant.MyEvents
-import com.example.gathr.presentation.participant.ProfileScreen
+import com.example.gathr.presentation.participant.MyEventsScreen
+import com.example.gathr.presentation.participant.ParticipantProfileScreen
 import com.example.gathr.presentation.shared.EventsScreen
 import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun MainScreen(isParticipant: Boolean = true) {
-    if (isParticipant) {
-        ParticipantScreen()
-    } else {
-        ModeratorScreen()
+fun MainScreen(viewModel: UserViewModel, onLogout: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UserEffect.NavigateBack -> {}
+                UserEffect.NavigateLogout -> onLogout()
+            }
+        }
     }
+
+    Box(Modifier.fillMaxSize()) {
+        val isParticipant = state.currentUser?.role == "PARTICIPANT"
+        if (isParticipant) {
+            ParticipantContent(state, viewModel::handleIntent)
+        } else {
+            ModeratorContent(state, viewModel::handleIntent)
+        }
+
+        if (state.isLoading) {
+            LoadingOverlay(isContrast = !isParticipant)
+        }
+    }
+    Log.d("MAINVIEW", state.currentUser?.role ?: "UNKNOWN USER")
 }
 
 @Composable
-fun ParticipantScreen() {
+fun ParticipantContent(state: UserState, onIntent: (UserIntent) -> Unit) {
     val backStack = rememberNavBackStack(ParticipantBottomBarScreen.Events)
     var currentBottomBarScreen: ParticipantBottomBarScreen by rememberSaveable(
         stateSaver = ParticipantBottomBarScreenSaver,
@@ -170,7 +194,7 @@ fun ParticipantScreen() {
                         EventsScreen()
                     }
                     entry<ParticipantBottomBarScreen.MyEvents> {
-                        MyEvents()
+                        MyEventsScreen()
                     }
                     entry<ParticipantBottomBarScreen.ETickets> {
                         ETicketsScreen()
@@ -179,23 +203,23 @@ fun ParticipantScreen() {
                         NotificationsScreen()
                     }
                     entry<ParticipantBottomBarScreen.Profile> {
-                        ProfileScreen()
+                        ParticipantProfileScreen(state, onIntent)
                     }
                 },
                 transitionSpec = {
                     // Slide in from right when navigating forward
                     slideInHorizontally(initialOffsetX = { it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { -it })
+                            slideOutHorizontally(targetOffsetX = { -it })
                 },
                 popTransitionSpec = {
                     // Slide in from left when navigating back
                     slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
+                            slideOutHorizontally(targetOffsetX = { it })
                 },
                 predictivePopTransitionSpec = {
                     // Slide in from left when navigating back
                     slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
+                            slideOutHorizontally(targetOffsetX = { it })
                 },
             )
         }
@@ -203,7 +227,7 @@ fun ParticipantScreen() {
 }
 
 @Composable
-fun ModeratorScreen() {
+fun ModeratorContent(state: UserState, onIntent: (UserIntent) -> Unit) {
     val backStack = rememberNavBackStack(ModeratorBottomBarScreen.Events)
     var currentBottomBarScreen: ModeratorBottomBarScreen by rememberSaveable(
         stateSaver = ModeratorBottomBarScreenSaver,
@@ -247,7 +271,7 @@ fun ModeratorScreen() {
                                 BadgedBox(
                                     badge = {
                                         Badge(
-//                                        containerColor = Color(0xFF312245),
+                                            //                                        containerColor = Color(0xFF312245),
                                             containerColor = Color(0xFFF7906E),
                                             contentColor = Color.White,
                                             modifier = Modifier
@@ -325,29 +349,29 @@ fun ModeratorScreen() {
                         EventsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Pendings> {
-                        MyEvents()
+                        MyEventsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Notifications> {
                         NotificationsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Account> {
-                        ProfileScreen()
+                        ModeratorProfileScreen(state, onIntent)
                     }
                 },
                 transitionSpec = {
                     // Slide in from right when navigating forward
                     slideInHorizontally(initialOffsetX = { it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { -it })
+                            slideOutHorizontally(targetOffsetX = { -it })
                 },
                 popTransitionSpec = {
                     // Slide in from left when navigating back
                     slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
+                            slideOutHorizontally(targetOffsetX = { it })
                 },
                 predictivePopTransitionSpec = {
                     // Slide in from left when navigating back
                     slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                        slideOutHorizontally(targetOffsetX = { it })
+                            slideOutHorizontally(targetOffsetX = { it })
                 },
             )
         }
@@ -357,5 +381,5 @@ fun ModeratorScreen() {
 @Preview
 @Composable
 private fun MainScreenPreview() {
-    MainScreen()
+//    MainScreen()
 }
