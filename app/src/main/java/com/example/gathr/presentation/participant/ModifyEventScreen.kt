@@ -56,12 +56,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -84,6 +86,10 @@ import com.example.gathr.presentation.main.UserState
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.Utils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 @Composable
 fun ModifyEventScreen(
@@ -140,7 +146,7 @@ fun ModifyEventContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
+//                    modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
                     title = {},
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -158,7 +164,7 @@ fun ModifyEventContent(
                     actions = {
                         if (state.isUpdateEvent)
                             TextButton(
-                                onClick = {},
+                                onClick = { onIntent(UserIntent.SaveModifiedEvent) },
                                 enabled = false,
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = Color.Black,
@@ -239,16 +245,22 @@ fun ModifyEventContent(
                             )
                         }
                         Spacer(Modifier.height(10.dp))
+
+                        val context = LocalContext.current
                         PhotoUploadComposable(
                             selectedImageUriString = state.createEvent.backgroundImage,
-                            onImageSelected = {
-                                onIntent(
-                                    UserIntent.CreateEventChanged(
-                                        state.createEvent.copy(
-                                            backgroundImage = it
+                            onImageSelected = { uriString ->
+                                if (uriString != null) {
+                                    val size = Utils.getFileSize(context, uriString)
+                                    onIntent(
+                                        UserIntent.CreateEventChanged(
+                                            state.createEvent.copy(
+                                                backgroundImage = uriString,
+                                                backgroundImageSizeBytes = size
+                                            )
                                         )
                                     )
-                                )
+                                }
                             }
                         )
                         Spacer(Modifier.height(2.dp))
@@ -462,12 +474,36 @@ fun ModifyEventContent(
                             .padding(bottom = paddingValues.calculateBottomPadding()),
                         contentAlignment = Alignment.Center
                     ) {
+                        val context = LocalContext.current
+                        val scope = rememberCoroutineScope()
+
                         ElevatedButton(
                             text = "NEXT",
                             onClick = {
                                 submittedOnce = true
                                 onIntent(UserIntent.IsLoadingChanged(true))
-                                onIntent(UserIntent.ValidateCreateEvent)
+
+                                val uriString = state.createEvent.backgroundImage
+                                if (uriString != null) {
+                                    scope.launch(Dispatchers.IO) {
+
+                                        val file =
+                                            Utils.createTempFileFromUri(
+                                                context,
+                                                uriString.toUri()
+                                            )
+
+                                        if (file != null) {
+                                            onIntent(UserIntent.CreateEventImageFileChanged(file))
+                                            onIntent(UserIntent.ValidateCreateEvent)
+                                        } else {
+                                            Log.d(
+                                                "CREATE_EVENT",
+                                                "Error: Could not create temp file"
+                                            )
+                                        }
+                                    }
+                                }
                             },
                             isEnabled = hasFilledOut,
                             buttonColor = Color(0xFF7B55A3),
@@ -503,7 +539,7 @@ fun PhotoUploadComposable(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if (selectedImageUriString != null) {
+        if (selectedImageUriString != null && selectedImageUriString.isNotBlank()) {
             Box(
                 modifier = Modifier
                     .width(150.dp)
@@ -528,7 +564,7 @@ fun PhotoUploadComposable(
                         modifier = Modifier
                             .background(Color.White, CircleShape)
                             .size(20.dp)
-                            .clickable { onImageSelected(null) },
+                            .clickable { onImageSelected("") },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

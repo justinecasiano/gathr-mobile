@@ -1,42 +1,24 @@
 package com.example.gathr.presentation.participant
 
-import android.util.Log
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.ui.tooling.preview.Preview
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,17 +34,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,15 +50,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.ClearTextField
-import com.example.gathr.core.ui.CustomTextField
 import com.example.gathr.core.ui.ElevatedButton
 import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
 import com.example.gathr.presentation.main.UserViewModel
-import com.example.gathr.ui.theme.AppColors
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toTitleCase
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun AddStaffScreen(
@@ -106,14 +92,59 @@ fun AddStaffScreen(
         if (state.isLoading) {
             LoadingOverlay()
         }
-        if (state.actionError.isNotBlank()) {
-            Alert(
-                title = "Error",
-                message = state.actionError,
-                onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
-                confirmButtonText = "Ok",
-                onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
-            )
+
+        when {
+            state.actionError.contains("Remove", ignoreCase = true) -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Error" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Confirm",
+                    onConfirmClicked = {
+                        state.actionOnConfirm()
+                        viewModel.handleIntent(UserIntent.ActionErrorChanged(""))
+                        viewModel.handleIntent(UserIntent.ActionOnConfirmClicked {})
+                    },
+                    cancelButtonText = "Cancel",
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+
+            state.actionError.contains("You have not added", ignoreCase = true) -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Confirm",
+                    onConfirmClicked = {
+                        state.actionOnConfirm()
+                        viewModel.handleIntent(UserIntent.ActionErrorChanged(""))
+                        viewModel.handleIntent(UserIntent.ActionOnConfirmClicked {})
+                    },
+                    cancelButtonText = "Cancel",
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+
+            state.actionError.contains("Created an event successfully") -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Success" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ViewEvent) },
+                )
+            }
+
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = "Error",
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
         }
     }
 }
@@ -123,6 +154,9 @@ fun AddStaffScreen(
 fun AddStaffContent(
     state: UserState, onIntent: (UserIntent) -> Unit
 ) {
+    val hasFilled = state.searchStaff.isNotBlank()
+    var added by remember { mutableStateOf(false) }
+
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -145,7 +179,7 @@ fun AddStaffContent(
                     actions = {
                         if (state.isUpdateEvent)
                             TextButton(
-                                onClick = {},
+                                onClick = { onIntent(UserIntent.SaveModifiedEvent) },
                                 enabled = false,
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = Color.Black,
@@ -178,6 +212,74 @@ fun AddStaffContent(
                         )
                         .padding(horizontal = 30.dp)
                 ) {
+                    Text(
+                        if (state.isUpdateEvent) "Update Staffs" else "Add Staffs",
+                        style = TextStyle(
+                            fontFamily = AppFonts.rethinkSans,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Start,
+                            color = Color.Black
+                        ),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        ClearTextField(
+                            modifier = Modifier.weight(9f),
+                            text = state.searchStaff,
+                            isError = if (!added) null else state.searchStaffError.isNotBlank(),
+                            supportingText = state.searchStaffError,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Unspecified,
+                                autoCorrectEnabled = false,
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Unspecified
+                            ),
+                            onValueChange = {
+                                added = false
+                                onIntent(UserIntent.SearchStaffChanged(it))
+                                onIntent(UserIntent.SearchStaffErrorChanged(""))
+                            },
+                            onClick = {
+                                added = false
+                                onIntent(UserIntent.SearchStaffChanged(""))
+                                onIntent(UserIntent.SearchStaffErrorChanged(""))
+                            },
+                            labelText = "Input email or username",
+                            containerColor = Color.White,
+                            contentColor = Color.Black,
+                            outlineColor = Color(0xFF777777),
+                            iconColor = Color(0xFF3C3C3C)
+                        )
+                        Spacer(Modifier.width(15.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(1.5f)
+                                .clip(CircleShape)
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        listOf(
+                                            Color(0xFF7B55A3),
+                                            Color(0xFF583181)
+                                        )
+                                    ), shape = CircleShape
+                                )
+                                .padding(12.dp)
+                                .clickable(enabled = hasFilled, onClick = {
+                                    added = true
+                                    onIntent(UserIntent.IsLoadingChanged(true))
+                                    onIntent(UserIntent.ValidateAddStaff)
+                                }),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.add_icon),
+                                contentDescription = "Add participant as staff",
+                                tint = Color(0xFFF6F6F6),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                     val labelStyle = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 20.sp,
@@ -186,21 +288,30 @@ fun AddStaffContent(
                         color = Color.Black
                     )
 
-                    val scrollState = rememberScrollState()
-                    Column(
-                        Modifier.verticalScroll(scrollState)
+                    LazyColumn(
+                        Modifier
+                            .fillMaxSize()
+                            .padding(top = 20.dp)
                     ) {
-                        Text(
-                            if (state.isUpdateEvent) "Update Staffs" else "Add Staffs",
-                            style = TextStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Start,
-                                color = Color.Black
-                            ),
-                        )
-                        Spacer(Modifier.height(5.dp))
+                        items(state.addStaffs, key = { staff -> staff.userId!! }) { staff ->
+                            StaffRow(
+                                firstName = staff.firstName, lastName = staff.lastName,
+                                onRemove = {
+                                    onIntent(UserIntent.ActionTitleChanged("Confirm Action"))
+                                    onIntent(UserIntent.ActionErrorChanged("Remove ${staff.firstName.toTitleCase()} ${staff.lastName.toTitleCase()} as staff?"))
+                                    onIntent(
+                                        UserIntent.ActionOnConfirmClicked {
+                                            val updatedList =
+                                                state.addStaffs.filter { it.userId != staff.userId }
+                                            onIntent(UserIntent.AddStaffsChanged(updatedList))
+                                        },
+                                    )
+                                }
+                            )
+                        }
+                        item {
+                            Spacer(Modifier.height(40.dp))
+                        }
                     }
                 }
                 Column(Modifier.background(Color.White)) {
@@ -214,13 +325,21 @@ fun AddStaffContent(
                         contentAlignment = Alignment.Center
                     ) {
                         ElevatedButton(
-                            text = "NEXT",
+                            text = if (state.isUpdateEvent) "DONE" else "CREATE EVENT",
                             onClick = {
-                                submittedOnce = true
-                                onIntent(UserIntent.IsLoadingChanged(true))
-                                onIntent(UserIntent.ValidateCreateEvent)
+                                if (state.addStaffs.count() == 0) {
+                                    onIntent(UserIntent.ActionTitleChanged("No Staff"))
+                                    onIntent(UserIntent.ActionErrorChanged("You have not added any staff, continue create event?"))
+                                    onIntent(UserIntent.ActionOnConfirmClicked {
+                                        onIntent(UserIntent.IsLoadingChanged(true))
+                                        onIntent(UserIntent.DoCreateEvent)
+                                    })
+                                } else {
+                                    onIntent(UserIntent.IsLoadingChanged(true))
+                                    onIntent(UserIntent.DoCreateEvent)
+                                }
                             },
-                            isEnabled = hasFilledOut,
+                            isEnabled = state.actionError.isBlank(),
                             buttonColor = Color(0xFF7B55A3),
                             outlineColor = Color(0xFF4C2576),
                             textStyle = TextStyle(
@@ -237,5 +356,58 @@ fun AddStaffContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StaffRow(
+    firstName: String, lastName: String, onRemove: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painterResource(R.drawable.profile),
+            contentDescription = "Profile",
+            modifier = Modifier.size(63.dp)
+        )
+        Spacer(Modifier.width(20.dp))
+        Text(
+            "${firstName.toTitleCase()} ${lastName.toTitleCase()}",
+            style = TextStyle(
+                fontFamily = AppFonts.rethinkSans,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Start,
+                color = Color.Black.copy(0.8f)
+            ),
+            modifier = Modifier.weight(7f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.weight(1f))
+        Box(Modifier.clickable(onClick = { onRemove() })) {
+            Icon(
+                painterResource(R.drawable.delete),
+                contentDescription = "Remove Staff",
+                tint = Color(0xFFEE101A),
+                modifier = Modifier.size(32.dp)
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun StaffRowPreview() {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 30.dp)
+    ) {
+        StaffRow("Angela Mae", "Cabrera") { }
     }
 }

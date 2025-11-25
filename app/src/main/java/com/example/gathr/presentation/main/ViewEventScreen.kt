@@ -1,5 +1,6 @@
 package com.example.gathr.presentation.main
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,6 +27,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +46,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +62,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
@@ -70,30 +75,100 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.gathr.R
+import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.ElevatedButton
+import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
+import com.example.gathr.presentation.participant.AddStaffContent
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.toPrettyString
+import com.example.gathr.utils.toSimpleTime
+import com.example.gathr.utils.toTitleCase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewEventScreen(
-    event: CreateEvent? = null,
-    isOrganizer: Boolean = false,
-    buttonText: String = "REGISTER",
-    onButtonClick: () -> Unit = {}
+    viewModel: UserViewModel,
+    onNavigateBack: () -> Unit,
+    onNavigateAttendance: () -> Unit,
+    onNavigateEdit: () -> Unit,
 ) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateBack -> onNavigateBack()
+                UserEffect.NavigateLogout -> {}
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        ViewEventContent(
+            state = state,
+            onIntent = viewModel::handleIntent,
+            onNavigateAttendance = onNavigateAttendance,
+            onNavigateEdit = onNavigateEdit
+        )
+        if (state.isLoading) {
+            LoadingOverlay()
+        }
+        when {
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Error" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ViewEventContent(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
+    onNavigateAttendance: () -> Unit,
+    onNavigateEdit: () -> Unit
+) {
+    val isOrganizer = state.currentEvent?.createdBy == state.currentUser?.id
+    val event: Event = state.currentEvent!!
+
+    var onButtonClick: () -> Unit = {}
+    var buttonText: String = ""
+
+    if (isOrganizer) {
+        buttonText = "TRACK ATTENDANCE"
+        onButtonClick = {}
+    } else {
+        buttonText = "REGISTER"
+        onButtonClick = {}
+    }
+    Log.d("CREATE_EVENT", "VIEW_EVENT: image - ${event.backgroundImage}")
+
     Scaffold(topBar = {
-        TopAppBar(
+        CenterAlignedTopAppBar(
             modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
             title = {},
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent
-            ), navigationIcon = {
+            ),
+            navigationIcon = {
                 Surface(
-                    onClick = {},
+                    onClick = { onIntent(UserIntent.BackClicked) },
                     shape = CircleShape,
                     color = Color(0xFFD9D9D9).copy(alpha = 0.76f),
                     modifier = Modifier.size(35.dp)
@@ -109,9 +184,8 @@ fun ViewEventScreen(
                     }
                 }
             },
-
             actions = {
-                ThreeDotMenu()
+                ThreeDotMenu(onIntent, onNavigateAttendance, onNavigateEdit)
             })
     }, bottomBar = {
         Row(
@@ -134,11 +208,12 @@ fun ViewEventScreen(
                                 color = Color.Black.copy(alpha = 0.8f)
                             )
                         ) {
-//                        append(event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase())
-                            append("OCT.5, 2025\n")
+                            append(
+                                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy")
+                                    .uppercase()
+                            )
                         }
-//                                        append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
-                        append("9:00 AM to 5:00 PM")
+                        append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
                     }, style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 12.sp,
@@ -160,8 +235,6 @@ fun ViewEventScreen(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                 ),
-//                    height = TODO(),
-//                    modifier = TODO(),
                 isContrast = false,
                 buttonShape = RoundedCornerShape(15.dp),
                 shouldAddShadow = false,
@@ -169,31 +242,46 @@ fun ViewEventScreen(
         }
     }) { outerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            Image(
+            AsyncImage(
                 modifier = Modifier.fillMaxHeight(0.6f),
-                painter = painterResource(R.drawable.infotech_placeholder_landscape),
-                contentScale = ContentScale.Crop,
-                contentDescription = "Event Background Image"
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(event.backgroundImage)
+                    .crossfade(true)
+                    .listener(
+                        onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
+                        onError = { request, result ->
+                            Log.e(
+                                "IMAGE_LOAD",
+                                "FAILED: ${result.throwable.message}"
+                            )
+                        }
+                    )
+                    .build(),
+                contentDescription = "Event Card Image",
+                contentScale = ContentScale.Crop
             )
-            BottomScreenSheet(Modifier.padding(outerPadding))
+            BottomScreenSheet(Modifier.padding(outerPadding), event)
         }
     }
 }
 
 @Composable
-fun ThreeDotMenu() {
-    var expanded by remember { mutableStateOf(true) }
+fun ThreeDotMenu(
+    onIntent: (UserIntent) -> Unit,
+    onNavigateAttendance: () -> Unit,
+    onNavigateEdit: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier.wrapContentSize(Alignment.TopStart)
     ) {
         Column(verticalArrangement = Arrangement.Top) {
             Surface(
-                onClick = {},
+                onClick = { !expanded },
                 shape = CircleShape,
                 color = Color(0xFFD9D9D9).copy(alpha = 0.76f),
-                modifier = Modifier
-                    .size(35.dp),
+                modifier = Modifier.size(35.dp),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
@@ -206,53 +294,23 @@ fun ThreeDotMenu() {
                 }
             }
             DropdownMenu(
-                modifier = Modifier
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF7B55A3), Color(0xFF583181)),
-                            start = Offset(0f, 0f),
-                            end = Offset(0f, Float.POSITIVE_INFINITY)
-                        )
-                    ),
-                expanded = true,
-                onDismissRequest = {}) {
-                DropdownMenuItem(
-                    onClick = {},
-                    text = {
-                        Row {
-                            Icon(
-                                painter = painterResource(R.drawable.attendees),
-                                contentDescription = "Attendees",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "See who registered",
-                                style = TextStyle(
-                                    fontFamily = AppFonts.rethinkSans,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = Color.White
-                                )
-                            )
-                        }
-                    })
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 15.dp),
-                    color = Color.Black,
-                    thickness = 0.8.dp
-                )
-                DropdownMenuItem(onClick = {}, text = {
+                modifier = Modifier.background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color(0xFF7B55A3), Color(0xFF583181)),
+                        start = Offset(0f, 0f),
+                        end = Offset(0f, Float.POSITIVE_INFINITY)
+                    )
+                ), expanded = expanded, onDismissRequest = {}) {
+                DropdownMenuItem(onClick = { onNavigateAttendance() }, text = {
                     Row {
                         Icon(
-                            painter = painterResource(R.drawable.delete),
-                            contentDescription = "Delete Event",
+                            painter = painterResource(R.drawable.attendees),
+                            contentDescription = "Attendees",
                             tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Delete Event",
-                            style = TextStyle(
+                            "See who registered", style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Normal,
@@ -266,7 +324,30 @@ fun ThreeDotMenu() {
                     color = Color.Black,
                     thickness = 0.8.dp
                 )
-                DropdownMenuItem(onClick = {}, text = {
+                DropdownMenuItem(onClick = { onIntent(UserIntent.DeleteEvent) }, text = {
+                    Row {
+                        Icon(
+                            painter = painterResource(R.drawable.delete),
+                            contentDescription = "Delete Event",
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Delete Event", style = TextStyle(
+                                fontFamily = AppFonts.rethinkSans,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = Color.White
+                            )
+                        )
+                    }
+                })
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 15.dp),
+                    color = Color.Black,
+                    thickness = 0.8.dp
+                )
+                DropdownMenuItem(onClick = { onNavigateEdit() }, text = {
                     Row {
                         Icon(
                             painter = painterResource(R.drawable.edit),
@@ -275,8 +356,7 @@ fun ThreeDotMenu() {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Edit Event",
-                            style = TextStyle(
+                            "Edit Event", style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Normal,
@@ -292,7 +372,7 @@ fun ThreeDotMenu() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
+fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
     val density = LocalDensity.current
 
     val halfScreenHeightInPixels = LocalWindowInfo.current.containerSize.height / 2
@@ -302,8 +382,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
     }
 
     val sheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.PartiallyExpanded,
-        skipHiddenState = true
+        initialValue = SheetValue.PartiallyExpanded, skipHiddenState = true
     )
 
     val scaffoldState = rememberBottomSheetScaffoldState(
@@ -334,8 +413,8 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                     color = Color.Black,
                 )
                 Text(
-//                    event.title.uppercase(),
-                    "UNIVERSITY OF MAKATI'S INFOTECHNOLYMPICS", style = TextStyle(
+                    event.title.uppercase(),
+                    style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
@@ -353,13 +432,10 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                                 color = Color(0xFFF6835E)
                             )
                         ) {
-//                        append("${event.computedStatus.uppercase()}\n")
-                            append("UPCOMING\n")
+                            append("${event.computedStatus.toString().uppercase()}\n")
                         }
-//                        append("${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
-//                        append(event.location)
-                        append("UMak Auditorium, University of Makati, Makati City\n")
-                        append("October 5, 2025 | 9:00 AM to 5:00 PM")
+                        append("${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
+                        append(event.location)
                     },
                     style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
@@ -380,8 +456,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                                     color = Color.Black
                                 )
                             ) {
-//                        append("${event.capacity}\n")
-                                append("1200\n")
+                                append("${event.capacity}\n")
                             }
                             append("Capacity")
                         }, style = TextStyle(
@@ -401,7 +476,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                             modifier = Modifier.height(35.dp),
                             painter = painterResource(R.drawable.highlight_event),
                             contentScale = ContentScale.FillHeight,
-                            contentDescription = "Event Background Image"
+                            contentDescription = "Event Highlight Image"
                         )
                     }
                     VerticalDivider(Modifier.height(40.dp), color = Color(0xFFDEDEDE))
@@ -415,8 +490,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                                     color = Color(0xFF820006)
                                 )
                             ) {
-//                        append("${event.remainingSlots}\n")
-                                append("5\n")
+                                append("${event.remainingSlots}\n")
                             }
                             append("Slots Left")
                         }, style = TextStyle(
@@ -456,8 +530,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                                 ) {
                                     append("Organizer\n")
                                 }
-//                        append("${event.createdBy}")
-                                append("Prof. Era Gannaban")
+                                append(event.createdByName.toTitleCase())
                             },
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
@@ -490,12 +563,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event? = null) {
                                 ) {
                                     append("Description\n")
                                 }
-//                        append("${event.createdBy}")
-                                append(
-                                    """The UMak Infotechnolympics is an annual event organized by the University of Makati that highlights the talents of students in the IT field. It serves as a platform for showcasing innovation, creativity, and technical expertise."
-                                        
-Through various competitions, exhibits, and workshops, the event encourages collaboration and healthy competition among participants. It aims to inspire future IT professionals to apply their knowledge, explore new technologies, and contribute to the advancement of the digital world."""
-                                )
+                                append(event.description)
                             },
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
@@ -511,14 +579,13 @@ Through various competitions, exhibits, and workshops, the event encourages coll
             }
         },
         sheetDragHandle = {
-
         },
     ) { innerPadding ->
     }
 }
 
-@Preview
-@Composable
-private fun ViewEventScreenPreview() {
-    ViewEventScreen()
-}
+//@Preview
+//@Composable
+//private fun ViewEventScreenPreview() {
+//    ViewEventScreen()
+//}

@@ -6,14 +6,15 @@ import com.example.gathr.data.model.User
 import com.example.gathr.utils.Utils.dbResponseHandler
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.PostgrestQueryBuilder
 import kotlinx.serialization.json.JsonObject
 
 interface UserRepository {
     suspend fun getCurrentUserProfile(): ApiResult<User>
     suspend fun getUserById(id: String): ApiResult<User>
+    suspend fun getUserByEmailOrUsername(emailOrUsername: String): ApiResult<User>
     suspend fun updateUserProfile(id: String, updates: JsonObject): ApiResult<User>
     suspend fun updateFcmToken(newToken: String): ApiResult<Unit>
 }
@@ -36,6 +37,21 @@ class UserRepositoryImpl(
         return dbResponseHandler {
             usersTable
                 .select { filter { eq("id", id) } }
+                .decodeSingle<User>()
+        }
+    }
+
+    override suspend fun getUserByEmailOrUsername(emailOrUsername: String): ApiResult<User> {
+        return dbResponseHandler {
+            usersTable
+                .select {
+                    filter {
+                        or {
+                            eq("email", emailOrUsername)
+                            eq("display_name", emailOrUsername)
+                        }
+                    }
+                }
                 .decodeSingle<User>()
         }
     }

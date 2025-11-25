@@ -59,7 +59,14 @@ import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun MainScreen(viewModel: UserViewModel, onLogout: () -> Unit) {
+fun MainScreen(
+    viewModel: UserViewModel,
+    onNavigateQrCode: () -> Unit,
+    onNavigateModifyEvent: () -> Unit,
+    onNavigateUpdateEvent: () -> Unit,
+    onNavigateViewEvent: () -> Unit,
+    onLogout: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
@@ -75,7 +82,11 @@ fun MainScreen(viewModel: UserViewModel, onLogout: () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         val isParticipant = state.currentUser?.role == "PARTICIPANT"
         if (isParticipant) {
-            ParticipantContent(state, viewModel::handleIntent)
+            ParticipantContent(
+                state, viewModel::handleIntent,
+                onNavigateQrCode, onNavigateModifyEvent,
+                onNavigateUpdateEvent, onNavigateViewEvent
+            )
         } else {
             ModeratorContent(state, viewModel::handleIntent)
         }
@@ -88,7 +99,14 @@ fun MainScreen(viewModel: UserViewModel, onLogout: () -> Unit) {
 }
 
 @Composable
-fun ParticipantContent(state: UserState, onIntent: (UserIntent) -> Unit) {
+fun ParticipantContent(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
+    onNavigateQrCode: () -> Unit,
+    onNavigateModifyEvent: () -> Unit,
+    onNavigateUpdateEvent: () -> Unit,
+    onNavigateViewEvent: () -> Unit,
+) {
     val backStack = rememberNavBackStack(ParticipantBottomBarScreen.Events)
     var currentBottomBarScreen: ParticipantBottomBarScreen by rememberSaveable(
         stateSaver = ParticipantBottomBarScreenSaver,
@@ -195,7 +213,10 @@ fun ParticipantContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                         EventsScreen()
                     }
                     entry<ParticipantBottomBarScreen.MyEvents> {
-                        MyEventsScreen()
+                        MyEventsScreen(
+                            state, onIntent, onNavigateQrCode,
+                            onNavigateModifyEvent, onNavigateUpdateEvent, onNavigateViewEvent
+                        )
                     }
                     entry<ParticipantBottomBarScreen.ETickets> {
                         ETicketsScreen()
@@ -350,7 +371,7 @@ fun ModeratorContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                         EventsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Pendings> {
-                        MyEventsScreen()
+//                        MyEventsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Notifications> {
                         NotificationsScreen()

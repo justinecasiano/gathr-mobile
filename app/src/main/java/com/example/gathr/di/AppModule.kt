@@ -2,6 +2,8 @@ package com.example.gathr.di
 
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.AuthRepositoryImpl
+import com.example.gathr.data.repository.EventParticipantRepository
+import com.example.gathr.data.repository.EventParticipantRepositoryImpl
 import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.data.repository.UserRepositoryImpl
 import com.example.gathr.presentation.auth.forgot_password.ForgotPasswordViewModel
@@ -17,6 +19,8 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
 import io.ktor.client.plugins.HttpTimeout
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -34,6 +38,7 @@ val appModule = module {
 
             install(Auth)
             install(Postgrest)
+            install(Storage)
 
             httpConfig {
                 install(HttpTimeout) {
@@ -56,12 +61,20 @@ val appModule = module {
         get<SupabaseClient>().auth
     }
 
+    single<Storage> {
+        get<SupabaseClient>().storage
+    }
+
     single<AuthRepository> {
         AuthRepositoryImpl(get(), get())
     }
 
     single<UserRepository> {
         UserRepositoryImpl(get(), get())
+    }
+
+    single<EventParticipantRepository> {
+        EventParticipantRepositoryImpl(get(), get(), get(), get())
     }
 
     viewModel { SignUpViewModel(get(), get()) }

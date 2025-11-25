@@ -10,6 +10,7 @@ import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.utils.Utils
 import com.google.firebase.messaging.FirebaseMessaging
 import io.github.jan.supabase.auth.OtpType
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

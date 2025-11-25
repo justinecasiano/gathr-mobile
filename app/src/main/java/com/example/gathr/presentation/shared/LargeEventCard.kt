@@ -1,5 +1,6 @@
 package com.example.gathr.presentation.shared
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -8,13 +9,17 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,6 +32,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -39,19 +45,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toDayOfMonth
+import com.example.gathr.utils.toLocalDateTime
+import com.example.gathr.utils.toMonthAbbreviation
+import com.example.gathr.utils.toSimpleTime
 
 @Composable
 fun LargeEventCard(
-    event: Event? = null,
+    event: Event,
     onCardClick: () -> Unit,
     onTextButtonClick: () -> Unit,
     image: (@Composable () -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier
+            .fillMaxWidth()
             .dropShadow(
                 shape = RoundedCornerShape(20.dp),
                 shadow = Shadow(
@@ -61,29 +78,29 @@ fun LargeEventCard(
                     offset = DpOffset(x = 0.dp, (10).dp)
                 )
             )
-            .fillMaxWidth()
             .height(250.dp),
         shape = RoundedCornerShape(20.dp),
         onClick = onCardClick
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (image != null) image()
-            else
-                Image(
-                    modifier = Modifier.fillMaxSize(),
-                    painter = painterResource(R.drawable.infotech_placeholder_landscape),
-                    contentScale = ContentScale.FillBounds,
-                    contentDescription = "Event Background Image"
-                )
-//            else
-//                AsyncImage(
-//                    model = ImageRequest.Builder(LocalContext.current).data(event.backgroundImage)
-//                        .crossfade(true)
-//                        .build(),
-//                    contentDescription = "Event Background Image",
-//                    placeholder = painterResource(id = R.drawable.placeholder_landscape),
-//                    contentScale = ContentScale.Crop
-//                )
+            AsyncImage(
+                modifier = Modifier.fillMaxSize(),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(event.backgroundImage)
+                    .crossfade(true)
+                    .listener(
+                        onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
+                        onError = { request, result ->
+                            Log.e(
+                                "IMAGE_LOAD",
+                                "FAILED: ${result.throwable.message}"
+                            )
+                        }
+                    )
+                    .build(),
+                contentDescription = "Event Card Image",
+                contentScale = ContentScale.Crop
+            )
             Box(
                 Modifier
                     .fillMaxSize()
@@ -96,11 +113,10 @@ fun LargeEventCard(
                         .padding(vertical = 12.dp, horizontal = 15.dp)
                         .align(Alignment.TopStart)
                 ) {
-//            val date = event.startTime.toLocalDateTime()
+                    val date = event.startTime.toLocalDateTime()
                     Text(
                         buildAnnotatedString {
-//                    append(date.toMonthAbbreviation())
-                            append("Oct\n")
+                            append("${date.toMonthAbbreviation()}\n")
                             withStyle(
                                 style = SpanStyle(
                                     fontFamily = AppFonts.instrumentSans,
@@ -108,8 +124,7 @@ fun LargeEventCard(
                                     fontWeight = FontWeight.Bold
                                 )
                             ) {
-//                        append(date.toDayOfMonth())
-                                append("22")
+                                append(date.toDayOfMonth())
                             }
                         },
                         style = TextStyle(
@@ -127,14 +142,14 @@ fun LargeEventCard(
                         .height(60.dp)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color.White.copy(alpha = 0.9f))
-                        .padding(vertical = 12.dp, horizontal = 15.dp)
+                        .padding(start = 13.dp, end = 5.dp)
+                        .padding(vertical = 12.dp)
                         .align(Alignment.BottomEnd)
                 ) {
                     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(8f)) {
                             Text(
-//                                text="${event.title}\n",
-                                text = "5th International Hackathon",
+                                text = "${event.title}\n",
                                 style = TextStyle(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 14.sp,
@@ -148,24 +163,22 @@ fun LargeEventCard(
                                     withStyle(
                                         style = SpanStyle(
                                             fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 12.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF676767)
                                         )
                                     ) {
-//                                        append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()} | ")
-                                        append("9:00 AM to 5:00 PM | ")
+                                        append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()} | ")
                                     }
                                     withStyle(
                                         style = SpanStyle(
                                             fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 12.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF558042)
                                         )
                                     ) {
-//                                        append("${event.remainingSlots}")
-                                        append("256 slots left")
+                                        append("${event.remainingSlots} slots left")
                                     }
                                 },
                                 maxLines = 1,
@@ -175,7 +188,7 @@ fun LargeEventCard(
                         VerticalDivider(color = Color.Black)
                         TextButton(
                             modifier = Modifier
-                                .weight(3f)
+                                .weight(2.5f)
                                 .defaultMinSize(minHeight = 1.dp),
                             contentPadding = PaddingValues(
                                 vertical = 0.dp
@@ -209,17 +222,6 @@ fun LargeEventCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun LargeEventCardPreview() {
-    Scaffold() { paddingValues ->
-        Column(Modifier.padding(horizontal = 20.dp)) {
-            Spacer(Modifier.height(10.dp))
-            LargeEventCard(onCardClick = {}, onTextButtonClick = {})
         }
     }
 }

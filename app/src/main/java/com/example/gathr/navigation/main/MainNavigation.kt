@@ -4,7 +4,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -17,12 +16,13 @@ import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.presentation.main.ViewEventScreen
 import com.example.gathr.presentation.participant.AddStaffScreen
+import com.example.gathr.presentation.participant.AttendanceScreen
 import com.example.gathr.presentation.participant.ModifyEventScreen
 import com.example.gathr.presentation.participant.QrCodeScreen
 
 @Composable
 fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
-    val backStack = rememberNavBackStack(MainScreen.ModifyEvent)
+    val backStack = rememberNavBackStack(MainScreen.Main)
 
     NavDisplay(
         backStack = backStack,
@@ -33,13 +33,31 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
         ),
         entryProvider = entryProvider {
             entry<MainScreen.Main> {
-                MainScreen(viewModel = userViewModel, onLogout = onLogout)
+                userViewModel.handleIntent(UserIntent.CurrentEventChanged(null))
+
+                MainScreen(
+                    viewModel = userViewModel,
+                    onLogout = onLogout,
+                    onNavigateQrCode = {
+                        backStack.add(MainScreen.QrScanner)
+                    },
+                    onNavigateModifyEvent = {
+                        backStack.add(MainScreen.ModifyEvent)
+                    }, onNavigateUpdateEvent = {
+                        userViewModel.handleIntent(UserIntent.IsUpdateEventChanged(true))
+                        backStack.add(MainScreen.ModifyEvent)
+                    },
+                    onNavigateViewEvent = {
+                        backStack.add(MainScreen.ViewEvent)
+                    }
+                )
             }
             entry<MainScreen.ModifyEvent> {
                 ModifyEventScreen(
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()
+                        userViewModel.handleIntent(UserIntent.IsUpdateEventChanged(false))
                     },
                     onNavigateNext = {
                         backStack.add(MainScreen.AddStaff)
@@ -55,18 +73,56 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                     onNavigateNext = {
                         backStack.clear()
                         backStack.add(MainScreen.ViewEvent)
+                        userViewModel.handleIntent(UserIntent.FetchEvents)
+                        userViewModel.handleIntent(UserIntent.IsUpdateEventChanged(false))
+                        userViewModel.handleIntent(UserIntent.SearchStaffChanged(""))
                         userViewModel.handleIntent(UserIntent.CreateEventChanged(CreateEvent()))
+                        userViewModel.handleIntent(UserIntent.AddStaffsChanged(emptyList()))
                     },
                 )
             }
             entry<MainScreen.ViewEvent> {
-                ViewEventScreen()
+                ViewEventScreen(
+                    viewModel = userViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+                        backStack.add(MainScreen.Main)
+//                        userViewModel.handleIntent(UserIntent.CurrentEventChanged(null))
+                    },
+                    onNavigateAttendance = {
+                        backStack.add(MainScreen.ViewAttendance)
+                    },
+                    onNavigateEdit = {
+                        userViewModel.handleIntent(UserIntent.IsUpdateEventChanged(true))
+                        backStack.add(MainScreen.ModifyEvent)
+                    },
+                )
+            }
+            entry<MainScreen.ViewAttendance> {
+                AttendanceScreen(
+                    viewModel = userViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+                    },
+                )
             }
             entry<MainScreen.QrCode> {
-                QrCodeScreen()
+                QrCodeScreen(
+                    viewModel = userViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+//                        userViewModel.handleIntent(UserIntent.CurrentEventChanged(null))
+                    },
+                )
             }
             entry<MainScreen.QrScanner> {
-                QrScannerScreen()
+                QrScannerScreen(
+                    viewModel = userViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+//                        userViewModel.handleIntent(UserIntent.CurrentEventChanged(null))
+                    },
+                )
             }
         },
         transitionSpec = {

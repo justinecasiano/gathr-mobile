@@ -121,6 +121,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.ktor:ktor-client-android:3.3.2")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.2.6")
 
     implementation(libs.face.detection)
     implementation(libs.androidx.camera.core)
@@ -131,12 +132,12 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
 
-
     implementation("nl.dionsegijn:konfetti-compose:2.0.5")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.google.accompanist:accompanist-permissions:0.37.3")
-    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation("com.google.zxing:core:3.5.4")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
     implementation("com.google.firebase:firebase-analytics")

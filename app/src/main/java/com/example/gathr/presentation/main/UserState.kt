@@ -1,13 +1,26 @@
 package com.example.gathr.presentation.main
 
 import com.example.gathr.data.model.CreateEvent
+import com.example.gathr.data.model.CreateStaff
+import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
+import java.io.File
 
 data class UserState(
     val currentUser: User? = null,
+    val currentEvent: Event? = null,
+    val currentMyEvents: List<Event> = emptyList(),
+    val currentParticipant: Participant? = null,
     val createEvent: CreateEvent = CreateEvent(),
+    val createEventImageFile: File? = null,
+    val addStaffs: List<CreateStaff> = emptyList(),
+    val searchStaff: String = "",
+    val searchStaffError: String = "",
+    val isUpdateEvent: Boolean = false,
+    val actionTitle: String = "",
     val actionError: String = "",
-    val isUpdateEvent: Boolean = true,
+    val actionOnConfirm: () -> Unit = {},
     val isLoading: Boolean = false,
     val createEventValidationState: CreateEventValidationState = CreateEventValidationState()
 )

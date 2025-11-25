@@ -2,15 +2,13 @@ package com.example.gathr.presentation.participant
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,11 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -40,22 +38,63 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.R
+import com.example.gathr.core.ui.Alert
 import com.example.gathr.presentation.shared.LargeEventCard
 import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.presentation.main.UserState
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun MyEventsScreen() {
+fun MyEventsScreen(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
+    onNavigateQrCode: () -> Unit,
+    onNavigateModifyEvent: () -> Unit,
+    onNavigateUpdateEvent: () -> Unit,
+    onNavigateViewEvent: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize()) {
+        MyEventContent(
+            state, onIntent,
+            onNavigateQrCode,
+            onNavigateModifyEvent,
+            onNavigateUpdateEvent,
+            onNavigateViewEvent
+        )
+
+        when {
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = "Error",
+                    message = state.actionError,
+                    onDismissRequest = { onIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { onIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MyEventContent(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
+    onNavigateQrCode: () -> Unit,
+    onNavigateModifyEvent: () -> Unit,
+    onNavigateUpdateEvent: () -> Unit,
+    onNavigateViewEvent: () -> Unit,
+) {
     val tabTitles = listOf("Pending", "Approved", "Rejected", "Removed")
     var selectedTabIndex by remember { mutableStateOf(0) }
     var searchText by remember { mutableStateOf("") }
@@ -143,11 +182,42 @@ fun MyEventsScreen() {
             }
         }
         Box {
+            fun filterEvents() {
+
+            }
+
             when (selectedTabIndex) {
-                0 -> MyEventsContent()
-                1 -> MyEventsContent()
-                2 -> MyEventsContent()
-                3 -> MyEventsContent()
+                0 -> MyEventsCards(
+                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.PENDING },
+                    onIntent = onIntent,
+                    onNavigateViewEvent = onNavigateViewEvent,
+                    onNavigateUpdateEvent = onNavigateUpdateEvent,
+                    onNavigateQrCode = onNavigateQrCode
+                )
+
+                1 -> MyEventsCards(
+                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.APPROVED },
+                    onIntent = onIntent,
+                    onNavigateViewEvent = onNavigateViewEvent,
+                    onNavigateUpdateEvent = onNavigateUpdateEvent,
+                    onNavigateQrCode = onNavigateQrCode
+                )
+
+                2 -> MyEventsCards(
+                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.REJECTED },
+                    onIntent = onIntent,
+                    onNavigateViewEvent = onNavigateViewEvent,
+                    onNavigateUpdateEvent = onNavigateUpdateEvent,
+                    onNavigateQrCode = onNavigateQrCode
+                )
+
+                3 -> MyEventsCards(
+                    events = state.currentMyEvents.filter { it.isArchive },
+                    onIntent = onIntent,
+                    onNavigateViewEvent = onNavigateViewEvent,
+                    onNavigateUpdateEvent = onNavigateUpdateEvent,
+                    onNavigateQrCode = onNavigateQrCode
+                )
             }
 
             val gradientColors = listOf(Color(0xFF7B55A3), Color(0xFF583181))
@@ -165,6 +235,7 @@ fun MyEventsScreen() {
                 Box(
                     modifier = Modifier
                         .background(Brush.horizontalGradient(colors = gradientColors))
+                        .clickable { onNavigateModifyEvent() }
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -192,7 +263,13 @@ fun MyEventsScreen() {
 }
 
 @Composable
-private fun MyEventsContent(events: List<Event>? = null) {
+private fun MyEventsCards(
+    events: List<Event> = emptyList(),
+    onIntent: (UserIntent) -> Unit,
+    onNavigateViewEvent: () -> Unit,
+    onNavigateUpdateEvent: () -> Unit,
+    onNavigateQrCode: () -> Unit
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -209,36 +286,17 @@ private fun MyEventsContent(events: List<Event>? = null) {
                 contentScale = ContentScale.FillWidth
             )
         }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
-        }
-        item {
+        items(events, key = { event -> event.id }) { event ->
             LargeEventCard(
-                event = null, onCardClick = {}, onTextButtonClick = {},
-                image = {
-                    Image(
-                        modifier = Modifier.fillMaxSize(),
-                        painter = painterResource(R.drawable.placeholder_landscape),
-                        contentScale = ContentScale.FillBounds,
-                        contentDescription = "Event Background Image"
-                    )
+                event = event,
+                onCardClick = {
+                    onIntent(UserIntent.CurrentEventChanged(event))
+                    onNavigateViewEvent()
                 },
-            )
-        }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
-        }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
-        }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
-        }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
-        }
-        item {
-            LargeEventCard(event = null, onCardClick = {}, onTextButtonClick = {})
+                onTextButtonClick = {
+                    onIntent(UserIntent.CurrentEventChanged(event))
+                    onNavigateQrCode()
+                })
         }
         item {
             Spacer(Modifier.height(25.dp))
@@ -247,10 +305,10 @@ private fun MyEventsContent(events: List<Event>? = null) {
 
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun MyEventsScreenPreview() {
-    Scaffold { paddingValues ->
-        MyEventsScreen()
-    }
-}
+//@Preview(showBackground = true)
+//@Composable
+//private fun MyEventsScreenPreview() {
+//    Scaffold { paddingValues ->
+//        MyEventsScreen()
+//    }
+//}

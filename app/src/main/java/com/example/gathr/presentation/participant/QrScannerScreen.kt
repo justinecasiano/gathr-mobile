@@ -64,9 +64,17 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gathr.R
+import com.example.gathr.core.ui.Alert
+import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.data.model.Event
+import com.example.gathr.presentation.main.UserEffect
+import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.presentation.main.UserState
+import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toTitleCase
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -79,7 +87,46 @@ import kotlinx.coroutines.withTimeout
 import java.util.concurrent.Executors
 
 @Composable
-fun QrScannerScreen(event: Event? = null) {
+fun QrScannerScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateBack -> onNavigateBack()
+                UserEffect.NavigateLogout -> {}
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        QrScannerContent(
+            state = state,
+            onIntent = viewModel::handleIntent,
+        )
+
+        if (state.isLoading) {
+            LoadingOverlay()
+        }
+        when {
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Error" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun QrScannerContent(state: UserState, onIntent: (UserIntent) -> Unit) {
+    val event: Event = state.currentEvent!!
+
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     var camera: Camera? by remember { mutableStateOf(null) }
@@ -102,7 +149,7 @@ fun QrScannerScreen(event: Event? = null) {
                 title = {},
                 navigationIcon = {
                     IconButton(
-                        onClick = {},
+                        onClick = { onIntent(UserIntent.BackClicked) },
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.close),
@@ -159,7 +206,7 @@ fun QrScannerScreen(event: Event? = null) {
                 )
                 Spacer(Modifier.height(5.dp))
                 Text(
-                    text = "University of Makati's Infotechnolympics",
+                    text = event.title.toTitleCase(),
                     fontFamily = AppFonts.rethinkSans,
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp,

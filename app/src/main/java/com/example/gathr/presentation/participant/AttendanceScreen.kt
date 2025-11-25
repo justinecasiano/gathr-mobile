@@ -22,10 +22,19 @@ import androidx.compose.ui.unit.sp
 import com.example.gathr.R
 import com.example.gathr.ui.theme.AppFonts.rethinkSans
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.gathr.core.ui.Alert
+import com.example.gathr.core.ui.LoadingOverlay
+import com.example.gathr.presentation.main.UserEffect
+import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.presentation.main.UserState
+import com.example.gathr.presentation.main.UserViewModel
+import com.example.gathr.presentation.main.ViewEventContent
 
 data class RegisteredUser(
     val name: String,
@@ -34,9 +43,46 @@ data class RegisteredUser(
 )
 
 @Composable
-fun AttendanceScreen(
-    event: Event? = null,
-    onBack: () -> Unit
+fun AttendanceScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateBack -> onNavigateBack()
+                UserEffect.NavigateLogout -> {}
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        AttendanceContent(
+            state = state,
+            onIntent = viewModel::handleIntent,
+        )
+
+        if (state.isLoading) {
+            LoadingOverlay()
+        }
+        when {
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Error" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AttendanceContent(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
 ) {
     var searchText by remember { mutableStateOf("") }
 
@@ -110,7 +156,7 @@ fun AttendanceScreen(
                                 .align(Alignment.CenterStart)
                                 .padding(start = 4.dp)
                                 .size(30.dp)
-                                .clickable { onBack() }
+                                .clickable { onIntent(UserIntent.BackClicked) }
                         )
 
                         Text(
@@ -331,13 +377,5 @@ fun RegisteredRow(user: RegisteredUser) {
             color = Color(0xFFCCCCCC),
             thickness = 1.dp
         )
-    }
-}
-
-@Preview
-@Composable
-private fun AttendanceScreenPreview() {
-    Scaffold {
-        AttendanceScreen(onBack = {})
     }
 }

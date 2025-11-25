@@ -45,6 +45,7 @@ import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.compose.runtime.collectAsState
+import com.example.gathr.presentation.main.UserIntent
 import kotlin.toString
 
 @Composable
@@ -59,6 +60,7 @@ fun SplashScreen(
     LaunchedEffect(Unit) {
         auth.awaitInitialization()
         userViewModel.getCurrentUser()
+        userViewModel.handleIntent(UserIntent.FetchEvents)
         delay(3000L)
         onLoaded(authRepository.isLoggedIn())
     }

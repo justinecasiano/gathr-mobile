@@ -1,8 +1,12 @@
 package com.example.gathr.utils
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
+import android.webkit.MimeTypeMap
 import com.example.gathr.presentation.auth.PasswordValidationState
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.core.graphics.createBitmap
@@ -20,6 +24,9 @@ import kotlinx.io.IOException
 import java.time.Clock
 import java.time.Instant
 import java.util.EnumMap
+import androidx.core.net.toUri
+import java.io.File
+import java.io.FileOutputStream
 
 object Utils {
 
@@ -48,6 +55,44 @@ object Utils {
         } catch (e: Exception) {
             e.printStackTrace()
             return null
+        }
+    }
+
+    fun getFileSize(context: Context, uriString: String?): Long {
+        if (uriString == null) return 0L
+
+        val uri = uriString.toUri()
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
+
+        return cursor?.use {
+            if (it.moveToFirst()) {
+                val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                if (sizeIndex != -1) {
+                    it.getLong(sizeIndex)
+                } else 0L
+            } else 0L
+        } ?: 0L
+    }
+
+    fun createTempFileFromUri(context: Context, uri: Uri): File? {
+        return try {
+            val contentResolver = context.contentResolver
+
+            val mimeType = contentResolver.getType(uri)
+
+            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
+
+            val tempFile = File.createTempFile("upload_", ".$extension", context.cacheDir)
+
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            tempFile
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
@@ -129,9 +174,12 @@ object Utils {
             "Please enter a valid capacity greater than 2"
         } else ""
 
-        val backgroundImageError = if (event.backgroundImage.isNullOrBlank()) {
-            "Background image is required"
-        } else ""
+        val MAX_IMAGE_SIZE = 5_242_880
+        val backgroundImageError = when {
+            event.backgroundImage.isNullOrBlank() -> "Background image is required."
+            event.backgroundImageSizeBytes > MAX_IMAGE_SIZE -> "Image is too large (Max 5MB)."
+            else -> ""
+        }
 
         val startDateError = if (event.startDateAndTime < currentMoment) {
             "Start time cannot be in the past"

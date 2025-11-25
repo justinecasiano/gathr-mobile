@@ -215,6 +215,7 @@ fun ClearTextField(
     onValueChange: (String) -> Unit = {},
     onClick: () -> Unit = {},
 ) {
+
     CustomTextField(
         text,
         labelText,

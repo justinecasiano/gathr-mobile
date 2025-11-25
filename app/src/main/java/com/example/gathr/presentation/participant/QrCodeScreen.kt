@@ -55,21 +55,75 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gathr.R
+import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.BottomButton
 import com.example.gathr.core.ui.ElevatedButton
+import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.Participant
+import com.example.gathr.data.model.User
 import com.example.gathr.presentation.auth.sign_up.SignUpIntent
+import com.example.gathr.presentation.main.UserEffect
+import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.presentation.main.UserState
+import com.example.gathr.presentation.main.UserViewModel
+import com.example.gathr.presentation.main.ViewEventContent
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.Utils.generateQrBitmap
 import com.example.gathr.utils.toLocalDateTime
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
+import com.example.gathr.utils.toTitleCase
+
+@Composable
+fun QrCodeScreen(
+    viewModel: UserViewModel,
+    onNavigateBack: () -> Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateBack -> onNavigateBack()
+                UserEffect.NavigateLogout -> {}
+            }
+        }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        QrCodeContent(
+            state = state,
+            onIntent = viewModel::handleIntent,
+        )
+
+        if (state.isLoading) {
+            LoadingOverlay()
+        }
+        when {
+            state.actionError.isNotBlank() -> {
+                Alert(
+                    title = state.actionTitle.ifBlank { "Error" },
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
+fun QrCodeContent(state: UserState, onIntent: (UserIntent) -> Unit) {
+    val user: User = state.currentUser!!
+    val participant: Participant = state.currentParticipant!!
+    val event: Event = state.currentEvent!!
+
     Scaffold(topBar = {
         CenterAlignedTopAppBar(
             modifier = Modifier.padding(top = 10.dp, start = 10.dp),
@@ -126,8 +180,8 @@ fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
-                        //                    "${event.title}"
-                        "University of Makati's Infotechnolympics", style = TextStyle(
+                        event.title.toTitleCase(),
+                        style = TextStyle(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
@@ -166,8 +220,7 @@ fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
                                                     color = Color.White
                                                 )
                                             ) {
-                                                //                                append("${event.}")
-                                                append("Angela Mae Cabrera")
+                                                append("${user.firstName.toTitleCase()} ${user.lastName.toTitleCase()}")
                                             }
                                         }, style = TextStyle(
                                             fontFamily = AppFonts.rethinkSans,
@@ -189,7 +242,7 @@ fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
                                                     color = Color.White
                                                 )
                                             ) {
-                                                append("Oct 15, 2025 || 2:00 AM to 5:00 PM")
+                                                append("${event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy")} || ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
                                             }
                                         }, style = TextStyle(
                                             fontFamily = AppFonts.rethinkSans,
@@ -216,8 +269,7 @@ fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
                                 Column(Modifier.weight(3.5f)) {
                                     Spacer(Modifier.height(20.dp))
                                     Text(
-                                        //                            "${event.title}\n",
-                                        "University of Makati's Infotechnolympics",
+                                        "${event.title.toTitleCase()}\n",
                                         style = TextStyle(
                                             fontFamily = AppFonts.rethinkSans,
                                             fontSize = 18.sp,
@@ -232,8 +284,7 @@ fun QrCodeScreen(participant: Participant? = null, event: Event? = null) {
                                     Spacer(Modifier.height(10.dp))
                                     Text(
                                         modifier = Modifier.padding(horizontal = 20.dp),
-                                        //                            "${event.location}"
-                                        text = "UMak Auditorium, University of Makati, Makati City",
+                                        text = event.location.toTitleCase(),
                                         style = TextStyle(
                                             fontFamily = AppFonts.rethinkSans,
                                             fontSize = 14.sp,
@@ -300,9 +351,9 @@ fun QrCodeDisplay(text: String) {
         )
     }
 }
-
-@Preview
-@Composable
-private fun QrCodeScreenPreview() {
-    QrCodeScreen()
-}
+//
+//@Preview
+//@Composable
+//private fun QrCodeScreenPreview() {
+//    QrCodeContent()
+//}

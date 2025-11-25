@@ -18,6 +18,9 @@ sealed class MainScreen : NavKey {
     data object AddStaff: MainScreen()
 
     @Serializable
+    data object ViewAttendance: MainScreen()
+
+    @Serializable
     data object QrCode: MainScreen()
 
     @Serializable

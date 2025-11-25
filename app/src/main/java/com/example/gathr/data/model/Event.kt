@@ -14,10 +14,10 @@ data class Event(
     val id: Long,
 
     @SerialName("parent_event_id")
-    val parentEventId: Long,
+    val parentEventId: Long? = null,
 
-    val title: String? = null,
-    val description: String? = null,
+    val title: String,
+    val description: String,
     val roles: List<String>? = null,
 
     @SerialName("allowed_departments")
@@ -30,20 +30,21 @@ data class Event(
     val allowAlumni: Boolean,
 
     @SerialName("background_image")
-    val backgroundImage: String? = null,
+    val backgroundImage: String,
 
-    val location: String? = null,
+    val location: String,
 
     @SerialName("start_time")
     @Serializable(with = JavaInstantSerializer::class)
-    val startTime: Instant? = null,
+    val startTime: Instant,
 
     @SerialName("end_time")
     @Serializable(with = JavaInstantSerializer::class)
-    val endTime: Instant? = null,
+    val endTime: Instant,
 
-    val capacity: Int? = null,
+    val capacity: Int,
 
+    @SerialName("remaining_slots")
     val remainingSlots: Int,
 
     @SerialName("evaluation_form")
@@ -53,8 +54,12 @@ data class Event(
     @Serializable(with = UuidSerializer::class)
     val createdBy: UUID,
 
+    @SerialName("created_by_name")
+    val createdByName: String,
+
     val status: EventApprovalStatus,
 
+    @SerialName("computed_status")
     val computedStatus: EventComputedStatus,
 
     @SerialName("submitted_at")

@@ -13,13 +13,15 @@ data class User(
     val id: UUID,
 
     @SerialName("display_name")
-    val displayName: String? = null,
+    val displayName: String,
 
     @SerialName("first_name")
-    val firstName: String? = null,
+    val firstName: String,
+
+    val email: String,
 
     @SerialName("last_name")
-    val lastName: String? = null,
+    val lastName: String,
 
     val role: String,
 
