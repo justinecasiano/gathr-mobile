@@ -24,6 +24,9 @@ sealed class AuthScreen : NavKey {
     data object TermsOfService : AuthScreen()
 
     @Serializable
+    data object PrivacyPolicy: AuthScreen()
+
+    @Serializable
     data object VerificationCode : AuthScreen()
 
     @Serializable

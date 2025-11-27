@@ -29,6 +29,7 @@ import org.koin.compose.koinInject
 fun RootNavigation() {
     val userViewModel: UserViewModel = koinViewModel()
     val startingDestination = RootScreen.Splash
+//    val startingDestination = RootScreen.Main
     val backStack = rememberNavBackStack(startingDestination)
 
     val networkService: NetworkConnectivityService = koinInject()

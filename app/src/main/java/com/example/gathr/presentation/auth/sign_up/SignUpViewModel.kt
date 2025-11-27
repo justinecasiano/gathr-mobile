@@ -56,6 +56,7 @@ class SignUpViewModel(
 
             is SignUpIntent.IsLoadingChanged -> _state.update { it.copy(isLoading = intent.value) }
 
+            is SignUpIntent.NextClicked -> sendEffect(SignUpEffect.NavigateToNext)
             is SignUpIntent.BackClicked -> sendEffect(SignUpEffect.NavigateBack)
             is SignUpIntent.LoginClicked -> sendEffect(SignUpEffect.NavigateToLogin)
             is SignUpIntent.NextOfBasicInfoClicked -> validateBasicInfo()

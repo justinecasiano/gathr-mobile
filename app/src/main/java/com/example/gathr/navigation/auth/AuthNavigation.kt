@@ -35,6 +35,7 @@ import com.example.gathr.presentation.auth.forgot_password.ResetPasswordScreen
 import com.example.gathr.presentation.auth.forgot_password.VerifyResetPasswordScreen
 import com.example.gathr.presentation.auth.login.LoginScreen
 import com.example.gathr.presentation.auth.login.LoginViewModel
+import com.example.gathr.presentation.auth.sign_up.PrivacyPolicyScreen
 import com.example.gathr.presentation.auth.sign_up.VerifyHumanScreen
 import com.example.gathr.presentation.auth.sign_up.SchoolVerificationScreen
 import com.example.gathr.presentation.auth.sign_up.SignUpScreen
@@ -143,25 +144,38 @@ fun AuthNavigation(onLogin: () -> Unit) {
                         backStack.add(AuthScreen.Login)
                     },
                     onNavigateNext = {
+                        backStack.add(AuthScreen.TermsOfService)
+                    },
+                )
+            }
+            entry<AuthScreen.TermsOfService> {
+                TermsOfServiceScreen(
+                    viewModel = signUpViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+                    },
+                    onNavigateLogin = {
+                        backStack.add(AuthScreen.Login)
+                    },
+                    onNavigateNext = {
+                        backStack.add(AuthScreen.PrivacyPolicy)
+                    },
+                )
+            }
+            entry<AuthScreen.PrivacyPolicy> {
+                PrivacyPolicyScreen(
+                    viewModel = signUpViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+                    },
+                    onNavigateLogin = {
+                        backStack.add(AuthScreen.Login)
+                    },
+                    onNavigateNext = {
                         backStack.add(AuthScreen.VerifyHuman)
                     },
                 )
             }
-//            entry<AuthScreen.TermsOfService> {
-//                TermsOfServiceScreen(
-//                    viewModel = signUpViewModel,
-//                    onNavigateBack = {
-//                        backStack.removeLastOrNull()
-//                    },
-//                    onNavigateLogin = {
-//                        backStack.add(AuthScreen.Login)
-//                    },
-//                    onNavigateNext = {
-////                        backStack.add(AuthScreen.VerifyHuman)
-//                        backStack.add(AuthScreen.VerifyEmail)
-//                    },
-//                )
-//            }
             entry<AuthScreen.VerifyHuman> {
                 VerifyHumanScreen(
                     viewModel = signUpViewModel,
@@ -261,12 +275,12 @@ fun AuthNavigation(onLogin: () -> Unit) {
             entry<AuthScreen.ResetLink> {
                 val currentState by forgotPasswordViewModel.state.collectAsStateWithLifecycle()
                 StatusScreen(
-                    title = "Password Reset Link",
+                    title = "Reset Password",
                     buttonText = "NEXT",
                     message = {
                         Text(
                             buildAnnotatedString {
-                                append("We have sent a verification code to your email ")
+                                append("We have sent a 6-digit code to your email ")
                                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                                     append(currentState.email)
                                 }

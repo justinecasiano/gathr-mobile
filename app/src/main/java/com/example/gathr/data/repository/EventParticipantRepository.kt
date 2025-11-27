@@ -48,8 +48,13 @@ class EventParticipantRepositoryImpl(
 
     override suspend fun fetchEvents(): ApiResult<List<Event>> {
         return try {
+            val id = auth.currentUserOrNull()?.id
             val events = supabase.from("events_with_details")
-                .select()
+                .select {
+                    filter {
+                        eq("created_by", UUID.fromString(id))
+                    }
+                }
                 .decodeList<Event>()
 
             ApiResult.Success(events)

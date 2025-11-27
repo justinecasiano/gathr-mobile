@@ -630,8 +630,8 @@ fun InstantDateTimePicker(
 
     val formattedDateTime = remember(value) {
         value?.let {
-            val localDateTime = LocalDateTime.ofInstant(it, ZoneId.systemDefault())
-            DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm").format(localDateTime)
+            val localDateTime = LocalDateTime.ofInstant(it, ZoneId.of("Asia/Manila"))
+            DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm a").format(localDateTime)
         } ?: ""
     }
 
@@ -710,7 +710,7 @@ fun InstantDateTimePicker(
 
                         if (tempDate != null) {
                             val localDateTime = LocalDateTime.of(tempDate, selectedTime)
-                            val zonedDateTime = localDateTime.atZone(ZoneId.systemDefault())
+                            val zonedDateTime = localDateTime.atZone(ZoneId.of("Asia/Manila"))
                             onValueChange(zonedDateTime.toInstant())
                         }
                         showTimePicker = false

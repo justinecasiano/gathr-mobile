@@ -84,7 +84,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun TermsOfServiceScreen(
+fun PrivacyPolicyScreen(
     viewModel: SignUpViewModel,
     onNavigateBack: () -> Unit,
     onNavigateLogin: () -> Unit,
@@ -101,12 +101,12 @@ fun TermsOfServiceScreen(
             }
         }
     }
-    TermsOfServiceContent(state = state, onIntent = viewModel::handleIntent)
+    PrivacyPolicyContent(state = state, onIntent = viewModel::handleIntent)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) {
+fun PrivacyPolicyContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) {
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val hasScrolledDown by remember {
@@ -191,7 +191,7 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                         .padding(horizontal = 20.dp),
                 ) {
                     Text(
-                        "Terms of Service",
+                        "Privacy Policy",
                         modifier = Modifier.fillMaxWidth(),
                         style = TextStyle(
                             fontFamily = AppFonts.rethinkSans,
@@ -222,9 +222,9 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                                     end = 15.dp
                                 )
                         ) {
-                            Text("1. Accounts", style = boldTextStyle)
+                            Text("1. Information We Collect", style = boldTextStyle)
                             Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("You are responsible for your login information and account activity.")
+                            BulletItem("We may collect the following information:")
                             BulletItem("You must provide accurate registration information and keep it updated.")
                             BulletItem("We may suspend or terminate accounts that violate school policies or these Terms.")
                             Spacer(modifier = Modifier.height(8.dp))
@@ -358,40 +358,6 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                 },
             )
         }
-    }
-}
-
-@Composable
-fun BulletItem(
-    text: String = "",
-    varyingText: @Composable (() -> Unit)? = null,
-) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
-        ) {
-            Text(
-                text = "•  ", style = TextStyle(
-                    fontFamily = AppFonts.instrumentSans,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White
-                ), modifier = Modifier.padding(top = 2.dp)
-            )
-            if (varyingText == null) {
-                Text(
-                    text = text, lineHeight = 16.sp, style = TextStyle(
-                        fontFamily = AppFonts.instrumentSans,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.White
-                    ), modifier = Modifier.weight(1f)
-                )
-            } else {
-                varyingText()
-            }
-        }
-        Spacer(modifier = Modifier.height(0.5.dp))
     }
 }
 

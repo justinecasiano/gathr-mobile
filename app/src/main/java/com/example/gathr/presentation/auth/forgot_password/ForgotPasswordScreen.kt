@@ -184,7 +184,7 @@ fun ForgotPasswordContent(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            "Enter your email address to receive a link to reset your password.",
+                            "Enter your email address to receive a code to reset your password.",
                             style = TextStyle(
                                 fontFamily = AppFonts.instrumentSans,
                                 fontSize = 16.sp,

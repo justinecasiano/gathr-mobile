@@ -19,6 +19,7 @@ sealed interface SignUpIntent {
 
     data class IsLoadingChanged(val value: Boolean) : SignUpIntent
 
+    data object NextClicked: SignUpIntent
     data object BackClicked : SignUpIntent
     data object LoginClicked : SignUpIntent
     data object NextOfBasicInfoClicked : SignUpIntent

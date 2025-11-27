@@ -80,19 +80,19 @@ fun MainScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        val isParticipant = state.currentUser?.role == "PARTICIPANT"
-        if (isParticipant) {
+        val role = state.currentUser?.role
+        if (role == "PARTICIPANT") {
             ParticipantContent(
                 state, viewModel::handleIntent,
                 onNavigateQrCode, onNavigateModifyEvent,
                 onNavigateUpdateEvent, onNavigateViewEvent
             )
-        } else {
+        } else if (role == "MODERATOR") {
             ModeratorContent(state, viewModel::handleIntent)
         }
 
         if (state.isLoading) {
-            LoadingOverlay(isContrast = !isParticipant)
+            LoadingOverlay(isContrast = role != "PARTICIPANT")
         }
     }
     Log.d("MAINVIEW", state.currentUser?.role ?: "UNKNOWN USER")

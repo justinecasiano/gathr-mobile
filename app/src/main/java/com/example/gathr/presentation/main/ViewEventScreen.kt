@@ -278,7 +278,7 @@ fun ThreeDotMenu(
     ) {
         Column(verticalArrangement = Arrangement.Top) {
             Surface(
-                onClick = { !expanded },
+                onClick = { expanded = !expanded },
                 shape = CircleShape,
                 color = Color(0xFFD9D9D9).copy(alpha = 0.76f),
                 modifier = Modifier.size(35.dp),
@@ -300,7 +300,7 @@ fun ThreeDotMenu(
                         start = Offset(0f, 0f),
                         end = Offset(0f, Float.POSITIVE_INFINITY)
                     )
-                ), expanded = expanded, onDismissRequest = {}) {
+                ), expanded = expanded, onDismissRequest = { expanded = false }) {
                 DropdownMenuItem(onClick = { onNavigateAttendance() }, text = {
                     Row {
                         Icon(
@@ -324,7 +324,9 @@ fun ThreeDotMenu(
                     color = Color.Black,
                     thickness = 0.8.dp
                 )
-                DropdownMenuItem(onClick = { onIntent(UserIntent.DeleteEvent) }, text = {
+                DropdownMenuItem(onClick = {
+//                    onIntent(UserIntent.DeleteEvent)
+                }, text = {
                     Row {
                         Icon(
                             painter = painterResource(R.drawable.delete),
