@@ -7,6 +7,7 @@ import java.time.Instant
 
 @Serializable
 data class CreateEvent(
+    val id: Int? = null,
     val title: String = "",
     val description: String = "",
     val backgroundImage: String? = null,

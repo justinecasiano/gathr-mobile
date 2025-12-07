@@ -17,7 +17,6 @@ import com.example.gathr.data.model.User
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.navigation.auth.AuthNavigation
 import com.example.gathr.navigation.main.MainNavigation
-import com.example.gathr.presentation.main.MainScreen
 import com.example.gathr.presentation.SplashScreen
 import com.example.gathr.presentation.auth.NoInternetScreen
 import com.example.gathr.presentation.main.UserViewModel
@@ -51,6 +50,7 @@ fun RootNavigation() {
                     onLoaded = { isLoggedIn ->
                         backStack.removeLastOrNull()
                         if (isLoggedIn && isOnline) {
+//                        if (isLoggedIn) {
                             backStack.add(RootScreen.Main)
                         } else {
                             backStack.add(RootScreen.Auth)

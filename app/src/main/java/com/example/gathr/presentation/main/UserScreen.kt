@@ -20,7 +20,6 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -52,43 +51,27 @@ import com.example.gathr.navigation.main.moderatorBottomBarItems
 import com.example.gathr.navigation.main.participantBottomBarItems
 import com.example.gathr.presentation.moderator.ModeratorProfileScreen
 import com.example.gathr.presentation.participant.ETicketsScreen
-import com.example.gathr.presentation.participant.MyEventsScreen
+import com.example.gathr.presentation.participant.ParticipantEventsScreen
+import com.example.gathr.presentation.participant.ParticipantMyEventsScreen
+import com.example.gathr.presentation.participant.ParticipantNotificationsScreen
 import com.example.gathr.presentation.participant.ParticipantProfileScreen
 import com.example.gathr.presentation.shared.EventsScreen
 import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun MainScreen(
+fun UserScreen(
     viewModel: UserViewModel,
-    onNavigateQrCode: () -> Unit,
-    onNavigateModifyEvent: () -> Unit,
-    onNavigateUpdateEvent: () -> Unit,
-    onNavigateViewEvent: () -> Unit,
-    onLogout: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
-            when (effect) {
-                UserEffect.NavigateToNext -> {}
-                UserEffect.NavigateBack -> {}
-                UserEffect.NavigateLogout -> onLogout()
-            }
-        }
-    }
-
     Box(Modifier.fillMaxSize()) {
         val role = state.currentUser?.role
-        if (role == "PARTICIPANT") {
-            ParticipantContent(
-                state, viewModel::handleIntent,
-                onNavigateQrCode, onNavigateModifyEvent,
-                onNavigateUpdateEvent, onNavigateViewEvent
-            )
-        } else if (role == "MODERATOR") {
-            ModeratorContent(state, viewModel::handleIntent)
+
+        if (role == "MODERATOR") {
+            ModeratorContent(state, viewModel::handleIntent, viewModel::sendMainEffect)
+        } else {
+            ParticipantContent(state, viewModel::handleIntent, viewModel::sendMainEffect)
         }
 
         if (state.isLoading) {
@@ -102,10 +85,7 @@ fun MainScreen(
 fun ParticipantContent(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
-    onNavigateQrCode: () -> Unit,
-    onNavigateModifyEvent: () -> Unit,
-    onNavigateUpdateEvent: () -> Unit,
-    onNavigateViewEvent: () -> Unit,
+    onNavigate: (MainEffect) -> Unit,
 ) {
     val backStack = rememberNavBackStack(ParticipantBottomBarScreen.Events)
     var currentBottomBarScreen: ParticipantBottomBarScreen by rememberSaveable(
@@ -132,7 +112,7 @@ fun ParticipantContent(
                         modifier = Modifier,
                         selected = currentBottomBarScreen == destination,
                         icon = {
-                            if (destination.title == "E-tickets" || destination.title == "Notifications") {
+                            if (destination.title == "E-tickets" && state.currentEvents.count { it.isRegistered } > 0) {
                                 BadgedBox(
                                     badge = {
                                         Badge(
@@ -144,7 +124,10 @@ fun ParticipantContent(
                                                     color = Color.Black,
                                                     shape = CircleShape,
                                                 ),
-                                        ) { Text(text = "0") }
+                                        ) {
+                                            Text(text = state.currentEvents.count { it.isRegistered }
+                                                .toString())
+                                        }
                                     },
                                 ) {
                                     Icon(
@@ -167,7 +150,7 @@ fun ParticipantContent(
                                 style = TextStyle(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
+                                    fontSize = 10.sp,
                                 ),
                             )
                         },
@@ -197,35 +180,42 @@ fun ParticipantContent(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF8F8F8))
+//                .background(Color(0xFFF8F8F8))
+                .background(Color.White)
                 .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
             NavDisplay(
                 backStack = backStack,
-                onBack = { backStack.removeLastOrNull() },
+                onBack = {
+                    if (!state.isLoading)
+                        backStack.removeLastOrNull()
+                },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(),
                 ),
                 entryProvider = entryProvider {
                     entry<ParticipantBottomBarScreen.Events> {
-                        EventsScreen()
+                        ParticipantEventsScreen(state, onIntent, onNavigate)
                     }
                     entry<ParticipantBottomBarScreen.MyEvents> {
-                        MyEventsScreen(
-                            state, onIntent, onNavigateQrCode,
-                            onNavigateModifyEvent, onNavigateUpdateEvent, onNavigateViewEvent
+                        ParticipantMyEventsScreen(
+                            state, onIntent, onNavigate
                         )
                     }
                     entry<ParticipantBottomBarScreen.ETickets> {
-                        ETicketsScreen()
+                        ETicketsScreen(state, onIntent, onNavigate)
                     }
                     entry<ParticipantBottomBarScreen.Notifications> {
-                        NotificationsScreen()
+                        ParticipantNotificationsScreen(state, onIntent, onNavigate)
                     }
                     entry<ParticipantBottomBarScreen.Profile> {
-                        ParticipantProfileScreen(state, onIntent)
+                        ParticipantProfileScreen(
+                            state, onIntent, onNavigate,
+                            onNext = {
+                                backStack.add(ParticipantBottomBarScreen.MyEvents)
+                            })
                     }
                 },
                 transitionSpec = {
@@ -249,7 +239,11 @@ fun ParticipantContent(
 }
 
 @Composable
-fun ModeratorContent(state: UserState, onIntent: (UserIntent) -> Unit) {
+fun ModeratorContent(
+    state: UserState,
+    onIntent: (UserIntent) -> Unit,
+    onNavigate: (MainEffect) -> Unit
+) {
     val backStack = rememberNavBackStack(ModeratorBottomBarScreen.Events)
     var currentBottomBarScreen: ModeratorBottomBarScreen by rememberSaveable(
         stateSaver = ModeratorBottomBarScreenSaver,
@@ -325,7 +319,7 @@ fun ModeratorContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                                 style = TextStyle(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
+                                    fontSize = 10.sp,
                                 ),
                             )
                         },
@@ -377,7 +371,7 @@ fun ModeratorContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                         NotificationsScreen()
                     }
                     entry<ModeratorBottomBarScreen.Account> {
-                        ModeratorProfileScreen(state, onIntent)
+                        ModeratorProfileScreen(state, onIntent, onNavigate)
                     }
                 },
                 transitionSpec = {

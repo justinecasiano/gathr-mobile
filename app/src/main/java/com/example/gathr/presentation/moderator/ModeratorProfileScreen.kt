@@ -24,6 +24,7 @@ import androidx.compose.ui.layout.ContentScale
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.presentation.auth.sign_up.SignUpIntent
+import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
 
@@ -32,6 +33,7 @@ import com.example.gathr.presentation.main.UserState
 fun ModeratorProfileScreen(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
+    onNavigate: (MainEffect) -> Unit
 ) {
     val user = state.currentUser
     val userName = "${user?.firstName} ${user?.lastName}"

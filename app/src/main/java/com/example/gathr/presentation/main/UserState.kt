@@ -5,13 +5,16 @@ import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
+import com.example.gathr.presentation.participant.ParticipantPayload
 import java.io.File
 
 data class UserState(
     val currentUser: User? = null,
     val currentEvent: Event? = null,
-    val currentMyEvents: List<Event> = emptyList(),
+    val currentEvents: List<Event> = emptyList(),
     val currentParticipant: Participant? = null,
+    val currentParticipants: List<Participant> = emptyList(),
+    val scanParticipant: ParticipantPayload? = null,
     val createEvent: CreateEvent = CreateEvent(),
     val createEventImageFile: File? = null,
     val addStaffs: List<CreateStaff> = emptyList(),

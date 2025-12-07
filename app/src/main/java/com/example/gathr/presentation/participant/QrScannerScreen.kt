@@ -84,6 +84,10 @@ import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import java.util.concurrent.Executors
 
 @Composable
@@ -91,11 +95,10 @@ fun QrScannerScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+        viewModel.userEffect.collect { effect ->
             when (effect) {
-                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateNext -> {}
                 UserEffect.NavigateBack -> onNavigateBack()
-                UserEffect.NavigateLogout -> {}
             }
         }
     }
@@ -114,9 +117,9 @@ fun QrScannerScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
                 Alert(
                     title = state.actionTitle.ifBlank { "Error" },
                     message = state.actionError,
-                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     confirmButtonText = "Ok",
-                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                 )
             }
         }
@@ -238,14 +241,47 @@ fun QrScannerContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                     onQrCodeScanned = { qrValue ->
                         scope.launch {
                             try {
+                                val jsonParser = Json {
+                                    ignoreUnknownKeys = true
+                                    isLenient = true
+                                }
+
+                                val value = jsonParser.decodeFromString<ParticipantPayload>(qrValue)
+
+                                if (value.eventId != event.id) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Ticket is invalid",
+                                        duration = SnackbarDuration.Indefinite,
+                                    )
+                                    return@launch
+                                }
+
+                                onIntent(UserIntent.IsLoadingChanged(true))
+                                onIntent(UserIntent.ScanParticipantChanged(value))
+                                onIntent(UserIntent.MarkAttendance)
+
+//                                withTimeout(1200L) {
+//                                    snackbarHostState.showSnackbar(
+//                                        message = "QR Scanned: $value",
+//                                        duration = SnackbarDuration.Indefinite,
+//                                    )
+//                                }
+                            } catch (e: TimeoutCancellationException) {
+                                snackbarHostState.currentSnackbarData?.dismiss()
+                            } catch (e: SerializationException) {
                                 withTimeout(1200L) {
                                     snackbarHostState.showSnackbar(
-                                        message = "QR Scanned: $qrValue",
+                                        message = "Ticket is invalid",
                                         duration = SnackbarDuration.Indefinite,
                                     )
                                 }
-                            } catch (e: TimeoutCancellationException) {
-                                snackbarHostState.currentSnackbarData?.dismiss()
+                            } catch (e: IllegalArgumentException) {
+                                withTimeout(1200L) {
+                                    snackbarHostState.showSnackbar(
+                                        message = "An unknown error occured",
+                                        duration = SnackbarDuration.Indefinite,
+                                    )
+                                }
                             }
                         }
                     },
@@ -318,6 +354,15 @@ fun CameraPreviewComposable(
         modifier = modifier
     )
 }
+
+@Serializable
+data class ParticipantPayload(
+    @SerialName("event_id")
+    val eventId: Long,
+
+    @SerialName("user_id")
+    val userId: String
+)
 
 @OptIn(ExperimentalGetImage::class)
 private class QrCodeAnalyzer(

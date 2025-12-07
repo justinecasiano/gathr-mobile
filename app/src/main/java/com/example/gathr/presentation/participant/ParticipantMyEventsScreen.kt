@@ -1,5 +1,6 @@
 package com.example.gathr.presentation.participant
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,26 +52,22 @@ import com.example.gathr.presentation.shared.LargeEventCard
 import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
+import com.example.gathr.presentation.shared.SearchNotFound
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.dummyEvents
 
 @Composable
-fun MyEventsScreen(
+fun ParticipantMyEventsScreen(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
-    onNavigateQrCode: () -> Unit,
-    onNavigateModifyEvent: () -> Unit,
-    onNavigateUpdateEvent: () -> Unit,
-    onNavigateViewEvent: () -> Unit,
+    onNavigate: (MainEffect) -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
-        MyEventContent(
-            state, onIntent,
-            onNavigateQrCode,
-            onNavigateModifyEvent,
-            onNavigateUpdateEvent,
-            onNavigateViewEvent
+        ParticipantMyEventContent(
+            state, onIntent, onNavigate
         )
 
         when {
@@ -87,14 +85,13 @@ fun MyEventsScreen(
 }
 
 @Composable
-fun MyEventContent(
+fun ParticipantMyEventContent(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
-    onNavigateQrCode: () -> Unit,
-    onNavigateModifyEvent: () -> Unit,
-    onNavigateUpdateEvent: () -> Unit,
-    onNavigateViewEvent: () -> Unit,
+    onNavigate: (MainEffect) -> Unit
 ) {
+    var eventList: List<Event> = state.currentEvents.filter { it.isOrganizer }
+
     val tabTitles = listOf("Pending", "Approved", "Rejected", "Removed")
     var selectedTabIndex by remember { mutableStateOf(0) }
     var searchText by remember { mutableStateOf("") }
@@ -165,13 +162,14 @@ fun MyEventContent(
                             unselectedContentColor = Color(0xFF473163),
                             onClick = {
                                 selectedTabIndex = index
+                                searchText = ""
                             },
                             text = {
                                 Text(
                                     text = title,
                                     style = TextStyle(
                                         fontFamily = AppFonts.rethinkSans,
-                                        fontSize = 14.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
                                     ),
                                 )
@@ -181,42 +179,65 @@ fun MyEventContent(
                 }
             }
         }
-        Box {
-            fun filterEvents() {
 
-            }
-
+        eventList = eventList.filter {
             when (selectedTabIndex) {
-                0 -> MyEventsCards(
-                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.PENDING },
-                    onIntent = onIntent,
-                    onNavigateViewEvent = onNavigateViewEvent,
-                    onNavigateUpdateEvent = onNavigateUpdateEvent,
-                    onNavigateQrCode = onNavigateQrCode
-                )
+                0 -> it.status == EventApprovalStatus.PENDING
 
-                1 -> MyEventsCards(
-                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.APPROVED },
-                    onIntent = onIntent,
-                    onNavigateViewEvent = onNavigateViewEvent,
-                    onNavigateUpdateEvent = onNavigateUpdateEvent,
-                    onNavigateQrCode = onNavigateQrCode
-                )
+                1 -> it.status == EventApprovalStatus.APPROVED
 
-                2 -> MyEventsCards(
-                    events = state.currentMyEvents.filter { it.status == EventApprovalStatus.REJECTED },
-                    onIntent = onIntent,
-                    onNavigateViewEvent = onNavigateViewEvent,
-                    onNavigateUpdateEvent = onNavigateUpdateEvent,
-                    onNavigateQrCode = onNavigateQrCode
-                )
+                2 -> it.status == EventApprovalStatus.REJECTED
 
-                3 -> MyEventsCards(
-                    events = state.currentMyEvents.filter { it.isArchive },
+                else -> it.isArchive
+            }
+        }.filter { event ->
+            if (searchText.isBlank()) {
+                true
+            } else {
+                event.title.contains(searchText, ignoreCase = true) ||
+                        event.description.contains(searchText, ignoreCase = true)
+            }
+        }
+
+        Box(Modifier.fillMaxSize()) {
+            if (searchText.isNotBlank() && eventList.isNotEmpty()) {
+                Column {
+                    Spacer(Modifier.height(25.dp))
+                    Text(
+                        "Search result(s) for \"$searchText\"",
+                        style = TextStyle(
+                            fontFamily = AppFonts.rethinkSans,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                        ),
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                    MyEventsCards(
+                        events = eventList,
+                        showBanner = false,
+                        isOrganizer = true,
+                        isETicket = false,
+                        onIntent = onIntent,
+                        onNavigate = onNavigate,
+                        onTextButtonClick = {
+                            onNavigate(MainEffect.NavigateQrScanner)
+                        },
+                    )
+                }
+            } else if (searchText.isNotBlank() && eventList.isEmpty()) {
+                SearchNotFound(Modifier.padding(horizontal = 20.dp))
+            } else {
+                MyEventsCards(
+                    events = eventList,
+                    showBanner = searchText.isBlank(),
+                    isOrganizer = true,
+                    isETicket = false,
                     onIntent = onIntent,
-                    onNavigateViewEvent = onNavigateViewEvent,
-                    onNavigateUpdateEvent = onNavigateUpdateEvent,
-                    onNavigateQrCode = onNavigateQrCode
+                    onNavigate = onNavigate,
+                    onTextButtonClick = {
+                        onNavigate(MainEffect.NavigateQrScanner)
+                    },
                 )
             }
 
@@ -235,7 +256,7 @@ fun MyEventContent(
                 Box(
                     modifier = Modifier
                         .background(Brush.horizontalGradient(colors = gradientColors))
-                        .clickable { onNavigateModifyEvent() }
+                        .clickable { onNavigate(MainEffect.NavigateCreateEvent) }
                         .padding(horizontal = 16.dp, vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -265,10 +286,12 @@ fun MyEventContent(
 @Composable
 private fun MyEventsCards(
     events: List<Event> = emptyList(),
+    showBanner: Boolean = true,
+    isOrganizer: Boolean = false,
+    isETicket: Boolean = false,
+    onTextButtonClick: () -> Unit,
     onIntent: (UserIntent) -> Unit,
-    onNavigateViewEvent: () -> Unit,
-    onNavigateUpdateEvent: () -> Unit,
-    onNavigateQrCode: () -> Unit
+    onNavigate: (MainEffect) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier
@@ -277,26 +300,56 @@ private fun MyEventsCards(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Spacer(Modifier.height(25.dp))
-            Image(
-                alignment = Alignment.TopCenter,
-                modifier = Modifier.fillMaxWidth(),
-                painter = painterResource(R.drawable.my_events_banner),
-                contentDescription = "Events banner",
-                contentScale = ContentScale.FillWidth
-            )
+            if (showBanner) {
+                Spacer(Modifier.height(25.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        modifier = Modifier.width(379.dp),
+                        painter = painterResource(R.drawable.my_events_banner),
+                        contentDescription = "Events banner",
+                        contentScale = ContentScale.FillWidth
+                    )
+                    Text(
+                        "See your created events\nat this section",
+                        style = TextStyle(
+                            fontFamily = AppFonts.instrumentSans,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            textAlign = TextAlign.Start,
+                            color = Color.White
+                        ),
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = 25.dp)
+                    )
+                }
+            }
         }
         items(events, key = { event -> event.id }) { event ->
+            val isRejectedOrRemoved =
+                event.status == EventApprovalStatus.REJECTED || event.isArchive
             LargeEventCard(
                 event = event,
-                onCardClick = {
+                role = "ORGANIZER",
+                isRejectedOrRemoved = isRejectedOrRemoved,
+                isETicket = isETicket,
+                onCardClicked = {
                     onIntent(UserIntent.CurrentEventChanged(event))
-                    onNavigateViewEvent()
+                    onNavigate(MainEffect.NavigateParticipantViewEvent)
                 },
                 onTextButtonClick = {
                     onIntent(UserIntent.CurrentEventChanged(event))
-                    onNavigateQrCode()
-                })
+                    onTextButtonClick()
+                },
+                onUpdateClicked = {
+                    onIntent(UserIntent.CurrentEventChanged(event))
+                    onNavigate(MainEffect.NavigateUpdateEvent)
+                }
+            )
         }
         item {
             Spacer(Modifier.height(25.dp))
@@ -304,11 +357,3 @@ private fun MyEventsCards(
     }
 
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//private fun MyEventsScreenPreview() {
-//    Scaffold { paddingValues ->
-//        MyEventsScreen()
-//    }
-//}

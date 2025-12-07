@@ -62,6 +62,15 @@ data class Event(
     @SerialName("computed_status")
     val computedStatus: EventComputedStatus,
 
+    @SerialName("is_registered")
+    val isRegistered: Boolean = false,
+
+    @SerialName("is_organizer")
+    val isOrganizer: Boolean = false,
+
+    @SerialName("is_staff")
+    val isStaff: Boolean = false,
+
     @SerialName("submitted_at")
     @Serializable(with = JavaInstantSerializer::class)
     val submittedAt: Instant,
@@ -84,10 +93,12 @@ data class Event(
     val isArchive: Boolean,
 )
 
+@Serializable
 enum class EventApprovalStatus {
     PENDING, REJECTED, APPROVED
 }
 
+@Serializable
 enum class EventComputedStatus {
     UPCOMING, ONGOING, COMPLETED
 }

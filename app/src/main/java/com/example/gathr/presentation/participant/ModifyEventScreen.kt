@@ -100,11 +100,10 @@ fun ModifyEventScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+        viewModel.userEffect.collect { effect ->
             when (effect) {
-                UserEffect.NavigateToNext -> onNavigateNext()
+                UserEffect.NavigateNext -> onNavigateNext()
                 UserEffect.NavigateBack -> onNavigateBack()
-                UserEffect.NavigateLogout -> {}
             }
         }
     }
@@ -146,7 +145,7 @@ fun ModifyEventContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-//                    modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
+                    modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
                     title = {},
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -164,7 +163,7 @@ fun ModifyEventContent(
                     actions = {
                         if (state.isUpdateEvent)
                             TextButton(
-                                onClick = { onIntent(UserIntent.SaveModifiedEvent) },
+                                onClick = { onIntent(UserIntent.UpdateEvent) },
                                 enabled = false,
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = Color.Black,

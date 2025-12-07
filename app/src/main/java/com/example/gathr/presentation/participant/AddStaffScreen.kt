@@ -65,6 +65,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.gathr.presentation.main.MainEffect
 
 @Composable
 fun AddStaffScreen(
@@ -75,11 +76,10 @@ fun AddStaffScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+        viewModel.userEffect.collect { effect ->
             when (effect) {
-                UserEffect.NavigateToNext -> onNavigateNext()
+                UserEffect.NavigateNext -> onNavigateNext()
                 UserEffect.NavigateBack -> onNavigateBack()
-                UserEffect.NavigateLogout -> {}
             }
         }
     }
@@ -126,13 +126,17 @@ fun AddStaffScreen(
                 )
             }
 
-            state.actionError.contains("Created an event successfully") -> {
+            state.actionError.contains("Please wait") -> {
                 Alert(
                     title = state.actionTitle.ifBlank { "Success" },
                     message = state.actionError,
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
                     confirmButtonText = "Ok",
-                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ViewEvent) },
+                    onConfirmClicked = {
+                        viewModel.handleIntent(UserIntent.ActionOnClear)
+                        viewModel.handleIntent(UserIntent.FetchEvents)
+                        viewModel.sendMainEffect(MainEffect.NavigateParticipantViewEvent)
+                    },
                 )
             }
 
@@ -179,7 +183,7 @@ fun AddStaffContent(
                     actions = {
                         if (state.isUpdateEvent)
                             TextButton(
-                                onClick = { onIntent(UserIntent.SaveModifiedEvent) },
+                                onClick = { onIntent(UserIntent.UpdateEvent) },
                                 enabled = false,
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = Color.Black,
@@ -297,8 +301,8 @@ fun AddStaffContent(
                             StaffRow(
                                 firstName = staff.firstName, lastName = staff.lastName,
                                 onRemove = {
-                                    onIntent(UserIntent.ActionTitleChanged("Confirm Action"))
-                                    onIntent(UserIntent.ActionErrorChanged("Remove ${staff.firstName.toTitleCase()} ${staff.lastName.toTitleCase()} as staff?"))
+                                    onIntent(UserIntent.ActionTitleChanged("Remove staff"))
+                                    onIntent(UserIntent.ActionErrorChanged("Are you sure you want to remove ${staff.firstName.toTitleCase()} ${staff.lastName.toTitleCase()} as a staff?"))
                                     onIntent(
                                         UserIntent.ActionOnConfirmClicked {
                                             val updatedList =

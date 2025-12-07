@@ -4,22 +4,19 @@ import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
 import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.EventParticipantRepository
 import com.example.gathr.data.repository.UserRepository
-import com.example.gathr.presentation.auth.sign_up.SignUpEffect
-import com.example.gathr.presentation.auth.sign_up.SignUpIntent
 import com.example.gathr.utils.Utils
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.exceptions.HttpRequestException
-import io.github.jan.supabase.exceptions.RestException
-import io.github.jan.supabase.storage.Storage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +26,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import io.github.jan.supabase.storage.upload
 import java.util.UUID
 
 class UserViewModel(
@@ -41,19 +37,45 @@ class UserViewModel(
     private val _state = MutableStateFlow(UserState())
     val state: StateFlow<UserState> = _state.asStateFlow()
 
-    private val _effect = MutableSharedFlow<UserEffect>()
-    val effect: SharedFlow<UserEffect> = _effect.asSharedFlow()
+    private val _userEffect = MutableSharedFlow<UserEffect>()
+    val userEffect: SharedFlow<UserEffect> = _userEffect.asSharedFlow()
+
+    private val _mainEffect = MutableSharedFlow<MainEffect>()
+    val mainEffect: SharedFlow<MainEffect> = _mainEffect.asSharedFlow()
 
     fun handleIntent(intent: UserIntent) {
         when (intent) {
             is UserIntent.CurrentEventChanged -> _state.update { it.copy(currentEvent = intent.value) }
             is UserIntent.CurrentParticipantChanged -> _state.update { it.copy(currentParticipant = intent.value) }
+            is UserIntent.AddStaffsChanged -> _state.update { it.copy(addStaffs = intent.value) }
+
             is UserIntent.CreateEventChanged -> _state.update { it.copy(createEvent = intent.value) }
             is UserIntent.CreateEventImageFileChanged -> _state.update {
                 it.copy(
                     createEventImageFile = intent.value
                 )
             }
+
+            is UserIntent.CreateEventOnClear -> {
+                viewModelScope.launch {
+                    delay(500)
+                    _state.update {
+                        it.copy(
+                            createEvent = CreateEvent(),
+                            isUpdateEvent = false,
+                            searchStaff = "",
+                            addStaffs = emptyList()
+                        )
+
+                    }
+                }
+            }
+
+            is UserIntent.ScanParticipantChanged -> {
+                _state.update { it.copy(scanParticipant = intent.value) }
+            }
+
+            is UserIntent.MarkAttendance -> markAttendance()
 
             is UserIntent.SearchStaffChanged -> {
                 _state.update {
@@ -62,23 +84,54 @@ class UserViewModel(
             }
 
             is UserIntent.SearchStaffErrorChanged -> _state.update { it.copy(searchStaffError = intent.value) }
-            is UserIntent.AddStaffsChanged -> _state.update { it.copy(addStaffs = intent.value) }
+
             is UserIntent.ActionTitleChanged -> _state.update { it.copy(actionTitle = intent.value) }
             is UserIntent.ActionErrorChanged -> _state.update { it.copy(actionError = intent.value) }
             is UserIntent.ActionOnConfirmClicked -> _state.update { it.copy(actionOnConfirm = intent.value) }
+            is UserIntent.ActionOnClear -> _state.update {
+                it.copy(actionTitle = "", actionError = "", actionOnConfirm = {})
+            }
+
             is UserIntent.IsLoadingChanged -> _state.update { it.copy(isLoading = intent.value) }
+
             is UserIntent.IsUpdateEventChanged -> _state.update { it.copy(isUpdateEvent = intent.value) }
 
+
+            is UserIntent.FetchAttendance -> fetchAttendance()
             is UserIntent.FetchEvents -> fetchEvents()
-            is UserIntent.SaveModifiedEvent -> saveModifiedEvent()
+
+            is UserIntent.CancelEvent -> cancelEvent()
             is UserIntent.RegisterEvent -> registerEvent()
+
+            is UserIntent.UpdateEvent -> updateEvent()
             is UserIntent.DeleteEvent -> deleteEvent()
-            is UserIntent.ViewEvent -> sendEffect(UserEffect.NavigateToNext)
             is UserIntent.DoCreateEvent -> createEvent()
             is UserIntent.ValidateAddStaff -> validateAddStaff()
             is UserIntent.ValidateCreateEvent -> validateCreateEvent()
-            is UserIntent.BackClicked -> sendEffect(UserEffect.NavigateBack)
+
             is UserIntent.LogoutClicked -> logout()
+            is UserIntent.BackClicked -> sendUserEffect(UserEffect.NavigateBack)
+        }
+    }
+
+    private fun fetchAttendance() {
+        val currentState = _state.value
+        val currentEvent = currentState.currentEvent!!
+
+        viewModelScope.launch {
+            val result = eventParticipantRepository.fetchAttendance(currentEvent.id)
+            var currentParticipants: List<Participant> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> currentParticipants = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update { it.copy(currentParticipants = currentParticipants) }
+
+            Log.d("FETCH_ATTENDANCE", currentParticipants.toString())
+            Log.d("FETCH_ATTENDANCE_ERROR", actionError)
         }
     }
 
@@ -93,22 +146,183 @@ class UserViewModel(
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update { it.copy(currentMyEvents = currentMyEvents) }
+            _state.update { it.copy(currentEvents = currentMyEvents) }
 
             Log.d("FETCH_EVENTS", currentMyEvents.toString())
             Log.d("FETCH_EVENTS_ERROR", actionError)
         }
     }
 
-    private fun saveModifiedEvent() {
-        TODO("Not yet implemented")
+    private fun markAttendance() {
+        val currentState = _state.value
+        val participant = currentState.scanParticipant!!
+
+        viewModelScope.launch {
+            val result = eventParticipantRepository.markAttendance(
+                participant.eventId,
+                UUID.fromString(participant.userId)
+            )
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> {}
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(actionError = actionError)
+            }
+
+            Log.d("MARK_ATTENDANCE", actionError)
+
+            if (actionError.isBlank()) {
+                handleIntent(UserIntent.IsLoadingChanged(false))
+                handleIntent(UserIntent.ActionTitleChanged("Mark Attendance"))
+                handleIntent(UserIntent.ActionErrorChanged("User is marked as present"))
+                handleIntent(UserIntent.FetchAttendance)
+            } else {
+                handleIntent(UserIntent.ActionTitleChanged("Mark Attendance Failed"))
+                handleIntent(UserIntent.ActionErrorChanged("An unknown error occurred"))
+                handleIntent(UserIntent.IsLoadingChanged(false))
+            }
+        }
+    }
+
+    private fun cancelEvent() {
+
+        val currentState = _state.value
+        val user = currentState.currentUser!!
+        val event = currentState.currentEvent!!
+
+        viewModelScope.launch {
+            val result = eventParticipantRepository.cancelEvent(event.id, user.id)
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> {}
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(actionError = actionError)
+            }
+
+            Log.d("CANCEL_EVENT", actionError)
+
+            if (actionError.isBlank()) {
+                handleIntent(UserIntent.IsLoadingChanged(false))
+                handleIntent(UserIntent.ActionTitleChanged("Registration Cancelled"))
+                handleIntent(UserIntent.ActionErrorChanged("You have cancelled the registration for this event"))
+                handleIntent(UserIntent.ActionOnConfirmClicked {
+                    viewModelScope.launch {
+                        handleIntent(UserIntent.IsLoadingChanged(true))
+                        handleIntent(UserIntent.FetchEvents)
+                        delay(500)
+                        handleIntent(UserIntent.IsLoadingChanged(false))
+                        handleIntent(UserIntent.BackClicked)
+                        handleIntent(UserIntent.ActionOnClear)
+                    }
+                })
+            } else {
+                handleIntent(UserIntent.ActionTitleChanged("Cancellation failed"))
+                handleIntent(UserIntent.ActionErrorChanged("We can't cancel your registration at this moment"))
+                handleIntent(UserIntent.IsLoadingChanged(false))
+            }
+        }
     }
 
     private fun registerEvent() {
-        TODO("Not yet implemented")
+        val currentState = _state.value
+        val user = currentState.currentUser!!
+        val event = currentState.currentEvent!!
+
+        if (event.remainingSlots < 1) {
+            handleIntent(UserIntent.ActionTitleChanged("Registration Error"))
+            handleIntent(UserIntent.ActionErrorChanged("Event is already full"))
+            handleIntent(UserIntent.IsLoadingChanged(false))
+            return
+        }
+
+        viewModelScope.launch {
+            val result = eventParticipantRepository.registerEvent(event.id, user.id)
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> {}
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(actionError = actionError)
+            }
+
+            Log.d("REGISTER_EVENT", actionError)
+
+            if (actionError.isBlank()) {
+                handleIntent(UserIntent.IsLoadingChanged(false))
+                handleIntent(UserIntent.ActionTitleChanged("Registration Successful"))
+                handleIntent(UserIntent.ActionErrorChanged("View your QR code in the E-Tickets tab."))
+                handleIntent(UserIntent.ActionOnConfirmClicked {
+                    viewModelScope.launch {
+                        handleIntent(UserIntent.IsLoadingChanged(true))
+                        handleIntent(UserIntent.FetchEvents)
+                        delay(500)
+                        handleIntent(UserIntent.IsLoadingChanged(false))
+                        handleIntent(UserIntent.BackClicked)
+                        handleIntent(UserIntent.ActionOnClear)
+                    }
+                })
+            } else {
+                handleIntent(UserIntent.ActionTitleChanged("Registration failed"))
+                handleIntent(UserIntent.ActionErrorChanged("We can't register you at this moment"))
+                handleIntent(UserIntent.IsLoadingChanged(false))
+            }
+        }
     }
 
     private fun deleteEvent() {
+        val currentState = _state.value
+        val user = currentState.currentUser!!
+        val event = currentState.currentEvent!!
+
+        if (event.computedStatus != EventComputedStatus.UPCOMING) {
+            handleIntent(UserIntent.ActionTitleChanged("Error"))
+            handleIntent(UserIntent.ActionErrorChanged("You can't delete an event that is past upcoming"))
+            handleIntent(UserIntent.IsLoadingChanged(false))
+            return
+        }
+
+        viewModelScope.launch {
+            val result = eventParticipantRepository.deleteEvent(event.id, user.id)
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> {}
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(actionError = actionError)
+            }
+
+            Log.d("DELETE_EVENT", actionError)
+
+            if (actionError.isBlank()) {
+                handleIntent(UserIntent.ActionTitleChanged("Deleted event"))
+                handleIntent(UserIntent.ActionErrorChanged("You have deleted an event named ${event.title}"))
+                handleIntent(UserIntent.ActionOnClear)
+                handleIntent(UserIntent.FetchEvents)
+                delay(750)
+                handleIntent(UserIntent.IsLoadingChanged(false))
+                handleIntent(UserIntent.BackClicked)
+            } else {
+                handleIntent(UserIntent.IsLoadingChanged(false))
+            }
+        }
+    }
+
+    private fun updateEvent() {
+        handleIntent(UserIntent.IsUpdateEventChanged(false))
         TODO("Not yet implemented")
     }
 
@@ -120,7 +334,8 @@ class UserViewModel(
         val imageFile = currentState.createEventImageFile
 
         viewModelScope.launch(Dispatchers.IO) {
-            val result = eventParticipantRepository.createEvent(user!!, event, staffs, imageFile)
+            val result =
+                eventParticipantRepository.createEvent(user!!, event, staffs, imageFile)
             var currentEvent: Event? = null
             var actionError = ""
 
@@ -129,13 +344,18 @@ class UserViewModel(
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update { it.copy(currentEvent = currentEvent, actionError = actionError) }
+            _state.update {
+                it.copy(
+                    currentEvent = currentEvent?.copy(isOrganizer = true),
+                    actionError = actionError
+                )
+            }
 
             Log.d("CREATE_EVENT", "CURRENT EVENT: ${_state.value.currentEvent}")
 
             if (actionError.isBlank()) {
-                handleIntent(UserIntent.ActionTitleChanged("Created Event"))
-                handleIntent(UserIntent.ActionErrorChanged("Created an event successfully"))
+                handleIntent(UserIntent.ActionTitleChanged("Event Created"))
+                handleIntent(UserIntent.ActionErrorChanged("Please wait for the moderator's approval"))
             }
             handleIntent(UserIntent.IsLoadingChanged(false))
         }
@@ -183,8 +403,7 @@ class UserViewModel(
 
                 _state.update {
                     it.copy(
-                        searchStaffError = searchStaffError,
-                        actionError = actionError
+                        searchStaffError = searchStaffError, actionError = actionError
                     )
                 }
 
@@ -206,8 +425,7 @@ class UserViewModel(
 
                 _state.update {
                     it.copy(
-                        searchStaffError = searchStaffError,
-                        actionError = actionError
+                        searchStaffError = searchStaffError, actionError = actionError
                     )
                 }
             }
@@ -238,6 +456,12 @@ class UserViewModel(
                     handleIntent(UserIntent.AddStaffsChanged(_state.value.addStaffs + newStaff))
                 }
 
+                _state.update {
+                    it.copy(
+                        actionError = actionError
+                    )
+                }
+
                 if (actionError.isNotBlank()) {
                     handleIntent(UserIntent.IsLoadingChanged(false))
                     return@launch
@@ -262,7 +486,7 @@ class UserViewModel(
             viewModelScope.launch {
                 delay(500)
                 handleIntent(UserIntent.IsLoadingChanged(false))
-                sendEffect(UserEffect.NavigateToNext)
+                sendUserEffect(UserEffect.NavigateNext)
             }
         } else handleIntent(UserIntent.IsLoadingChanged(false))
     }
@@ -285,7 +509,7 @@ class UserViewModel(
 
             if (actionError.isBlank()) {
                 delay(500)
-                sendEffect(UserEffect.NavigateLogout)
+                sendMainEffect(MainEffect.NavigateLogout)
             }
             handleIntent(UserIntent.IsLoadingChanged(false))
         }
@@ -298,12 +522,18 @@ class UserViewModel(
             is ApiResult.Success -> _state.update { it.copy(currentUser = result.data) }
             is ApiResult.Error -> Log.d("MAIN", result.message)
         }
-        Log.d("MAINVIEW", _state.value.currentUser.toString())
+        Log.d("USER", _state.value.currentUser.toString())
     }
 
-    private fun sendEffect(effect: UserEffect) {
+    private fun sendUserEffect(effect: UserEffect) {
         viewModelScope.launch {
-            _effect.emit(effect)
+            _userEffect.emit(effect)
+        }
+    }
+
+    fun sendMainEffect(effect: MainEffect) {
+        viewModelScope.launch {
+            _mainEffect.emit(effect)
         }
     }
 }

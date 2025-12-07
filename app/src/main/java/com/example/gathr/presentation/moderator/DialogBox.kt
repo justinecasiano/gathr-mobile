@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -345,7 +346,6 @@ fun EventOptionsPopup(
     anchor: Offset,
     onSeeRegistered: () -> Unit,
     onRemove: () -> Unit,
-    onPin: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val density = LocalDensity.current
@@ -418,7 +418,9 @@ fun EventOptionsPopup(
                     .width(popupWidth)
             ) {
                 PopupItem(R.drawable.attendees, "See Participants", onSeeRegistered)
-                Divider(color = Color.White.copy(alpha = 0.15f))
+                HorizontalDivider(
+                    color = Color.White.copy(alpha = 0.15f)
+                )
                 PopupItem(R.drawable.delete, "Remove Event", onRemove)
             }
         }

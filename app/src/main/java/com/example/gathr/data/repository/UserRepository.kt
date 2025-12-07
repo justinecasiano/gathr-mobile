@@ -50,6 +50,7 @@ class UserRepositoryImpl(
                             eq("email", emailOrUsername)
                             eq("display_name", emailOrUsername)
                         }
+                        neq("role", "MODERATOR")
                     }
                 }
                 .decodeSingle<User>()

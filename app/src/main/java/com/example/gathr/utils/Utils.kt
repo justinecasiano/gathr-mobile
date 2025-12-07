@@ -1,12 +1,17 @@
 package com.example.gathr.utils
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.webkit.MimeTypeMap
+import android.widget.Toast
 import com.example.gathr.presentation.auth.PasswordValidationState
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.core.graphics.createBitmap
@@ -27,8 +32,54 @@ import java.util.EnumMap
 import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
 
 object Utils {
+    fun saveBitmapToGallery(
+        context: Context,
+        bitmap: Bitmap,
+        filename: String = "Gathr_${System.currentTimeMillis()}.png"
+    ) {
+
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+            }
+        }
+
+        var outputStream: OutputStream? = null
+        var uri: Uri? = null
+
+        try {
+            uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+            if (uri == null) {
+                throw java.io.IOException("Failed to create new MediaStore record.")
+            }
+
+            outputStream = resolver.openOutputStream(uri)
+            if (outputStream == null) {
+                throw java.io.IOException("Failed to get output stream.")
+            }
+
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            outputStream.flush()
+
+            Toast.makeText(context, "Ticket saved to Gallery", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Log.e("SAVE_IMAGE", "Error saving bitmap: ${e.message}", e)
+            if (uri != null) {
+                resolver.delete(uri, null, null)
+            }
+            Toast.makeText(context, "Failed to save ticket", Toast.LENGTH_LONG).show()
+        } finally {
+            outputStream?.close()
+        }
+    }
 
     fun generateQrBitmap(
         text: String,
@@ -218,6 +269,8 @@ object Utils {
             Log.d("SUPABASE_ERROR", "${e.message}")
             val errorMessage = "A database error occurred"
             ApiResult.Error(errorMessage)
+        } catch (e: NoSuchElementException) {
+            ApiResult.Error("Not found")
         } catch (e: HttpRequestTimeoutException) {
             ApiResult.Error("The request timed out. Please check your connection and try again.")
         } catch (e: IOException) {

@@ -51,7 +51,6 @@ import kotlin.toString
 @Composable
 fun SplashScreen(
     userViewModel: UserViewModel,
-    isWhiteBackground: Boolean = false,
     onLoaded: (Boolean) -> Unit
 ) {
     val auth: Auth = koinInject()

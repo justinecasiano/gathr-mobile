@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -153,13 +151,13 @@ fun EventsScreen(isParticipant: Boolean = true) {
         }
         LargeEventCard(
             dummyEvents[1],
-            onCardClick = {},
+            onCardClicked = {},
             onTextButtonClick = {}
         )
         Spacer(Modifier.height(20.dp))
         LargeEventCard(
             dummyEvents[2],
-            onCardClick = {},
+            onCardClicked = {},
             onTextButtonClick = {}
         )
     }

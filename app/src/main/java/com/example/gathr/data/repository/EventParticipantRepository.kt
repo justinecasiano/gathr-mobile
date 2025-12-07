@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.Participant
+import com.example.gathr.data.model.ParticipantStatus
 import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.data.model.User
 import com.example.gathr.data.remote.ApiResult
@@ -25,9 +27,18 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.File
+import java.time.Instant
 import java.util.UUID
 
 interface EventParticipantRepository {
+    suspend fun fetchAttendance(eventId: Long): ApiResult<List<Participant>>
+    suspend fun fetchEvents(): ApiResult<List<Event>>
+
+    suspend fun markAttendance(eventId: Long, userId: UUID): ApiResult<Unit>
+    suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit>
+    suspend fun registerEvent(eventId: Long, userId: UUID): ApiResult<Unit>
+    suspend fun deleteEvent(eventId: Long, userId: UUID): ApiResult<Unit>
+
     suspend fun createEvent(
         user: User,
         event: CreateEvent,
@@ -35,7 +46,6 @@ interface EventParticipantRepository {
         imageFile: File?
     ): ApiResult<Event>
 
-    suspend fun fetchEvents(): ApiResult<List<Event>>
 }
 
 class EventParticipantRepositoryImpl(
@@ -45,17 +55,49 @@ class EventParticipantRepositoryImpl(
     private val supabase: SupabaseClient
 ) : EventParticipantRepository {
 
+    override suspend fun fetchAttendance(eventId: Long): ApiResult<List<Participant>> {
+        return try {
+
+            val rpcParams = buildJsonObject {
+                put("p_event_id", eventId)
+            }
+
+            val response = supabase.postgrest.rpc(
+                function = "get_registered_attendees_by_event",
+                parameters = rpcParams
+            )
+
+            val json = Json { ignoreUnknownKeys = true }
+            val participants = json.decodeFromString<List<Participant>>(response.data)
+
+            ApiResult.Success(participants)
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val errorMessage = when (e) {
+                is RestException -> "Database error has occurred"
+                is HttpRequestException -> "Network Error: Check your connection."
+                else -> "An unexpected error occurred"
+            }
+            ApiResult.Error(errorMessage)
+        }
+    }
 
     override suspend fun fetchEvents(): ApiResult<List<Event>> {
         return try {
             val id = auth.currentUserOrNull()?.id
-            val events = supabase.from("events_with_details")
-                .select {
-                    filter {
-                        eq("created_by", UUID.fromString(id))
-                    }
-                }
-                .decodeList<Event>()
+
+            val rpcParams = buildJsonObject {
+                put("viewer_id", id)
+            }
+
+            val response = supabase.postgrest.rpc(
+                function = "get_all_events",
+                parameters = rpcParams
+            )
+
+            val json = Json { ignoreUnknownKeys = true }
+            val events = json.decodeFromString<List<Event>>(response.data)
 
             ApiResult.Success(events)
 
@@ -65,6 +107,102 @@ class EventParticipantRepositoryImpl(
                 is HttpRequestException -> "Network Error: Check your connection."
                 else -> "An unexpected error occurred"
             }
+            Log.d("FETCH_EVENTS", e.message.toString())
+            ApiResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun markAttendance(eventId: Long, userId: UUID): ApiResult<Unit> {
+        return try {
+            val updateParticipant = buildJsonObject {
+                put("status", "PRESENT")
+                put("check_in", Instant.now().toString())
+            }
+
+            supabase.from("participants").update(updateParticipant) {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId)
+                    eq("status", "REGISTERED")
+                }
+            }
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is RestException -> "Database error has occurred"
+                is HttpRequestException -> "Network Error: Check your internet connection."
+                else -> "An unexpected error occurred"
+            }
+            Log.e("CANCEL_EVENT", "Operation failed", e)
+            ApiResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
+        return try {
+            val updateParticipant = buildJsonObject {
+                put("status", "CANCELLED")
+            }
+
+            supabase.from("participants").update(updateParticipant) {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId)
+                }
+            }
+
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is RestException -> "Database error has occurred"
+                is HttpRequestException -> "Network Error: Check your internet connection."
+                else -> "An unexpected error occurred"
+            }
+            Log.e("CANCEL_EVENT", "Operation failed", e)
+            ApiResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun registerEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
+        return try {
+
+            val newParticipant = buildJsonObject {
+                put("event_id", eventId)
+                put("user_id", userId.toString())
+                put("participant_type", "ATTENDEE")
+                put("status", "REGISTERED")
+            }
+
+            supabase.from("participants").insert(newParticipant)
+
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is RestException -> "Database error has occurred"
+                is HttpRequestException -> "Network Error: Check your internet connection."
+                else -> "An unexpected error occurred"
+            }
+            Log.e("REGISTER_EVENT", "Operation failed", e)
+            ApiResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun deleteEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
+        return try {
+            supabase.from("events").delete {
+                filter {
+                    eq("id", eventId)
+                    eq("created_by", userId)
+                }
+            }
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is RestException -> "Database error has occurred"
+                is HttpRequestException -> "Network Error: Check your internet connection."
+                else -> "An unexpected error occurred"
+            }
+            Log.e("DELETE_EVENT", "Operation failed", e)
             ApiResult.Error(errorMessage)
         }
     }
@@ -123,7 +261,7 @@ class EventParticipantRepositoryImpl(
                     parameters = rpcParams
                 )
 
-                val json = Json { ignoreUnknownKeys = true } // Safety setting
+                val json = Json { ignoreUnknownKeys = true }
                 val createdEvent = json.decodeFromString<Event>(response.data)
 
                 Log.d("CREATE_EVENT", "Created Event: ${createdEvent.toString()}")

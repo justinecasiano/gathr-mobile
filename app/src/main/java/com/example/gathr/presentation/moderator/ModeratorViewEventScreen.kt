@@ -1,24 +1,20 @@
-package com.example.gathr.presentation.main
+package com.example.gathr.presentation.moderator
 
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,22 +22,16 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomSheetScaffold
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -54,14 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -77,59 +63,81 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import coil3.compose.SubcomposeAsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.ElevatedButton
 import com.example.gathr.core.ui.LoadingOverlay
-import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
-import com.example.gathr.presentation.participant.AddStaffContent
+import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.presentation.main.MainEffect
+import com.example.gathr.presentation.main.UserEffect
+import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.dummyEvents
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
 import com.example.gathr.utils.toTitleCase
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewEventScreen(
+fun ModeratorViewEventScreen(
     viewModel: UserViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateAttendance: () -> Unit,
-    onNavigateEdit: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
+        viewModel.userEffect.collect { effect ->
             when (effect) {
-                UserEffect.NavigateToNext -> {}
+                UserEffect.NavigateNext -> {}
                 UserEffect.NavigateBack -> onNavigateBack()
-                UserEffect.NavigateLogout -> {}
             }
         }
     }
 
     Box(Modifier.fillMaxSize()) {
-        ViewEventContent(
-            state = state,
+        ModeratorViewEventContent(
+            event = dummyEvents[0],
+            role = "MODERATOR",
+            isRegistered = false,
             onIntent = viewModel::handleIntent,
-            onNavigateAttendance = onNavigateAttendance,
-            onNavigateEdit = onNavigateEdit
+            onNavigate = viewModel::sendMainEffect
         )
+//        ViewEventContent(
+//            state = state,
+//            onIntent = viewModel::handleIntent,
+//            onNavigateAttendance = onNavigateAttendance,
+//            onNavigateEdit = onNavigateEdit
+//        )
         if (state.isLoading) {
             LoadingOverlay()
         }
         when {
-            state.actionError.isNotBlank() -> {
+            state.actionTitle == "Cancel Registration" ||
+                    state.actionTitle == "Delete Event" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    confirmButtonText = "Continue",
+                    onConfirmClicked = state.actionOnConfirm,
+                    cancelButtonText = "Cancel",
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                )
+            }
+
+            state.actionTitle.isNotBlank() -> {
                 Alert(
                     title = state.actionTitle.ifBlank { "Error" },
-                    message = state.actionError,
-                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    message = state.actionError.ifBlank { "" },
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     confirmButtonText = "Ok",
-                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                 )
             }
         }
@@ -138,138 +146,212 @@ fun ViewEventScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewEventContent(
-    state: UserState,
+fun ModeratorViewEventContent(
+    event: Event,
+    role: String,
+    isRegistered: Boolean,
     onIntent: (UserIntent) -> Unit,
-    onNavigateAttendance: () -> Unit,
-    onNavigateEdit: () -> Unit
+    onNavigate: (MainEffect) -> Unit
 ) {
-    val isOrganizer = state.currentEvent?.createdBy == state.currentUser?.id
-    val event: Event = state.currentEvent!!
 
-    var onButtonClick: () -> Unit = {}
+    val role = "ORGANIZER"
+    val isRegistered = false
+    val event1 = event.copy(
+        startTime = Instant.now(),
+        endTime = Instant.now().plusSeconds(3600),
+        computedStatus = EventComputedStatus.ONGOING
+    )
+    val event2 = event.copy(
+        startTime = Instant.now().minusSeconds(6000),
+        endTime = Instant.now().minusSeconds(3600),
+        computedStatus = EventComputedStatus.COMPLETED
+    )
+    val event3 = event.copy(
+        startTime = Instant.now().plusSeconds(5),
+        endTime = Instant.now().plusSeconds(3600),
+    )
+    val event = event3
+
     var buttonText: String = ""
+    var buttonColor = Color(0xFF7B55A3)
+    var buttonOutlineColor = Color(0xFF4C2576)
+    var onButtonClick: () -> Unit = {}
 
-    if (isOrganizer) {
+    val isUpcoming = event.startTime >= Instant.now()
+    var bottomBorderThickness = 5.dp
+    val eventStatusColor =
+        if (isUpcoming && !isRegistered) Color.Black.copy(0.8f) else Color(0xFF9FC090)
+    var eventStatus = event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+    var eventDateTime = "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+
+    if (role == "ATTENDEE") {
+        if (!isRegistered) {
+            buttonText = "REGISTER"
+            onButtonClick = {
+                onIntent(UserIntent.IsLoadingChanged(true))
+                onIntent(UserIntent.RegisterEvent)
+            }
+        } else {
+            buttonText = "CANCEL"
+            eventStatus = "REGISTERED"
+            onButtonClick = {
+                onIntent(UserIntent.ActionTitleChanged("Cancel Registration"))
+                onIntent(UserIntent.ActionErrorChanged("Are you sure you want to cancel your registration?"))
+                onIntent(UserIntent.ActionOnConfirmClicked {
+                    onIntent(UserIntent.IsLoadingChanged(true))
+                    onIntent(UserIntent.CancelEvent)
+                })
+            }
+            buttonColor = Color(0xFFFC3436)
+            buttonOutlineColor = Color(0xFF820006)
+            eventDateTime = "${
+                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+            } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+        }
+    }
+
+    if (Instant.now() > event.endTime) {
+        eventStatus = "COMPLETED EVENT"
+        eventDateTime = "${
+            event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+        } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+
+        buttonText = "GIVE FEEDBACK"
+        buttonColor = Color(0xFF7B55A3)
+        bottomBorderThickness = 0.dp
+    } else if (Instant.now() > event.startTime) {
+        eventStatus = "ONGOING EVENT"
+        eventDateTime = "${
+            event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+        } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+
+        buttonText = "SHOW QR"
+        buttonColor = Color(0xFF7B986E)
+        bottomBorderThickness = 0.dp
+    }
+
+    if (role == "ORGANIZER" || role == "isStaff") {
         buttonText = "TRACK ATTENDANCE"
-        onButtonClick = {}
-    } else {
-        buttonText = "REGISTER"
+        buttonColor = Color(0xFF7B55A3)
+        bottomBorderThickness = 0.dp
         onButtonClick = {}
     }
-    Log.d("CREATE_EVENT", "VIEW_EVENT: image - ${event.backgroundImage}")
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(
-            modifier = Modifier.padding(top = 10.dp, start = 10.dp, end = 10.dp),
-            title = {},
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent
-            ),
-            navigationIcon = {
-                Surface(
-                    onClick = { onIntent(UserIntent.BackClicked) },
-                    shape = CircleShape,
-                    color = Color(0xFFD9D9D9).copy(alpha = 0.76f),
-                    modifier = Modifier.size(35.dp)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                modifier = Modifier.padding(top = 10.dp, start = 20.dp, end = 20.dp),
+                title = {},
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                navigationIcon = {
+                    Surface(
+                        onClick = { onIntent(UserIntent.BackClicked) },
+                        shape = CircleShape,
+                        color = Color(0xFFD9D9D9).copy(alpha = 0.76f),
+                        modifier = Modifier.size(35.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(R.drawable.back_outline),
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
-                    }
-                }
-            },
-            actions = {
-                ThreeDotMenu(onIntent, onNavigateAttendance, onNavigateEdit)
-            })
-    }, bottomBar = {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .border(2.dp, color = Color(0xFFD7D7D7))
-                .padding(top = 20.dp, start = 25.dp, end = 25.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Box(modifier = Modifier.weight(6.5f)) {
-                Text(
-                    buildAnnotatedString {
-                        withStyle(
-                            style = SpanStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black.copy(alpha = 0.8f)
-                            )
+                        Box(
+                            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                         ) {
-                            append(
-                                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy")
-                                    .uppercase()
+                            Icon(
+                                painter = painterResource(R.drawable.back_outline),
+                                contentDescription = "Back",
+                                tint = Color.Black
                             )
                         }
-                        append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
-                    }, style = TextStyle(
-                        fontFamily = AppFonts.rethinkSans,
-                        fontSize = 12.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.Normal,
-                    )
-                )
-            }
-            ElevatedButton(
-                text = buttonText,
-                onClick = onButtonClick,
-                isEnabled = true,
-                shouldFill = false,
-                buttonColor = Color(0xFF7B55A3),
-                outlineColor = Color(0xFF4C2576),
-                textStyle = TextStyle(
-                    fontFamily = AppFonts.instrumentSans,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                ),
-                isContrast = false,
-                buttonShape = RoundedCornerShape(15.dp),
-                shouldAddShadow = false,
-            )
-        }
-    }) { outerPadding ->
+                    }
+                },
+                actions = {
+                    if (role != "ATTENDEE")
+                        ThreeDotMenu(role, onIntent, onNavigate)
+                })
+        },
+    ) { outerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
                 modifier = Modifier.fillMaxHeight(0.6f),
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(event.backgroundImage)
-                    .crossfade(true)
-                    .listener(
+                model = ImageRequest.Builder(LocalContext.current).data(event.backgroundImage)
+                    .crossfade(true).listener(
                         onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
                         onError = { request, result ->
                             Log.e(
-                                "IMAGE_LOAD",
-                                "FAILED: ${result.throwable.message}"
+                                "IMAGE_LOAD", "FAILED: ${result.throwable.message}"
                             )
-                        }
-                    )
-                    .build(),
+                        }).build(),
                 contentDescription = "Event Card Image",
                 contentScale = ContentScale.Crop
             )
             BottomScreenSheet(Modifier.padding(outerPadding), event)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .border(1.2.dp, color = Color(0xFFD7D7D7))
+                    .padding(
+                        top = 20.dp,
+                        bottom = outerPadding.calculateBottomPadding(),
+                        start = 20.dp,
+                        end = 20.dp
+                    )
+                    .align(Alignment.BottomEnd),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(modifier = Modifier.fillMaxWidth(0.49f)) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = eventStatusColor
+                                )
+                            ) {
+                                append("${eventStatus}\n")
+                            }
+                            append(eventDateTime)
+                        }, style = TextStyle(
+                            fontFamily = AppFonts.rethinkSans,
+                            fontSize = 12.sp,
+                            lineHeight = 20.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = Color.Black.copy(alpha = 0.8f)
+                        )
+                    )
+                }
+                Spacer(Modifier.width(5.dp))
+                if (event.status == EventApprovalStatus.PENDING) {
+                    ElevatedButton(
+                        text = buttonText,
+                        onClick = onButtonClick,
+                        isEnabled = true,
+                        shouldFill = true,
+                        buttonColor = buttonColor,
+                        outlineColor = buttonOutlineColor,
+                        textStyle = TextStyle(
+                            fontFamily = AppFonts.instrumentSans,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        ),
+                        buttonShape = RoundedCornerShape(17.dp),
+                        bottomBorderThickness = bottomBorderThickness,
+                        shouldAddShadow = true,
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 fun ThreeDotMenu(
+    role: String,
     onIntent: (UserIntent) -> Unit,
-    onNavigateAttendance: () -> Unit,
-    onNavigateEdit: () -> Unit
+    onNavigate: (MainEffect) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -294,79 +376,104 @@ fun ThreeDotMenu(
                 }
             }
             DropdownMenu(
-                modifier = Modifier.background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(Color(0xFF7B55A3), Color(0xFF583181)),
-                        start = Offset(0f, 0f),
-                        end = Offset(0f, Float.POSITIVE_INFINITY)
+                modifier = Modifier
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(Color(0xFF7B55A3), Color(0xFF583181)),
+                            start = Offset(0f, 0f),
+                            end = Offset(0f, Float.POSITIVE_INFINITY)
+                        )
+                    ),
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                DropdownMenuItem(
+                    onClick = {
+                        expanded = false
+                        onNavigate(MainEffect.NavigateAttendance)
+                    },
+                    text = {
+                        Row {
+                            Icon(
+                                painter = painterResource(R.drawable.attendees),
+                                contentDescription = "Attendees",
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "See who registered", style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color.White
+                                )
+                            )
+                        }
+                    })
+                if (role == "ORGANIZER" || role == "MODERATOR") {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 15.dp),
+                        color = Color.Black,
+                        thickness = 0.8.dp
                     )
-                ), expanded = expanded, onDismissRequest = { expanded = false }) {
-                DropdownMenuItem(onClick = { onNavigateAttendance() }, text = {
-                    Row {
-                        Icon(
-                            painter = painterResource(R.drawable.attendees),
-                            contentDescription = "Attendees",
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "See who registered", style = TextStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = Color.White
+                    DropdownMenuItem(onClick = {
+                        onIntent(UserIntent.ActionTitleChanged("Delete Event"))
+                        onIntent(UserIntent.ActionErrorChanged("Are you sure you want to delete this event?"))
+                        onIntent(UserIntent.ActionOnConfirmClicked {
+                            onIntent(UserIntent.IsLoadingChanged(true))
+                            onIntent(UserIntent.DeleteEvent)
+                        })
+                    }, text = {
+                        Row {
+                            Icon(
+                                painter = painterResource(R.drawable.delete),
+                                contentDescription = "Delete Event",
+                                tint = Color.White
                             )
-                        )
-                    }
-                })
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 15.dp),
-                    color = Color.Black,
-                    thickness = 0.8.dp
-                )
-                DropdownMenuItem(onClick = {
-//                    onIntent(UserIntent.DeleteEvent)
-                }, text = {
-                    Row {
-                        Icon(
-                            painter = painterResource(R.drawable.delete),
-                            contentDescription = "Delete Event",
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Delete Event", style = TextStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = Color.White
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Delete Event", style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = Color.White
+                                )
                             )
-                        )
-                    }
-                })
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 15.dp),
-                    color = Color.Black,
-                    thickness = 0.8.dp
-                )
-                DropdownMenuItem(onClick = { onNavigateEdit() }, text = {
-                    Row {
-                        Icon(
-                            painter = painterResource(R.drawable.edit),
-                            contentDescription = "Edit Event",
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Edit Event", style = TextStyle(
-                                fontFamily = AppFonts.rethinkSans,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = Color.White
-                            )
-                        )
-                    }
-                })
+                        }
+                    })
+                }
+
+                if (role == "ORGANIZER") {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 15.dp),
+                        color = Color.Black,
+                        thickness = 0.8.dp
+                    )
+                    DropdownMenuItem(
+                        onClick = {
+                            expanded = false
+                            onNavigate(MainEffect.NavigateUpdateEvent)
+                        },
+                        text = {
+                            Row {
+                                Icon(
+                                    painter = painterResource(R.drawable.edit),
+                                    contentDescription = "Edit Event",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Edit Event", style = TextStyle(
+                                        fontFamily = AppFonts.rethinkSans,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = Color.White
+                                    )
+                                )
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -390,6 +497,9 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState
     )
+
+    val isUpcoming = event.startTime > Instant.now()
+
     BottomSheetScaffold(
         modifier = modifier,
         containerColor = Color.Transparent,
@@ -415,8 +525,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                     color = Color.Black,
                 )
                 Text(
-                    event.title.uppercase(),
-                    style = TextStyle(
+                    event.title.uppercase(), style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
@@ -431,13 +540,13 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 fontFamily = AppFonts.rethinkSans,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFF6835E)
+                                color = if (isUpcoming) Color(0xFFF6835E) else Color(0xFF9FC090)
                             )
                         ) {
                             append("${event.computedStatus.toString().uppercase()}\n")
                         }
+                        append("${event.location}\n")
                         append("${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
-                        append(event.location)
                     },
                     style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
@@ -475,10 +584,20 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         modifier = Modifier.weight(4.4f), contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            modifier = Modifier.height(35.dp),
+                            modifier = Modifier.height(36.dp),
                             painter = painterResource(R.drawable.highlight_event),
                             contentScale = ContentScale.FillHeight,
                             contentDescription = "Event Highlight Image"
+                        )
+                        Text(
+                            "Significant\nEvent", style = TextStyle(
+                                fontFamily = AppFonts.instrumentSans,
+                                fontSize = 14.sp,
+                                lineHeight = 13.sp,
+                                textAlign = TextAlign.Center,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                            )
                         )
                     }
                     VerticalDivider(Modifier.height(40.dp), color = Color(0xFFDEDEDE))
@@ -580,14 +699,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                 }
             }
         },
-        sheetDragHandle = {
-        },
+        sheetDragHandle = {},
     ) { innerPadding ->
     }
 }
-
-//@Preview
-//@Composable
-//private fun ViewEventScreenPreview() {
-//    ViewEventScreen()
-//}

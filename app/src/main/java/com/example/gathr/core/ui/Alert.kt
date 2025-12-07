@@ -90,7 +90,6 @@ fun Alert(
                                 .weight(1f)
                                 .clickable {
                                     onCancelClicked()
-                                    onDismissRequest()
                                 }
                                 .padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                             Text(
@@ -114,7 +113,6 @@ fun Alert(
                             .weight(1f)
                             .clickable {
                                 onConfirmClicked()
-                                onDismissRequest()
                             }
                             .padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                         val buttonColor =

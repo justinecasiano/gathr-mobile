@@ -42,12 +42,12 @@ val appModule = module {
 
             httpConfig {
                 install(HttpTimeout) {
-                    connectTimeoutMillis = 10_000L
+                    connectTimeoutMillis = 30_000L
 
 //                    requestTimeoutMillis = 1L
-                    requestTimeoutMillis = 10_000L
+                    requestTimeoutMillis = 30_000L
 
-                    socketTimeoutMillis = 10_000L
+                    socketTimeoutMillis = 30_000L
                 }
             }
         }

@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +38,7 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -50,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
+import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
 import com.example.gathr.ui.theme.AppFonts
@@ -60,6 +64,8 @@ import com.example.gathr.utils.toTitleCase
 fun ParticipantProfileScreen(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
+    onNavigate: (MainEffect) -> Unit,
+    onNext: () -> Unit
 ) {
     val user = state.currentUser
     val userName = "${user?.firstName} ${user?.lastName}"
@@ -90,14 +96,14 @@ fun ParticipantProfileScreen(
             ProfileCard(name = userName, initial = initial, school = school, onClick = {})
             Spacer(modifier = Modifier.height(10.dp))
             ProfileBanner(
-                onClick = {},
+                onClick = onNext,
                 title = "Become an event organizer",
                 body = "Begin hosting events for your college",
                 image = R.drawable.organizer_pic
             )
             Spacer(Modifier.height(20.dp))
             ProfileBanner(
-                onClick = {},
+                onClick = { onNavigate(MainEffect.NavigateStaff) },
                 title = "Staffed events",
                 body = "View all events you've been assigned to here",
                 image = R.drawable.staffed_events_pic
@@ -106,7 +112,7 @@ fun ParticipantProfileScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
+                    .height(50.dp)
                     .clickable { showLogoutDialog = true },
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -140,8 +146,7 @@ fun ParticipantProfileScreen(
                     onIntent(UserIntent.LogoutClicked)
                 },
                 cancelButtonText = "Cancel",
-                onCancelClicked = { showLogoutDialog = false }
-            )
+                onCancelClicked = { showLogoutDialog = false })
         }
         if (state.actionError.isNotBlank()) {
             Alert(
@@ -170,24 +175,20 @@ fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Un
                 .align(Alignment.Center)
                 .padding(start = 150.dp)
         ) {
-            Surface(
+            Box(
                 modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF616162).copy(0.2f))
                     .size(width = 55.dp, height = 28.dp)
-                    .clickable { onClick },
-                shape = RoundedCornerShape(10.dp),
-                color = Color(0xFF616162).copy(0.2f)
+                    .clickable { onClick }, contentAlignment = Alignment.Center
             ) {
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Edit",
-                        color = Color.Black,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = rethinkSans
-                    )
-                }
+                Text(
+                    text = "Edit",
+                    color = Color.Black,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = rethinkSans
+                )
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -195,8 +196,7 @@ fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Un
                 modifier = Modifier
                     .size(90.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF473163)),
-                contentAlignment = Alignment.Center
+                    .background(Color(0xFF473163)), contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = initial,
@@ -209,10 +209,7 @@ fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Un
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = name,
-                color = Color.Black,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+                text = name, color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold
             )
 
             Text(
@@ -226,19 +223,15 @@ fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Un
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ProfileBanner(
-    onClick: () -> Unit,
-    title: String,
-    body: String,
-    @DrawableRes image: Int
+    onClick: () -> Unit, title: String, body: String, @DrawableRes image: Int
 ) {
     Card(
-        onClick = onClick,
         modifier = Modifier
             .dropShadow(
-                shape = RoundedCornerShape(20.dp),
-                shadow = Shadow(
+                shape = RoundedCornerShape(20.dp), shadow = Shadow(
                     radius = 50.dp,
                     spread = 0.dp,
                     color = Color(0xFF000000).copy(alpha = 0.1f),
@@ -246,7 +239,7 @@ fun ProfileBanner(
                 )
             )
             .fillMaxWidth()
-            .height(140.dp),
+            .height(160.dp),
         shape = RoundedCornerShape(20.dp),
     ) {
         Box(
@@ -267,7 +260,8 @@ fun ProfileBanner(
                                 colors = listOf(Color(0xFF9053C9), Color(0xFF473163))
                             )
                         )
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .clickable { onClick() },
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     Text(
@@ -286,7 +280,7 @@ fun ProfileBanner(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    modifier = Modifier.height(105.dp),
+                    modifier = Modifier.height(120.dp),
                     painter = painterResource(image),
                     contentDescription = "Organizer",
                     contentScale = ContentScale.FillHeight

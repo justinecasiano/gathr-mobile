@@ -11,7 +11,6 @@ import java.util.UUID
 data class Notification(
     val id: Int,
     val type: String,
-    val title: String,
     val message: String,
 
     @SerialName("is_read")

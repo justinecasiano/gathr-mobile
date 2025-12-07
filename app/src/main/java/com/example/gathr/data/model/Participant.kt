@@ -10,11 +10,14 @@ import java.util.UUID
 @Serializable
 data class Participant(
     @SerialName("event_id")
-    val eventId: Int,
+    val eventId: Long,
 
     @SerialName("user_id")
     @Serializable(with = UuidSerializer::class)
     val userId: UUID,
+
+    @SerialName("full_name")
+    val fullName: String,
 
     @SerialName("participant_type")
     val participantType: ParticipantType,

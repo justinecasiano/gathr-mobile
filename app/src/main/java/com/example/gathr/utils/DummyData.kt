@@ -4,6 +4,10 @@ import com.example.gathr.data.model.DepartmentType
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.Notification
+import com.example.gathr.data.model.Participant
+import com.example.gathr.data.model.ParticipantStatus
+import com.example.gathr.data.model.ParticipantType
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -31,7 +35,7 @@ val dummyEvents = listOf(
         evaluationForm = "https://forms.gle/xyz",
         createdBy = UUID.randomUUID(),
         createdByName = "Dr. Alan Turing",
-        status = EventApprovalStatus.APPROVED,
+        status = EventApprovalStatus.PENDING,
         computedStatus = EventComputedStatus.UPCOMING,
         submittedAt = Instant.now().minus(10, ChronoUnit.DAYS),
         approvedBy = UUID.randomUUID(),
@@ -117,7 +121,7 @@ val dummyEvents = listOf(
         submittedAt = Instant.now().minus(400, ChronoUnit.DAYS),
         approvedBy = UUID.randomUUID(),
         approvedAt = Instant.now().minus(390, ChronoUnit.DAYS),
-        isArchive = true
+        isArchive = false
     ),
 
     // 5. Rejected Event
@@ -146,5 +150,282 @@ val dummyEvents = listOf(
         approvedAt = Instant.now().minus(1, ChronoUnit.HOURS),
         comment = "This violates university curfew policies.",
         isArchive = false
+    )
+)
+val dummyParticipants: List<Participant> = listOf(
+    // -----------------------------------------------------------
+    // Scenario 1: PRESENT Attendee (Completed Evaluation)
+    // -----------------------------------------------------------
+    Participant(
+        eventId = 101,
+        userId = UUID.fromString("1a1a1a1a-1111-4000-8000-000000000001"),
+        fullName = "Angela Cabrera",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T09:30:00Z"),
+        evaluation = "Excellent event organization!",
+        evaluationSubmittedAt = Instant.parse("2025-11-20T17:00:00Z"),
+        joinedAt = Instant.parse("2025-10-15T10:00:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Scenario 2: ABSENT Attendee (Did not check in)
+    // -----------------------------------------------------------
+    Participant(
+        eventId = 101,
+        userId = UUID.fromString("2b2b2b2b-2222-4000-8000-000000000002"),
+        fullName = "Ben Villanueva",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = null,
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-01T14:00:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Scenario 3: REGISTERED Attendee (Awaiting event start)
+    // -----------------------------------------------------------
+    Participant(
+        eventId = 102,
+        userId = UUID.fromString("3c3c3c3c-3333-4000-8000-000000000003"),
+        fullName = "Catherine Uy",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.REGISTERED,
+        checkIn = null,
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-11-25T12:00:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Scenario 4: CANCELLED Attendee
+    // -----------------------------------------------------------
+    Participant(
+        eventId = 103,
+        userId = UUID.fromString("4d4d4d4d-4444-4000-8000-000000000004"),
+        fullName = "Daniel Ramirez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.CANCELLED,
+        checkIn = null,
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-11-05T08:00:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Scenario 5: PRESENT Attendee (Evaluation Pending)
+    // -----------------------------------------------------------
+    Participant(
+        eventId = 101,
+        userId = UUID.fromString("5e5e5e5e-5555-4000-8000-000000000005"),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+
+
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    ),
+    Participant(
+        eventId = 101,
+        userId = UUID.randomUUID(),
+        fullName = "Ethan Lopez",
+        participantType = ParticipantType.ATTENDEE,
+        participantRole = null,
+        participantStatus = ParticipantStatus.PRESENT,
+        checkIn = Instant.parse("2025-11-20T10:15:00Z"),
+        evaluation = null,
+        evaluationSubmittedAt = null,
+        joinedAt = Instant.parse("2025-10-25T13:00:00Z")
+    )
+)
+
+val dummyNotifications: List<Notification> = listOf(
+    // -----------------------------------------------------------
+    // Notification 1: Registration Success (Read)
+    // -----------------------------------------------------------
+    Notification(
+        id = 1,
+        type = "REGISTRATION",
+        message = "You have successfully registered for event: Graduation 2025.",
+        isRead = true,
+        // Set an arbitrary past time
+        createdAt = Instant.parse("2025-11-28T10:00:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Notification 2: Evaluation Ready (Unread)
+    // -----------------------------------------------------------
+    Notification(
+        id = 2,
+        type = "ACTION_REQUIRED",
+        message = "Evaluation form is ready for event: Tekla vs Manny Pacquiao alumni match.",
+        isRead = false,
+        // Set a more recent time
+        createdAt = Instant.parse("2025-12-03T15:30:00Z")
+    ),
+
+    // -----------------------------------------------------------
+    // Notification 3: Upcoming Events Alert (Unread)
+    // -----------------------------------------------------------
+    Notification(
+        id = 3,
+        type = "REMINDER",
+        message = "You have incoming events this week including one significant event.",
+        isRead = false,
+        // Set the current time
+        createdAt = Instant.now()
+    ),
+
+    // -----------------------------------------------------------
+    // Notification 4: Arbitrary Alert (Read)
+    // -----------------------------------------------------------
+    Notification(
+        id = 4,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = true,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 5,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 6,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 7,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 8,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = true,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 9,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 10,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
+    ),
+    Notification(
+        id = 11,
+        type = "ALERT",
+        message = "A new schedule update has been posted for the morning sessions.",
+        isRead = false,
+        createdAt = Instant.parse("2025-12-02T08:15:00Z")
     )
 )
