@@ -1,5 +1,6 @@
-import java.util.Properties
+import org.gradle.kotlin.dsl.invoke
 import java.io.FileInputStream
+import java.util.Properties
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
@@ -13,6 +14,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.diffplug.spotless") version "8.0.0"
     alias(libs.plugins.jetbrains.kotlin.serialization)
+    id("com.google.gms.google-services")
 }
 
 spotless {
@@ -39,7 +41,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.gathr"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -110,6 +112,39 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.geometry)
 
+    implementation(project.dependencies.platform("io.insert-koin:koin-bom:4.1.0"))
+    implementation(libs.koin.core)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.androidx.compose.navigation)
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.6"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.ktor:ktor-client-android:3.3.2")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.2.6")
+
+    implementation(libs.face.detection)
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation("com.google.mlkit:face-detection:16.1.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+
+    implementation("nl.dionsegijn:konfetti-compose:2.0.5")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation("com.google.zxing:core:3.5.4")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.5")
 }

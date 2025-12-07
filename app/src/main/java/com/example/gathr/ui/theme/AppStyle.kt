@@ -15,8 +15,8 @@ object AppColors {
     val secondary = Color(0xFFF6835E)
     val secondaryDark = Color(0xFFD96944)
 
-    val success = Color(0xFF94B983)
-    val error = Color(0xFF820006)
+    val success = Color(0xFFA3E4CE)
+    val error = Color(0xFFFC3436)
 }
 
 object AppFonts {
@@ -29,7 +29,7 @@ object AppTextStyles {
         fontFamily = AppFonts.instrumentSans,
         fontWeight = FontWeight.W700,
         fontSize = 40.sp,
-        color = Color.Black
+        color = Color.Black,
     )
 }
 
