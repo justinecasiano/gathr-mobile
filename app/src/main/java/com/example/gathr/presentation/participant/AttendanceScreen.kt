@@ -75,10 +75,6 @@ fun AttendanceScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.handleIntent(UserIntent.FetchAttendance)
-    }
-
     Box(Modifier.fillMaxSize()) {
         AttendanceContent(
             state = state,
@@ -114,7 +110,7 @@ fun AttendanceContent(
 
     val event: Event = state.currentEvent!!
     val participantList =
-        state.currentParticipants.sortedBy { it.joinedAt }
+        state.currentAttendees.sortedBy { it.joinedAt }
 
     var searchList = participantList
 
@@ -244,7 +240,7 @@ fun AttendanceContent(
                         val oneThirdWidth = rowWidthDp / 3f
 
                         val presentCount =
-                            participantList.count { participant -> participant.participantStatus == ParticipantStatus.PRESENT }
+                            participantList.count { participant -> participant.participantStatus == ParticipantStatus.PRESENT || participant.participantStatus == ParticipantStatus.CHECKED_IN }
                         StatCard(
                             number = presentCount.toString(),
                             label = "Present",
@@ -270,22 +266,20 @@ fun AttendanceContent(
                             ),
                             modifier = Modifier.width(oneThirdWidth)
                         )
-                        if (participantList.count { participant -> participant.participantStatus == ParticipantStatus.ABSENT } > 0) {
-                            Spacer(Modifier.width(10.dp))
-                            val absentCount =
-                                participantList.count { participant -> participant.participantStatus == ParticipantStatus.ABSENT }
-                            StatCard(
-                                number = absentCount.toString(),
-                                label = "Absent",
-                                color = Brush.linearGradient(
-                                    colors = listOf(
-                                        Color(0xFFF6835E),
-                                        Color(0xFF6C0005)
-                                    )
-                                ),
-                                modifier = Modifier.width(oneThirdWidth)
-                            )
-                        }
+                        Spacer(Modifier.width(10.dp))
+                        val absentCount =
+                            participantList.count { participant -> participant.participantStatus == ParticipantStatus.ABSENT }
+                        StatCard(
+                            number = absentCount.toString(),
+                            label = "Absent",
+                            color = Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFFF6835E),
+                                    Color(0xFF6C0005)
+                                )
+                            ),
+                            modifier = Modifier.width(oneThirdWidth)
+                        )
                     }
                 }
             }
@@ -312,7 +306,7 @@ fun AttendanceContent(
                                 end = Offset.Infinite
                             )
                         )
-                        .padding(vertical = 10.dp, horizontal = 18.dp),
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -323,15 +317,16 @@ fun AttendanceContent(
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Start,
                             color = Color.White
-                        ), modifier = Modifier.weight(3.3f)
+                        ), modifier = Modifier.weight(2.7f)
                     )
+                    Spacer(Modifier.weight(0.4f))
                     Text(
                         "Date & Time",
                         style = TextStyle(
                             fontFamily = rethinkSans,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
+                            textAlign = TextAlign.Start,
                             color = Color.White
                         ), modifier = Modifier.weight(4f)
                     )
@@ -343,7 +338,7 @@ fun AttendanceContent(
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.End,
                             color = Color.White
-                        ), modifier = Modifier.weight(2.8f)
+                        ), modifier = Modifier.weight(2f)
                     )
                 }
                 LazyColumn(Modifier.padding(top = 10.dp)) {
@@ -417,6 +412,7 @@ fun RegisteredRow(user: RegisteredUser) {
     val statusColor = when (user.status) {
         ParticipantStatus.CANCELLED -> Color(0xFFF36F44)
         ParticipantStatus.PRESENT -> Color(0xFF9FC090)
+        ParticipantStatus.CHECKED_IN -> Color(0xFF9FC090)
         ParticipantStatus.ABSENT -> Color(0xFF820006)
         else -> Color.Transparent
     }
@@ -438,17 +434,18 @@ fun RegisteredRow(user: RegisteredUser) {
                     textAlign = TextAlign.Start,
                     color = Color.Black
                 ),
-                maxLines = 1,
+                maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(3.3f)
+                modifier = Modifier.weight(2.7f)
             )
+            Spacer(Modifier.weight(0.4f))
             Text(
                 user.dateAndTime.toPrettyString("MMM. d, yyyy - h:mm a"),
                 style = TextStyle(
                     fontFamily = rethinkSans,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                     color = Color.Black
                 ), modifier = Modifier.weight(4f)
             )
@@ -460,7 +457,7 @@ fun RegisteredRow(user: RegisteredUser) {
                     fontWeight = FontWeight.ExtraBold,
                     textAlign = TextAlign.End,
                     color = statusColor
-                ), modifier = Modifier.weight(2.8f)
+                ), modifier = Modifier.weight(2f)
             )
         }
         HorizontalDivider(

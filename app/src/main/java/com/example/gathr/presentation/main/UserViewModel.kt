@@ -50,6 +50,7 @@ class UserViewModel(
     val mainEffect: SharedFlow<MainEffect> = _mainEffect.asSharedFlow()
 
     private var pollingJob: Job? = null
+    private var attendanceRealtimeJob: Job? = null
 
     init {
         observeNetwork()
@@ -141,14 +142,22 @@ class UserViewModel(
                     fetchNotifications()
                 } catch (e: Exception) {
                 }
-                delay(5_000L)
+                delay(10_000L)
             }
         }
     }
 
     fun handleIntent(intent: UserIntent) {
         when (intent) {
-            is UserIntent.CurrentEventChanged -> _state.update { it.copy(currentEvent = intent.value) }
+            is UserIntent.CurrentEventChanged -> {
+                attendanceRealtimeJob?.cancel()
+                _state.update { it.copy(currentEvent = intent.value) }
+                if (intent.value != null) {
+                    fetchAttendance(true)
+                    startAttendanceRealtime(intent.value.id)
+                }
+            }
+
             is UserIntent.CurrentParticipantChanged -> _state.update { it.copy(currentParticipant = intent.value) }
             is UserIntent.AddStaffsChanged -> _state.update { it.copy(addStaffs = intent.value) }
 
@@ -204,7 +213,6 @@ class UserViewModel(
             is UserIntent.FetchJoinedEvents -> fetchJoinedEvents()
             is UserIntent.FetchAvailableStaff -> fetchAvailableStaff()
             is UserIntent.FetchNotifications -> fetchNotifications()
-            is UserIntent.FetchAttendance -> fetchAttendance()
 
             is UserIntent.CancelEvent -> cancelEvent()
             is UserIntent.RegisterEvent -> registerEvent()
@@ -377,26 +385,36 @@ class UserViewModel(
         _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(notifications = FetchStatus.DONE)) }
     }
 
-    private fun fetchAttendance() {
+    private fun fetchAttendance(isSilent: Boolean = false) {
         val currentState = _state.value
         val currentEvent = currentState.currentEvent!!
 
         viewModelScope.launch {
-            handleIntent(UserIntent.IsLoadingChanged(true))
+            if (!isSilent) handleIntent(UserIntent.IsLoadingChanged(true))
+
             val result = eventParticipantRepository.fetchAttendance(currentEvent.id)
-            var currentParticipants: List<Participant> = emptyList()
+            var currentAttendees: List<Participant> = emptyList()
             var actionError = ""
 
             when (result) {
-                is ApiResult.Success -> currentParticipants = result.data
+                is ApiResult.Success -> currentAttendees = result.data
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update { it.copy(currentParticipants = currentParticipants) }
-            handleIntent(UserIntent.IsLoadingChanged(true))
+            _state.update { it.copy(currentAttendees = currentAttendees) }
+            handleIntent(UserIntent.IsLoadingChanged(false))
 
-            Log.d("FETCH_ATTENDANCE", currentParticipants.toString())
+            Log.d("FETCH_ATTENDANCE", currentAttendees.toString())
             Log.d("FETCH_ATTENDANCE_ERROR", actionError)
+        }
+    }
+
+    private fun startAttendanceRealtime(eventId: Long) {
+        attendanceRealtimeJob?.cancel()
+        attendanceRealtimeJob = viewModelScope.launch {
+            eventParticipantRepository.observeAttendance(eventId).collect {
+                fetchAttendance(true)
+            }
         }
     }
 
@@ -426,7 +444,6 @@ class UserViewModel(
                 handleIntent(UserIntent.IsLoadingChanged(false))
                 handleIntent(UserIntent.ActionTitleChanged("Mark Attendance"))
                 handleIntent(UserIntent.ActionErrorChanged("User is marked as present"))
-                handleIntent(UserIntent.FetchAttendance)
             } else {
                 handleIntent(UserIntent.ActionTitleChanged("Mark Attendance Failed"))
                 handleIntent(UserIntent.ActionErrorChanged("An unknown error occurred"))

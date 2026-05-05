@@ -8,9 +8,7 @@ import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.utils.Utils
-import com.google.firebase.messaging.FirebaseMessaging
 import io.github.jan.supabase.auth.OtpType
-import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +18,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.math.sign

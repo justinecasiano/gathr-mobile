@@ -14,7 +14,8 @@ fun String.toTitleCase(
     )
 ): String {
     return this.lowercase()
-        .split(" ")
+        .split(Regex("[\\s_]+"))
+        .filter { it.isNotBlank() }
         .joinToString(" ") { word ->
             if (word in exclusions) {
                 word

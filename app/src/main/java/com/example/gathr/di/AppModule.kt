@@ -15,14 +15,17 @@ import com.example.gathr.utils.NetworkConnectivityService
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.annotations.SupabaseInternal
 import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.websocket.WebSockets
+import okhttp3.OkHttp
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -38,12 +41,14 @@ val appModule = module {
             supabaseUrl = "https://gjhijvulvzqbmqafragh.supabase.co",
             supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqaGlqdnVsdnpxYm1xYWZyYWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MzcxODEsImV4cCI6MjA3ODUxMzE4MX0.mhdtm8zL8Tr8w_X0YB2QhjnRTvyicOkXd4KQvrtzAzU"
         ) {
-
             install(Auth)
             install(Postgrest)
             install(Storage)
+            install(Realtime)
 
             httpConfig {
+                install(WebSockets)
+
                 install(HttpTimeout) {
                     connectTimeoutMillis = 30_000L
 
@@ -66,6 +71,10 @@ val appModule = module {
 
     single<Storage> {
         get<SupabaseClient>().storage
+    }
+
+    single<Realtime> {
+        get<SupabaseClient>().realtime
     }
 
     single<AuthRepository> {

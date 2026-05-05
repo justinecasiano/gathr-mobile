@@ -73,5 +73,5 @@ enum class ParticipantType {
 }
 
 enum class ParticipantStatus {
-    REGISTERED, PRESENT, ABSENT, CANCELLED
+    REGISTERED, PRESENT, ABSENT, CANCELLED, CHECKED_IN
 }

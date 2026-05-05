@@ -16,7 +16,17 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
@@ -32,6 +42,7 @@ interface EventParticipantRepository {
     suspend fun fetchJoinedEvents(): ApiResult<List<Event>>
     suspend fun fetchAvailableStaff(eventId: Long): ApiResult<List<User>>
     suspend fun fetchAttendance(eventId: Long): ApiResult<List<Participant>>
+    fun observeAttendance(eventId: Long): Flow<Unit>
     suspend fun markAttendance(eventId: Long, userId: UUID): ApiResult<Unit>
     suspend fun registerEvent(eventId: Long, userId: UUID): ApiResult<Unit>
     suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit>
@@ -47,13 +58,13 @@ interface EventParticipantRepository {
 }
 
 class EventParticipantRepositoryImpl(
-    private val postgrest: Postgrest,
     private val auth: Auth,
     private val storage: Storage,
+    private val realtime: Realtime,
     private val supabase: SupabaseClient
 ) : EventParticipantRepository {
 
-    private val jsonConfig = Json{ignoreUnknownKeys = true}
+    private val jsonConfig = Json { ignoreUnknownKeys = true }
 
     override suspend fun fetchManagedEvents(): ApiResult<List<ManagedEvent>> {
         return try {
@@ -139,7 +150,7 @@ class EventParticipantRepositoryImpl(
             }
 
             val response = supabase.postgrest.rpc(
-                function = "get_registered_attendees_by_event",
+                function = "get_event_participants",
                 parameters = rpcParams
             )
 
@@ -147,12 +158,33 @@ class EventParticipantRepositoryImpl(
             ApiResult.Success(participants)
         } catch (e: Exception) {
             e.printStackTrace()
-            val errorMessage = when (e) {
-                is RestException -> "Database error has occurred"
-                is HttpRequestException -> "Network Error: Check your connection."
-                else -> "An unexpected error occurred"
+            ApiResult.Error(e.message.toString())
+        }
+    }
+
+    override fun observeAttendance(eventId: Long): Flow<Unit> = callbackFlow {
+        val channel = supabase.channel("attendance_${eventId}_${System.currentTimeMillis()}")
+
+        val dataChangeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "participants"
+            filter("event_id", FilterOperator.EQ, eventId)
+        }
+
+        val job = launch {
+            dataChangeFlow.collect { action ->
+                send(Unit)
             }
-            ApiResult.Error(errorMessage)
+        }
+
+        channel.subscribe()
+
+        awaitClose {
+            launch {
+                channel.unsubscribe()
+                supabase.realtime.removeAllChannels()
+                supabase.realtime.removeChannel(channel)
+            }
+            job.cancel()
         }
     }
 

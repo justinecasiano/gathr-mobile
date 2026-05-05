@@ -39,7 +39,6 @@ sealed interface UserIntent {
     data object FetchJoinedEvents: UserIntent
     data object FetchAvailableStaff: UserIntent
     data object FetchNotifications: UserIntent
-    data object FetchAttendance: UserIntent
 
     data object MarkAttendance: UserIntent
 
