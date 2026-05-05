@@ -50,7 +50,6 @@ fun RootNavigation() {
                     onLoaded = { isLoggedIn ->
                         backStack.removeLastOrNull()
                         if (isLoggedIn && isOnline) {
-//                        if (isLoggedIn) {
                             backStack.add(RootScreen.Main)
                         } else {
                             backStack.add(RootScreen.Auth)

@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.gathr.data.model.UserRole
 import com.example.gathr.presentation.main.FetchStatus
 import com.example.gathr.presentation.main.UserIntent
+import com.example.gathr.utils.NetworkConnectivityService
 
 @Composable
 fun SplashScreen(
@@ -51,6 +52,20 @@ fun SplashScreen(
 ) {
     val auth: Auth = koinInject()
     val authRepository: AuthRepository = koinInject()
+
+    val networkService: NetworkConnectivityService = koinInject()
+    val isOnline by networkService.observeNetworkStatus().collectAsState(initial = true)
+
+    LaunchedEffect(isOnline) {
+        if (!isOnline) {
+            val hasCachedData = userViewModel.loadCacheImmediately()
+            if (hasCachedData) {
+                onLoaded(true)
+            } else {
+                onLoaded(false)
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         auth.awaitInitialization()
@@ -232,10 +247,3 @@ fun ModeratorSplash(modifier: Modifier = Modifier) {
     }
 }
 
-@Preview
-@Composable
-private fun SplashScreenPreview() {
-//    DefaultSplash()
-//    ParticipantSplash()
-    ModeratorSplash()
-}

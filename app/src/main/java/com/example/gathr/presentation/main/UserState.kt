@@ -8,15 +8,20 @@ import com.example.gathr.data.model.Notification
 import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
 import com.example.gathr.presentation.participant.ParticipantPayload
+import kotlinx.serialization.Serializable
 import java.io.File
 
 data class UserState(
     val managedEvents: List<ManagedEvent> = emptyList(),
     val joinableEvents: List<Event> = emptyList(),
     val joinedEvents: List<Event> = emptyList(),
-    val availableStaff: List<User> = emptyList(),
     val notifications: List<Notification> = emptyList(),
     val dataFetchStatus: StateFetchStatus = StateFetchStatus(),
+
+    val currentUser: User? = null,
+    val currentEvent: Event? = null,
+    val currentAttendees: List<Participant> = emptyList(),
+    val availableStaff: List<User> = emptyList(),
 
     val eventsSearchText: String = "",
     val myEventsSelectedTabIndex: Int = 0,
@@ -24,8 +29,6 @@ data class UserState(
     val eTicketsSelectedTabIndex: Int = 0,
     val eTicketsSearchText: String = "",
 
-    val currentUser: User? = null,
-    val currentEvent: Event? = null,
     val currentParticipant: Participant? = null,
     val currentParticipants: List<Participant> = emptyList(),
     val scanParticipant: ParticipantPayload? = null,
@@ -42,6 +45,7 @@ data class UserState(
     val createEventValidationState: CreateEventValidationState = CreateEventValidationState()
 )
 
+@Serializable
 data class StateFetchStatus(
     val currentUser: FetchStatus = FetchStatus.LOADING,
     val managedEvents: FetchStatus = FetchStatus.LOADING,
@@ -55,6 +59,16 @@ enum class FetchStatus {
     LOADING,
     DONE,
 }
+
+@Serializable
+data class UserCache(
+    val managedEvents: List<ManagedEvent>,
+    val joinableEvents: List<Event>,
+    val joinedEvents: List<Event>,
+    val notifications: List<Notification>,
+    val currentUser: User?,
+    val dataFetchStatus: StateFetchStatus = StateFetchStatus(),
+)
 
 data class CreateEventValidationState(
     val titleError: String = "",

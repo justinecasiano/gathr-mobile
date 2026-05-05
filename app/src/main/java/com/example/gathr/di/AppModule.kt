@@ -1,5 +1,6 @@
 package com.example.gathr.di
 
+import LocalCacheManager
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.AuthRepositoryImpl
 import com.example.gathr.data.repository.EventParticipantRepository
@@ -29,6 +30,8 @@ import org.koin.dsl.module
 @OptIn(SupabaseInternal::class)
 val appModule = module {
     single { NetworkConnectivityService(androidContext()) }
+    single { LocalCacheManager(androidContext()) }
+
 
     single {
         createSupabaseClient(
@@ -80,5 +83,5 @@ val appModule = module {
     viewModel { SignUpViewModel(get(), get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { ForgotPasswordViewModel(get()) }
-    viewModel { UserViewModel(get(), get(), get()) }
+    viewModel { UserViewModel(get(), get(), get(), get(), get()) }
 }

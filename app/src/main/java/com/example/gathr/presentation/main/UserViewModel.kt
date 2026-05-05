@@ -1,5 +1,6 @@
 package com.example.gathr.presentation.main
 
+import LocalCacheManager
 import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
@@ -16,6 +17,7 @@ import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.EventParticipantRepository
 import com.example.gathr.data.repository.UserRepository
+import com.example.gathr.utils.NetworkConnectivityService
 import com.example.gathr.utils.Utils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -33,7 +35,9 @@ import java.util.UUID
 class UserViewModel(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
-    private val eventParticipantRepository: EventParticipantRepository
+    private val eventParticipantRepository: EventParticipantRepository,
+    private val cacheManager: LocalCacheManager,
+    private val networkService: NetworkConnectivityService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UserState())
@@ -46,6 +50,73 @@ class UserViewModel(
     val mainEffect: SharedFlow<MainEffect> = _mainEffect.asSharedFlow()
 
     private var pollingJob: Job? = null
+
+    init {
+        observeNetwork()
+    }
+
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            networkService.observeNetworkStatus().collect { isOnline ->
+                if (!isOnline) loadFromCache()
+            }
+        }
+    }
+
+    private suspend fun loadFromCache() {
+        cacheManager.getCache()?.let { cachedState ->
+            _state.update {
+                it.copy(
+                    currentUser = cachedState.currentUser,
+                    managedEvents = cachedState.managedEvents,
+                    joinableEvents = cachedState.joinableEvents,
+                    joinedEvents = cachedState.joinedEvents,
+                    notifications = cachedState.notifications,
+                    dataFetchStatus = cachedState.dataFetchStatus
+                )
+            }
+        }
+    }
+
+    suspend fun loadCacheImmediately(): Boolean {
+        val cachedState = cacheManager.getCache()
+        return if (cachedState != null) {
+            _state.update { currentState ->
+                currentState.copy(
+                    currentUser = cachedState.currentUser,
+                    managedEvents = cachedState.managedEvents,
+                    joinableEvents = cachedState.joinableEvents,
+                    joinedEvents = cachedState.joinedEvents,
+                    notifications = cachedState.notifications,
+                    dataFetchStatus = currentState.dataFetchStatus.copy(
+                        managedEvents = FetchStatus.DONE,
+                        joinableEvents = FetchStatus.DONE,
+                        joinedEvents = FetchStatus.DONE,
+                        notifications = FetchStatus.DONE,
+                        currentUser = FetchStatus.DONE
+                    )
+                )
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    fun onFetchSuccess() {
+        val currentState = _state.value
+        viewModelScope.launch {
+            val cache = UserCache(
+                managedEvents = currentState.managedEvents,
+                joinableEvents = currentState.joinableEvents,
+                joinedEvents = currentState.joinedEvents,
+                notifications = currentState.notifications,
+                currentUser = currentState.currentUser,
+                dataFetchStatus = currentState.dataFetchStatus
+            )
+            cacheManager.saveCache(cache)
+        }
+    }
 
     fun startPolling() {
         pollingJob?.cancel()
@@ -61,9 +132,9 @@ class UserViewModel(
                     }
 
                     if (currentUser.role == UserRole.PARTICIPANT) {
+                        fetchManagedEvents()
                         fetchJoinableEvents()
                         fetchJoinedEvents()
-                        fetchManagedEvents()
                     } else {
                         // fetch for moderator
                     }
@@ -177,11 +248,14 @@ class UserViewModel(
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update {
-                it.copy(
-                    managedEvents = managedEvents,
-                    dataFetchStatus = it.dataFetchStatus.copy(managedEvents = FetchStatus.DONE)
-                )
+            if (managedEvents.isNotEmpty()) {
+                _state.update {
+                    it.copy(
+                        managedEvents = managedEvents,
+                        dataFetchStatus = it.dataFetchStatus.copy(managedEvents = FetchStatus.DONE)
+                    )
+                }
+                onFetchSuccess()
             }
 
             Log.d("FETCH_MANAGED_EVENTS", managedEvents.toString())
@@ -202,11 +276,14 @@ class UserViewModel(
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update {
-                it.copy(
-                    joinableEvents = joinableEvents,
-                    dataFetchStatus = it.dataFetchStatus.copy(joinableEvents = FetchStatus.DONE)
-                )
+            if (joinableEvents.isNotEmpty()) {
+                _state.update {
+                    it.copy(
+                        joinableEvents = joinableEvents,
+                        dataFetchStatus = it.dataFetchStatus.copy(joinableEvents = FetchStatus.DONE)
+                    )
+                }
+                onFetchSuccess()
             }
 
             Log.d("FETCH_JOINABLE_EVENTS", joinableEvents.toString())
@@ -227,11 +304,14 @@ class UserViewModel(
                 is ApiResult.Error -> actionError = result.message
             }
 
-            _state.update {
-                it.copy(
-                    joinedEvents = joinedEvents,
-                    dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.DONE)
-                )
+            if (joinedEvents.isNotEmpty()) {
+                _state.update {
+                    it.copy(
+                        joinedEvents = joinedEvents,
+                        dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.DONE)
+                    )
+                }
+                onFetchSuccess()
             }
 
             Log.d("FETCH_JOINED_EVENTS", joinedEvents.toString())
@@ -269,6 +349,31 @@ class UserViewModel(
 
     private fun fetchNotifications() {
         _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(notifications = FetchStatus.LOADING)) }
+//        viewModelScope.launch {
+//            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.LOADING)) }
+//
+//            val result = eventParticipantRepository.fetchJoinedEvents()
+//            var joinedEvents: List<Event> = emptyList()
+//            var actionError = ""
+//
+//            when (result) {
+//                is ApiResult.Success -> joinedEvents = result.data
+//                is ApiResult.Error -> actionError = result.message
+//            }
+//
+//            if (joinedEvents.isNotEmpty()) {
+//                _state.update {
+//                    it.copy(
+//                        joinedEvents = joinedEvents,
+//                        dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.DONE)
+//                    )
+//                }
+//        onFetchSuccess()
+//    }
+//
+//            Log.d("FETCH_JOINED_EVENTS", joinedEvents.toString())
+//            Log.d("FETCH_JOINED_EVENTS_ERROR", actionError)
+//        }
         _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(notifications = FetchStatus.DONE)) }
     }
 
@@ -277,6 +382,7 @@ class UserViewModel(
         val currentEvent = currentState.currentEvent!!
 
         viewModelScope.launch {
+            handleIntent(UserIntent.IsLoadingChanged(true))
             val result = eventParticipantRepository.fetchAttendance(currentEvent.id)
             var currentParticipants: List<Participant> = emptyList()
             var actionError = ""
@@ -287,6 +393,7 @@ class UserViewModel(
             }
 
             _state.update { it.copy(currentParticipants = currentParticipants) }
+            handleIntent(UserIntent.IsLoadingChanged(true))
 
             Log.d("FETCH_ATTENDANCE", currentParticipants.toString())
             Log.d("FETCH_ATTENDANCE_ERROR", actionError)
@@ -668,6 +775,7 @@ class UserViewModel(
                         dataFetchStatus = it.dataFetchStatus.copy(currentUser = FetchStatus.DONE)
                     )
                 }
+                onFetchSuccess()
             }
 
             is ApiResult.Error -> Log.d("MAIN", result.message)

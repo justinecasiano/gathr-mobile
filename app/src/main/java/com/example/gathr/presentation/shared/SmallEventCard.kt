@@ -49,6 +49,7 @@ import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
 
@@ -70,7 +71,7 @@ fun SmallEventCard(
     {
         AsyncImage(
             modifier = Modifier
-                .padding(vertical = 8.dp)
+                .padding(vertical = 4.dp)
                 .shadow(
                     elevation = 6.dp,
                     shape = RoundedCornerShape(20.dp),
@@ -132,7 +133,7 @@ fun SmallEventCard(
                             else Color(0xFF9FC090)
                         )
                     ) {
-                        append("${event.remainingSlots} slots")
+                        append("${event.remainingSlots.toAbbreviatedString()} slots")
                     }
                 },
                 maxLines = 1,
@@ -185,7 +186,7 @@ fun SmallEventCard(
                             else Color(0xFF9FC090),
                         )
                     ) {
-                        append("${event.remainingSlots} slots left")
+                        append("${event.remainingSlots.toAbbreviatedString()} slots left")
                     }
                 },
             )

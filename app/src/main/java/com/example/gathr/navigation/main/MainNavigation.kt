@@ -42,13 +42,7 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                 MainEffect.NavigateParticipantViewEvent -> backStack.add(MainScreen.ParticipantViewEvent)
                 MainEffect.NavigateModeratorViewEvent -> backStack.add(MainScreen.ModeratorViewEvent)
                 MainEffect.NavigateEditProfile -> backStack.add(MainScreen.EditProfile)
-                MainEffect.NavigateAttendance -> {
-                    userViewModel.handleIntent(UserIntent.IsLoadingChanged(true))
-                    userViewModel.handleIntent(UserIntent.FetchAttendance)
-                    backStack.add(MainScreen.ViewAttendance)
-                    userViewModel.handleIntent(UserIntent.IsLoadingChanged(false))
-                }
-
+                MainEffect.NavigateAttendance ->  backStack.add(MainScreen.ViewAttendance)
                 MainEffect.NavigateFeedback -> backStack.add(MainScreen.Feedback)
                 MainEffect.NavigateQrCode -> backStack.add(MainScreen.QrCode)
                 MainEffect.NavigateQrScanner -> backStack.add(MainScreen.QrScanner)

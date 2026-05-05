@@ -2,6 +2,7 @@ package com.example.gathr.presentation.shared
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,6 +56,7 @@ import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toDayOfMonth
 import com.example.gathr.utils.toLocalDateTime
 import com.example.gathr.utils.toMonthAbbreviation
@@ -116,6 +118,11 @@ fun LargeEventCard(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
+                            .border(
+                                width = 1.dp,
+                                color = Color.Black,
+                                shape = RoundedCornerShape(20.dp)
+                            )
                             .background(Color.White.copy(alpha = 0.9f))
                             .padding(vertical = 12.dp, horizontal = 18.dp)
                     ) {
@@ -157,6 +164,12 @@ fun LargeEventCard(
                                 .padding(10.dp))
                         {
                             Icon(
+                                painter = painterResource(R.drawable.update_icon),
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = Color.Black
+                            )
+                            Icon(
                                 painterResource(R.drawable.update_icon),
                                 contentDescription = "Update event",
                                 modifier = Modifier
@@ -170,6 +183,11 @@ fun LargeEventCard(
                         .fillMaxWidth()
                         .wrapContentHeight()
                         .clip(RoundedCornerShape(20.dp))
+                        .border(
+                            width = 1.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(20.dp)
+                        )
                         .background(Color.White.copy(alpha = 0.9f))
                         .padding(start = 5.dp, end = 5.dp)
                         .padding(vertical = 12.dp)
@@ -218,7 +236,7 @@ fun LargeEventCard(
                                             color = Color(0xFF558042)
                                         )
                                     ) {
-                                        append("${event.remainingSlots} slots")
+                                        append("${event.remainingSlots.toAbbreviatedString()} slots")
                                     }
                                 },
                                 maxLines = 1,
@@ -226,7 +244,8 @@ fun LargeEventCard(
                         }
                         if (!isRejectedOrRemoved) {
                             Spacer(Modifier.width(5.dp))
-                            VerticalDivider(color = Color.Black,
+                            VerticalDivider(
+                                color = Color.Black,
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .padding(vertical = 4.dp) //
@@ -298,7 +317,7 @@ fun LargeEventCard(
                                                     color = Color(0xFF2A2A2A)
                                                 )
                                             ) {
-                                                append("${event.capacity}\n")
+                                                append("${event.capacity.toAbbreviatedString()}\n")
                                             }
                                             append("Capacity")
                                         },

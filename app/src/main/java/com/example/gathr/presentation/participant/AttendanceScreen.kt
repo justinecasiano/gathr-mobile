@@ -75,6 +75,10 @@ fun AttendanceScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.handleIntent(UserIntent.FetchAttendance)
+    }
+
     Box(Modifier.fillMaxSize()) {
         AttendanceContent(
             state = state,

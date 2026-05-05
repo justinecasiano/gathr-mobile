@@ -57,6 +57,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -80,6 +81,7 @@ import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.dummyEvents
+import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
 import com.example.gathr.utils.toTitleCase
@@ -108,12 +110,11 @@ fun ParticipantViewEventScreen(
         var isRegistered =
             if (role == ParticipantType.ATTENDEE && event.isRegistered) true else false
 
-        if (role === ParticipantType.ORGANIZER)
-            Log.d("CREATE_EVENT", "User is Organizer")
+        Log.d("VIEW_EVENT", "User Role is $role")
 
         ParticipantViewEventContent(
             event = state.currentEvent!!,
-            role = role.toString().toTitleCase(),
+            role = role.toString(),
             isRegistered = isRegistered,
             onIntent = viewModel::handleIntent,
             onNavigate = viewModel::sendMainEffect
@@ -231,9 +232,9 @@ fun ParticipantViewEventContent(
     }
 
     if (role == "ORGANIZER" || role == "STAFF") {
+        Log.d("VIEW_EVENT", "THIS IS A STAFF")
         buttonText = "TRACK ATTENDANCE"
         buttonColor = Color(0xFF7B55A3)
-        bottomBorderThickness = 0.dp
         onButtonClick = { onNavigate(MainEffect.NavigateAttendance) }
     }
 
@@ -340,7 +341,7 @@ fun ParticipantViewEventContent(
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                         ),
-                        buttonShape = RoundedCornerShape(17.dp),
+                        buttonShape = RoundedCornerShape(20.dp),
                         bottomBorderThickness = bottomBorderThickness,
                         shouldAddShadow = true,
                     )
@@ -530,12 +531,15 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                     color = Color.Black,
                 )
                 Text(
-                    event.title.uppercase(), style = TextStyle(
+                    event.title.uppercase(),
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
                     )
                 )
                 Text(
@@ -548,17 +552,33 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 color = if (isUpcoming) Color(0xFFF6835E) else Color(0xFF9FC090)
                             )
                         ) {
-                            append("${event.computedStatus.toString().uppercase()}\n")
+                            append(event.computedStatus.toString().uppercase())
                         }
-                        append("${event.location}\n")
-                        append("${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}")
                     },
+                )
+                Text(
+                    event.location,
+                    style = TextStyle(
+                        fontFamily = AppFonts.rethinkSans,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.Black,
+                    ),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    "${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}",
                     style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 12.sp,
                         lineHeight = 22.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Normal,
+                        color = Color.Black,
                     ),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -572,7 +592,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                     color = Color.Black
                                 )
                             ) {
-                                append("${event.capacity}\n")
+                                append("${event.capacity.toAbbreviatedString()}\n")
                             }
                             append("Capacity")
                         }, style = TextStyle(
@@ -616,7 +636,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                     color = Color(0xFF820006)
                                 )
                             ) {
-                                append("${event.remainingSlots}\n")
+                                append("${event.remainingSlots.toAbbreviatedString()}\n")
                             }
                             append("Slots Left")
                         }, style = TextStyle(
@@ -658,6 +678,8 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 }
                                 append(event.organizerName.toTitleCase())
                             },
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,
                                 fontSize = 11.sp,
