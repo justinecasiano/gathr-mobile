@@ -14,6 +14,7 @@ import io.ktor.client.plugins.ResponseException
 import kotlinx.io.IOException
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.time.ExperimentalTime
 
 interface AuthRepository {
     suspend fun signIn(email: String, password: String): ApiResult<Unit>
@@ -74,6 +75,7 @@ class AuthRepositoryImpl(private val auth: Auth, private val postgrest: Postgres
             auth.verifyEmailOtp(type = type, email = email, token = code)
             ApiResult.Success(Unit)
         } catch (e: Exception) {
+            Log.d("SUPABASE", e.message ?: "")
             if (e.message!!.contains("Token has expired or is invalid")) ApiResult.Error(message = "Token has expired or is invalid")
             else mapAuthException(e)
         }
@@ -153,8 +155,11 @@ class AuthRepositoryImpl(private val auth: Auth, private val postgrest: Postgres
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     override fun isLoggedIn(): Boolean {
-        return auth.currentUserOrNull() != null
+        val user = auth.currentUserOrNull()
+        val isEmailVerified = user?.emailConfirmedAt != null
+        return isEmailVerified
     }
 
     override fun getCurrentUserId(): String? {

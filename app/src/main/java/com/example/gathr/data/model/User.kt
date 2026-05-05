@@ -1,6 +1,8 @@
 package com.example.gathr.data.model
 
+import com.example.gathr.utils.DepartmentSerializer
 import com.example.gathr.utils.JavaInstantSerializer
+import com.example.gathr.utils.UserRoleSerializer
 import com.example.gathr.utils.UuidSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,9 +25,15 @@ data class User(
     @SerialName("last_name")
     val lastName: String,
 
-    val role: String,
+    @SerialName("avatar_url")
+    val avatarUrl: String? = null,
 
-    val department: String? = null,
+    @Serializable(with = UserRoleSerializer::class)
+    val role: UserRole = UserRole.PARTICIPANT,
+
+    @Serializable(with = DepartmentSerializer::class)
+    val department: DepartmentType? = null,
+
     val school: String,
 
     @SerialName("is_umak")
@@ -33,9 +41,6 @@ data class User(
 
     @SerialName("is_alumni")
     val isAlumni: Boolean,
-
-    @SerialName("fcm_token")
-    val fcmToken: String? = null,
 
     @SerialName("created_at")
     @Serializable(with = JavaInstantSerializer::class)

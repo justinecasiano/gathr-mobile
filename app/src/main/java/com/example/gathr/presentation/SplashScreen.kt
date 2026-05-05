@@ -11,16 +11,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -30,11 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gathr.R
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.presentation.main.UserViewModel
@@ -42,11 +37,12 @@ import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.ui.theme.AppMisc
 import io.github.jan.supabase.auth.Auth
 import kotlinx.coroutines.delay
-import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.gathr.data.model.UserRole
+import com.example.gathr.presentation.main.FetchStatus
 import com.example.gathr.presentation.main.UserIntent
-import kotlin.toString
 
 @Composable
 fun SplashScreen(
@@ -58,17 +54,43 @@ fun SplashScreen(
 
     LaunchedEffect(Unit) {
         auth.awaitInitialization()
-        userViewModel.getCurrentUser()
-        userViewModel.handleIntent(UserIntent.FetchEvents)
-        delay(3000L)
-        onLoaded(authRepository.isLoggedIn())
+        val user = userViewModel.getCurrentUser()
+
+        if (user !== null) {
+            userViewModel.handleIntent(UserIntent.FetchNotifications)
+
+            if (user.role === UserRole.PARTICIPANT) {
+                userViewModel.handleIntent(UserIntent.FetchManagedEvents)
+                userViewModel.handleIntent(UserIntent.FetchJoinableEvents)
+                userViewModel.handleIntent(UserIntent.FetchJoinedEvents)
+
+            } else if (user.role === UserRole.MODERATOR) {
+                // fetch for moderator
+            }
+        } else {
+            onLoaded(false)
+        }
     }
 
-    val role = userViewModel.state.collectAsState().value.currentUser?.role
+    val state by userViewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.dataFetchStatus) {
+        val user = userViewModel.getCurrentUser()
+        val status = state.dataFetchStatus
+        val hasFetchedData =
+            status.currentUser == FetchStatus.DONE && status.managedEvents == FetchStatus.DONE &&
+                    status.joinableEvents == FetchStatus.DONE && status.joinedEvents == FetchStatus.DONE &&
+                    status.notifications == FetchStatus.DONE
+
+        if (user !== null && hasFetchedData) {
+            onLoaded(authRepository.isLoggedIn())
+        }
+    }
+
+    val role = state.currentUser?.role
 
     when (role) {
-        "MODERATOR" -> ModeratorSplash()
-        "PARTICIPANT" -> ParticipantSplash()
+        UserRole.MODERATOR -> ModeratorSplash()
+        UserRole.PARTICIPANT -> ParticipantSplash()
         null -> DefaultSplash()
     }
 }

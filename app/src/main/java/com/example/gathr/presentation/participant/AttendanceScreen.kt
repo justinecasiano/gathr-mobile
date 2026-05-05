@@ -117,7 +117,7 @@ fun AttendanceContent(
     if (searchText.isNotBlank())
         searchList =
             participantList.filter { p ->
-                p.fullName.contains(searchText, ignoreCase = true) ||
+                p.fullName?.contains(searchText, ignoreCase = true) == true ||
                         p.participantStatus.toString().contains(searchText, ignoreCase = true)
             }
 
@@ -348,7 +348,7 @@ fun AttendanceContent(
                         key = { participant -> participant.userId }) { participant ->
                         RegisteredRow(
                             RegisteredUser(
-                                name = participant.fullName,
+                                name = participant.fullName ?: "Unknown User",
                                 dateAndTime = participant.joinedAt,
                                 status = participant.participantStatus
                             )

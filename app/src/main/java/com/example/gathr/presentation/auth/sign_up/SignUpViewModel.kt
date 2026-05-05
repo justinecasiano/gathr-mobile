@@ -95,11 +95,6 @@ class SignUpViewModel(
 
             if (emailCodeError.isBlank()) {
                 var signUpError = ""
-                val token = try {
-                    FirebaseMessaging.getInstance().token.await()
-                } catch (e: Exception) {
-                    null
-                }
 
                 val updates = buildJsonObject {
                     put("display_name", currentState.username)
@@ -109,7 +104,6 @@ class SignUpViewModel(
                     if (currentState.school.isNotBlank()) put("school", currentState.school)
                     put("is_umak", currentState.isUmak)
                     put("is_alumni", currentState.isAlumni)
-                    put("fcm_token", token)
                 }
 
                 val result = userRepository.updateUserProfile(
@@ -148,6 +142,8 @@ class SignUpViewModel(
             }
 
             _state.update { it.copy(signUpError = signUpError) }
+
+            Log.d("SIGNUP", signUpError)
 
             if (signUpError.isBlank()) {
                 delay(500)

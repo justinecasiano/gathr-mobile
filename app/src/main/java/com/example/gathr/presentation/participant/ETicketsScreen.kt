@@ -82,12 +82,12 @@ fun ETicketsContent(
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
-    var eventList: List<Event> = state.currentEvents.filter { it.isRegistered }
+    var eventList: List<Event> = state.joinedEvents
     var eTicketsList: List<Event> = emptyList()
 
     val tabTitles = listOf("Upcoming", "Ongoing", "Completed")
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    var searchText by remember { mutableStateOf("") }
+    val selectedTabIndex = state.eTicketsSelectedTabIndex
+    val searchText = state.eTicketsSearchText
 
     Column(
         modifier = Modifier
@@ -128,8 +128,8 @@ fun ETicketsContent(
                 Spacer(modifier = Modifier.height(10.dp))
                 SearchTextField(
                     searchText,
-                    onValueChange = { searchText = it },
-                    onClearValue = { searchText = "" },
+                    onValueChange = { onIntent(UserIntent.ETicketsSearchTextChanged(it)) },
+                    onClearValue = { onIntent(UserIntent.ETicketsSearchTextChanged("")) },
                     placeholderText = "Search in Tickets",
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
@@ -154,8 +154,7 @@ fun ETicketsContent(
                             selectedContentColor = Color(0xFF473163),
                             unselectedContentColor = Color(0xFF473163),
                             onClick = {
-                                selectedTabIndex = index
-                                searchText = ""
+                                onIntent(UserIntent.ETicketsSelectedTabChanged(index))
                             },
                             text = {
                                 Text(
@@ -179,7 +178,7 @@ fun ETicketsContent(
 
                 1 -> it.computedStatus == EventComputedStatus.ONGOING
 
-                else -> it.computedStatus == EventComputedStatus.COMPLETED
+                else -> it.computedStatus == EventComputedStatus.ENDED
             }
         }.filter { event ->
             if (searchText.isBlank()) {
@@ -207,8 +206,6 @@ fun ETicketsContent(
                     MyEventsCards(
                         events = eTicketsList,
                         showBanner = false,
-                        isOrganizer = false,
-                        isETicket = true,
                         onIntent = onIntent,
                         onNavigate = onNavigate,
                         onTextButtonClick = {
@@ -222,8 +219,6 @@ fun ETicketsContent(
                 MyEventsCards(
                     events = eTicketsList,
                     showBanner = searchText.isBlank(),
-                    isOrganizer = false,
-                    isETicket = true,
                     onIntent = onIntent,
                     onNavigate = onNavigate,
                     onTextButtonClick = {
@@ -239,8 +234,7 @@ fun ETicketsContent(
 private fun MyEventsCards(
     events: List<Event> = emptyList(),
     showBanner: Boolean = true,
-    isOrganizer: Boolean = false,
-    isETicket: Boolean = false,
+    isETicket: Boolean = true,
     onTextButtonClick: () -> Unit,
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit,

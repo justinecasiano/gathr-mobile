@@ -1,6 +1,13 @@
 package com.example.gathr.presentation.main
 
 import android.util.Log
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -20,6 +27,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +51,8 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.gathr.core.ui.LoadingOverlay
+import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.UserRole
 import com.example.gathr.navigation.main.ModeratorBottomBarScreen
 import com.example.gathr.navigation.main.ModeratorBottomBarScreenSaver
 import com.example.gathr.navigation.main.ParticipantBottomBarScreen
@@ -58,6 +68,8 @@ import com.example.gathr.presentation.participant.ParticipantProfileScreen
 import com.example.gathr.presentation.shared.EventsScreen
 import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.ui.theme.scaleIn
+import com.example.gathr.ui.theme.scaleOut
 
 @Composable
 fun UserScreen(
@@ -65,20 +77,24 @@ fun UserScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.startPolling()
+    }
+
     Box(Modifier.fillMaxSize()) {
         val role = state.currentUser?.role
 
-        if (role == "MODERATOR") {
+        if (role === UserRole.MODERATOR) {
             ModeratorContent(state, viewModel::handleIntent, viewModel::sendMainEffect)
         } else {
             ParticipantContent(state, viewModel::handleIntent, viewModel::sendMainEffect)
         }
 
         if (state.isLoading) {
-            LoadingOverlay(isContrast = role != "PARTICIPANT")
+            LoadingOverlay(isContrast = role !== UserRole.PARTICIPANT)
         }
     }
-    Log.d("MAINVIEW", state.currentUser?.role ?: "UNKNOWN USER")
+    Log.d("MAINVIEW", state.currentUser?.role.toString())
 }
 
 @Composable
@@ -112,7 +128,7 @@ fun ParticipantContent(
                         modifier = Modifier,
                         selected = currentBottomBarScreen == destination,
                         icon = {
-                            if (destination.title == "E-tickets" && state.currentEvents.count { it.isRegistered } > 0) {
+                            if (destination.title == "E-tickets" && state.joinedEvents.count { it.computedStatus === EventComputedStatus.UPCOMING } > 0) {
                                 BadgedBox(
                                     badge = {
                                         Badge(
@@ -125,8 +141,7 @@ fun ParticipantContent(
                                                     shape = CircleShape,
                                                 ),
                                         ) {
-                                            Text(text = state.currentEvents.count { it.isRegistered }
-                                                .toString())
+                                            Text(text = state.joinedEvents.count { it.computedStatus === EventComputedStatus.UPCOMING }.toString())
                                         }
                                     },
                                 ) {
@@ -219,20 +234,23 @@ fun ParticipantContent(
                     }
                 },
                 transitionSpec = {
-                    // Slide in from right when navigating forward
-                    slideInHorizontally(initialOffsetX = { it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { -it })
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                    ) togetherWith fadeOut(
+                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                    )
                 },
                 popTransitionSpec = {
-                    // Slide in from left when navigating back
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { it })
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                    ) togetherWith fadeOut(
+                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                    )
                 },
                 predictivePopTransitionSpec = {
-                    // Slide in from left when navigating back
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { it })
-                },
+                    (fadeIn(animationSpec = tween(250)) + scaleIn(initialScale = 0.92f)) togetherWith
+                            (fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.92f))
+                }
             )
         }
     }
@@ -375,27 +393,24 @@ fun ModeratorContent(
                     }
                 },
                 transitionSpec = {
-                    // Slide in from right when navigating forward
-                    slideInHorizontally(initialOffsetX = { it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { -it })
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                    ) togetherWith fadeOut(
+                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                    )
                 },
                 popTransitionSpec = {
-                    // Slide in from left when navigating back
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { it })
+                    fadeIn(
+                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                    ) togetherWith fadeOut(
+                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                    )
                 },
                 predictivePopTransitionSpec = {
-                    // Slide in from left when navigating back
-                    slideInHorizontally(initialOffsetX = { -it }) togetherWith
-                            slideOutHorizontally(targetOffsetX = { it })
-                },
+                    (fadeIn(animationSpec = tween(250)) + scaleIn(initialScale = 0.92f)) togetherWith
+                            (fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.92f))
+                }
             )
         }
     }
-}
-
-@Preview
-@Composable
-private fun MainScreenPreview() {
-//    MainScreen()
 }

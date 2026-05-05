@@ -76,6 +76,7 @@ import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.Notification
+import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
@@ -120,12 +121,11 @@ fun ParticipantNotificationsContent(
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
-    val state = state.copy(currentEvents = dummyEvents)
     val newNotifications = emptyList<Notification>()
 //        dummyNotifications.filter { it -> !it.isRead }.sortedByDescending { it.createdAt }
     val pastNotifications = emptyList<Notification>()
 //        dummyNotifications.filter { it -> it.isRead }.sortedByDescending { it.createdAt }
-    val eventsCount = state.currentEvents.count { it.isOrganizer }
+    val eventsCount = state.managedEvents.count {it.userParticipantType === ParticipantType.ORGANIZER}
 
     Box(
         modifier = Modifier

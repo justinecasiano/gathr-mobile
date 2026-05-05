@@ -134,7 +134,7 @@ fun AddStaffScreen(
                     confirmButtonText = "Ok",
                     onConfirmClicked = {
                         viewModel.handleIntent(UserIntent.ActionOnClear)
-                        viewModel.handleIntent(UserIntent.FetchEvents)
+                        viewModel.handleIntent(UserIntent.FetchJoinableEvents)
                         viewModel.sendMainEffect(MainEffect.NavigateParticipantViewEvent)
                     },
                 )

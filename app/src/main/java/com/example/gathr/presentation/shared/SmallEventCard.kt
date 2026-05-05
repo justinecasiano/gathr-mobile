@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
@@ -44,6 +45,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.fallback
+import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
@@ -68,18 +70,17 @@ fun SmallEventCard(
     {
         AsyncImage(
             modifier = Modifier
-                .dropShadow(
+                .padding(vertical = 8.dp)
+                .shadow(
+                    elevation = 6.dp,
                     shape = RoundedCornerShape(20.dp),
-                    shadow = Shadow(
-                        radius = 10.dp,
-                        spread = 0.dp,
-                        color = Color(0xFF000000).copy(alpha = 0.25f),
-                        offset = DpOffset(x = 0.dp, (6).dp)
-                    )
+                    clip = false
                 )
                 .clip(RoundedCornerShape(20.dp))
+                .fillMaxWidth()
                 .height(width),
             model = ImageRequest.Builder(LocalContext.current)
+                .size(Size.ORIGINAL)
                 .fallback(R.drawable.placeholder_landscape)
                 .data(event.backgroundImage)
                 .crossfade(true)
@@ -173,7 +174,7 @@ fun SmallEventCard(
                                     .uppercase()
                             } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}\n"
                         )
-                        append("Organized by ${event.createdByName}\n")
+                        append("Organized by ${event.organizerName}\n")
                     }
                     withStyle(
                         style = SpanStyle(

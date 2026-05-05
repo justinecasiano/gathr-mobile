@@ -8,14 +8,15 @@ import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
+import com.example.gathr.data.model.UserRole
 import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.EventParticipantRepository
 import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.utils.Utils
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -42,6 +44,36 @@ class UserViewModel(
 
     private val _mainEffect = MutableSharedFlow<MainEffect>()
     val mainEffect: SharedFlow<MainEffect> = _mainEffect.asSharedFlow()
+
+    private var pollingJob: Job? = null
+
+    fun startPolling() {
+        pollingJob?.cancel()
+        val currentUser = _state.value.currentUser!!
+
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                try {
+                    Log.d("POLL", "CURRENTLY POLLING")
+                    if (!authRepository.isLoggedIn()) {
+                        Log.d("POLL", "STOPPED POLLING")
+                        pollingJob?.cancel()
+                    }
+
+                    if (currentUser.role == UserRole.PARTICIPANT) {
+                        fetchJoinableEvents()
+                        fetchJoinedEvents()
+                        fetchManagedEvents()
+                    } else {
+                        // fetch for moderator
+                    }
+                    fetchNotifications()
+                } catch (e: Exception) {
+                }
+                delay(5_000L)
+            }
+        }
+    }
 
     fun handleIntent(intent: UserIntent) {
         when (intent) {
@@ -96,9 +128,12 @@ class UserViewModel(
 
             is UserIntent.IsUpdateEventChanged -> _state.update { it.copy(isUpdateEvent = intent.value) }
 
-
+            is UserIntent.FetchManagedEvents -> fetchManagedEvents()
+            is UserIntent.FetchJoinableEvents -> fetchJoinableEvents()
+            is UserIntent.FetchJoinedEvents -> fetchJoinedEvents()
+            is UserIntent.FetchAvailableStaff -> fetchAvailableStaff()
+            is UserIntent.FetchNotifications -> fetchNotifications()
             is UserIntent.FetchAttendance -> fetchAttendance()
-            is UserIntent.FetchEvents -> fetchEvents()
 
             is UserIntent.CancelEvent -> cancelEvent()
             is UserIntent.RegisterEvent -> registerEvent()
@@ -111,7 +146,130 @@ class UserViewModel(
 
             is UserIntent.LogoutClicked -> logout()
             is UserIntent.BackClicked -> sendUserEffect(UserEffect.NavigateBack)
+
+            is UserIntent.EventsSearchTextChanged -> _state.update { it.copy(eventsSearchText = intent.value) }
+            is UserIntent.MyEventsSearchTextChanged -> _state.update { it.copy(myEventsSearchText = intent.value) }
+            is UserIntent.MyEventsSelectedTabChanged -> _state.update {
+                it.copy(
+                    myEventsSelectedTabIndex = intent.value
+                )
+            }
+
+            is UserIntent.ETicketsSearchTextChanged -> _state.update { it.copy(eTicketsSearchText = intent.value) }
+            is UserIntent.ETicketsSelectedTabChanged -> _state.update {
+                it.copy(
+                    eTicketsSelectedTabIndex = intent.value
+                )
+            }
         }
+    }
+
+    private fun fetchManagedEvents() {
+        viewModelScope.launch {
+            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(managedEvents = FetchStatus.LOADING)) }
+
+            val result = eventParticipantRepository.fetchManagedEvents()
+            var managedEvents: List<ManagedEvent> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> managedEvents = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(
+                    managedEvents = managedEvents,
+                    dataFetchStatus = it.dataFetchStatus.copy(managedEvents = FetchStatus.DONE)
+                )
+            }
+
+            Log.d("FETCH_MANAGED_EVENTS", managedEvents.toString())
+            Log.d("FETCH_MANAGED_EVENTS_ERROR", actionError)
+        }
+    }
+
+    private fun fetchJoinableEvents() {
+        viewModelScope.launch {
+            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(joinableEvents = FetchStatus.LOADING)) }
+
+            val result = eventParticipantRepository.fetchJoinableEvents()
+            var joinableEvents: List<Event> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> joinableEvents = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(
+                    joinableEvents = joinableEvents,
+                    dataFetchStatus = it.dataFetchStatus.copy(joinableEvents = FetchStatus.DONE)
+                )
+            }
+
+            Log.d("FETCH_JOINABLE_EVENTS", joinableEvents.toString())
+            Log.d("FETCH_JOINABLE_EVENTS_ERROR", actionError)
+        }
+    }
+
+    private fun fetchJoinedEvents() {
+        viewModelScope.launch {
+            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.LOADING)) }
+
+            val result = eventParticipantRepository.fetchJoinedEvents()
+            var joinedEvents: List<Event> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> joinedEvents = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(
+                    joinedEvents = joinedEvents,
+                    dataFetchStatus = it.dataFetchStatus.copy(joinedEvents = FetchStatus.DONE)
+                )
+            }
+
+            Log.d("FETCH_JOINED_EVENTS", joinedEvents.toString())
+            Log.d("FETCH_JOINED_EVENTS_ERROR", actionError)
+        }
+    }
+
+    private fun fetchAvailableStaff() {
+        val currentState = _state.value
+        val currentEvent = currentState.currentEvent!!
+
+        viewModelScope.launch {
+            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(availableStaff = FetchStatus.LOADING)) }
+
+            val result = eventParticipantRepository.fetchAvailableStaff(currentEvent.id)
+            var availableStaff: List<User> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> availableStaff = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            _state.update {
+                it.copy(
+                    availableStaff = availableStaff,
+                    dataFetchStatus = it.dataFetchStatus.copy(availableStaff = FetchStatus.DONE)
+                )
+            }
+
+            Log.d("FETCH_AVAILABLE_STAFF", availableStaff.toString())
+            Log.d("FETCH_AVAILABLE_STAFF_ERROR", actionError)
+        }
+    }
+
+    private fun fetchNotifications() {
+        _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(notifications = FetchStatus.LOADING)) }
+        _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(notifications = FetchStatus.DONE)) }
     }
 
     private fun fetchAttendance() {
@@ -132,24 +290,6 @@ class UserViewModel(
 
             Log.d("FETCH_ATTENDANCE", currentParticipants.toString())
             Log.d("FETCH_ATTENDANCE_ERROR", actionError)
-        }
-    }
-
-    private fun fetchEvents() {
-        viewModelScope.launch {
-            val result = eventParticipantRepository.fetchEvents()
-            var currentMyEvents: List<Event> = emptyList()
-            var actionError = ""
-
-            when (result) {
-                is ApiResult.Success -> currentMyEvents = result.data
-                is ApiResult.Error -> actionError = result.message
-            }
-
-            _state.update { it.copy(currentEvents = currentMyEvents) }
-
-            Log.d("FETCH_EVENTS", currentMyEvents.toString())
-            Log.d("FETCH_EVENTS_ERROR", actionError)
         }
     }
 
@@ -216,7 +356,7 @@ class UserViewModel(
                 handleIntent(UserIntent.ActionOnConfirmClicked {
                     viewModelScope.launch {
                         handleIntent(UserIntent.IsLoadingChanged(true))
-                        handleIntent(UserIntent.FetchEvents)
+                        handleIntent(UserIntent.FetchJoinableEvents)
                         delay(500)
                         handleIntent(UserIntent.IsLoadingChanged(false))
                         handleIntent(UserIntent.BackClicked)
@@ -265,7 +405,7 @@ class UserViewModel(
                 handleIntent(UserIntent.ActionOnConfirmClicked {
                     viewModelScope.launch {
                         handleIntent(UserIntent.IsLoadingChanged(true))
-                        handleIntent(UserIntent.FetchEvents)
+                        handleIntent(UserIntent.FetchJoinableEvents)
                         delay(500)
                         handleIntent(UserIntent.IsLoadingChanged(false))
                         handleIntent(UserIntent.BackClicked)
@@ -311,7 +451,7 @@ class UserViewModel(
                 handleIntent(UserIntent.ActionTitleChanged("Deleted event"))
                 handleIntent(UserIntent.ActionErrorChanged("You have deleted an event named ${event.title}"))
                 handleIntent(UserIntent.ActionOnClear)
-                handleIntent(UserIntent.FetchEvents)
+                handleIntent(UserIntent.FetchJoinableEvents)
                 delay(750)
                 handleIntent(UserIntent.IsLoadingChanged(false))
                 handleIntent(UserIntent.BackClicked)
@@ -327,38 +467,38 @@ class UserViewModel(
     }
 
     private fun createEvent() {
-        val currentState = _state.value
-        val user = currentState.currentUser
-        val event = currentState.createEvent
-        val staffs = currentState.addStaffs
-        val imageFile = currentState.createEventImageFile
-
-        viewModelScope.launch(Dispatchers.IO) {
-            val result =
-                eventParticipantRepository.createEvent(user!!, event, staffs, imageFile)
-            var currentEvent: Event? = null
-            var actionError = ""
-
-            when (result) {
-                is ApiResult.Success -> currentEvent = result.data
-                is ApiResult.Error -> actionError = result.message
-            }
-
-            _state.update {
-                it.copy(
-                    currentEvent = currentEvent?.copy(isOrganizer = true),
-                    actionError = actionError
-                )
-            }
-
-            Log.d("CREATE_EVENT", "CURRENT EVENT: ${_state.value.currentEvent}")
-
-            if (actionError.isBlank()) {
-                handleIntent(UserIntent.ActionTitleChanged("Event Created"))
-                handleIntent(UserIntent.ActionErrorChanged("Please wait for the moderator's approval"))
-            }
-            handleIntent(UserIntent.IsLoadingChanged(false))
-        }
+//        val currentState = _state.value
+//        val user = currentState.currentUser
+//        val event = currentState.createEvent
+//        val staffs = currentState.addStaffs
+//        val imageFile = currentState.createEventImageFile
+//
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val result =
+//                eventParticipantRepository.createEvent(user!!, event, staffs, imageFile)
+//            var currentEvent: Event? = null
+//            var actionError = ""
+//
+//            when (result) {
+//                is ApiResult.Success -> currentEvent = result.data
+//                is ApiResult.Error -> actionError = result.message
+//            }
+//
+//            _state.update {
+//                it.copy(
+//                    currentEvent = currentEvent?.copy(isOrganizer = true),
+//                    actionError = actionError
+//                )
+//            }
+//
+//            Log.d("CREATE_EVENT", "CURRENT EVENT: ${_state.value.currentEvent}")
+//
+//            if (actionError.isBlank()) {
+//                handleIntent(UserIntent.ActionTitleChanged("Event Created"))
+//                handleIntent(UserIntent.ActionErrorChanged("Please wait for the moderator's approval"))
+//            }
+//            handleIntent(UserIntent.IsLoadingChanged(false))
+//        }
     }
 
     private fun validateAddStaff() {
@@ -515,14 +655,25 @@ class UserViewModel(
         }
     }
 
-    suspend fun getCurrentUser() {
+    suspend fun getCurrentUser(): User? {
         val result = userRepository.getCurrentUserProfile()
 
+        _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(currentUser = FetchStatus.LOADING)) }
+
         when (result) {
-            is ApiResult.Success -> _state.update { it.copy(currentUser = result.data) }
+            is ApiResult.Success -> {
+                _state.update {
+                    it.copy(
+                        currentUser = result.data,
+                        dataFetchStatus = it.dataFetchStatus.copy(currentUser = FetchStatus.DONE)
+                    )
+                }
+            }
+
             is ApiResult.Error -> Log.d("MAIN", result.message)
         }
         Log.d("USER", _state.value.currentUser.toString())
+        return _state.value.currentUser
     }
 
     private fun sendUserEffect(effect: UserEffect) {

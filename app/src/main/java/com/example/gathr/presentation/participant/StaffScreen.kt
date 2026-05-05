@@ -58,6 +58,7 @@ import com.example.gathr.presentation.shared.LargeEventCard
 import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
@@ -114,7 +115,9 @@ fun StaffContent(
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
-    var staffedEvents: List<Event> = state.currentEvents.filter { it.isStaff }
+    var staffedEvents: List<Event> =
+        state.managedEvents.filter { it.userParticipantType === ParticipantType.STAFF }
+            .map { it.event }
     var eventList: List<Event> = emptyList()
 
     val tabTitles = listOf("Pending", "Approved", "Rejected", "Removed")

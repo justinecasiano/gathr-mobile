@@ -1,6 +1,6 @@
 package com.example.gathr.data.repository
 
-import com.example.gathr.data.model.FcmToken
+import com.example.gathr.data.model.Notification
 import com.example.gathr.data.remote.ApiResult
 import com.example.gathr.data.model.User
 import com.example.gathr.utils.Utils.dbResponseHandler
@@ -16,7 +16,6 @@ interface UserRepository {
     suspend fun getUserById(id: String): ApiResult<User>
     suspend fun getUserByEmailOrUsername(emailOrUsername: String): ApiResult<User>
     suspend fun updateUserProfile(id: String, updates: JsonObject): ApiResult<User>
-    suspend fun updateFcmToken(newToken: String): ApiResult<Unit>
 }
 
 class UserRepositoryImpl(
@@ -27,6 +26,10 @@ class UserRepositoryImpl(
     private val usersTable = supabase.from("users")
 
     override suspend fun getCurrentUserProfile(): ApiResult<User> {
+        if (auth.currentUserOrNull() == null) {
+            return ApiResult.Error("User not authenticated")
+        }
+
         val currentUserId = auth.currentUserOrNull()?.id
             ?: return ApiResult.Error("Not authenticated")
 
@@ -69,33 +72,6 @@ class UserRepositoryImpl(
                     select()
                 }
                 .decodeSingle<User>()
-        }
-    }
-
-    override suspend fun updateFcmToken(newToken: String): ApiResult<Unit> {
-        return dbResponseHandler {
-            val currentUserId = auth.currentUserOrNull()?.id
-                ?: throw Exception("User not logged in")
-
-            val existingRow = usersTable.select(
-                columns = Columns.list("id", "fcm_token")
-            ) {
-                filter { eq("id", currentUserId) }
-            }.decodeList<FcmToken>().firstOrNull()
-
-            if (existingRow == null) {
-                val payload = FcmToken(id = currentUserId, fcmToken = newToken)
-                usersTable.insert(payload)
-            } else {
-                if (existingRow.fcmToken != newToken) {
-                    usersTable.update({
-                        set("fcm_token", newToken)
-                    }) {
-                        filter { eq("id", currentUserId) }
-                    }
-                }
-            }
-            Unit
         }
     }
 }

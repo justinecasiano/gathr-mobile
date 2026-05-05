@@ -5,7 +5,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -24,8 +23,6 @@ import com.example.gathr.presentation.participant.ModifyEventScreen
 import com.example.gathr.presentation.participant.ParticipantViewEventScreen
 import com.example.gathr.presentation.participant.QrCodeScreen
 import com.example.gathr.presentation.participant.StaffScreen
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
@@ -95,7 +92,7 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                     onNavigateNext = {
                         backStack.clear()
                         backStack.add(MainScreen.ParticipantViewEvent)
-                        userViewModel.handleIntent(UserIntent.FetchEvents)
+                        userViewModel.handleIntent(UserIntent.FetchJoinableEvents)
                         userViewModel.handleIntent(UserIntent.CreateEventOnClear)
                     },
                 )

@@ -73,9 +73,7 @@ class LoginViewModel(
                 it.copy(emailOrPasswordError = emailOrPasswordError)
             }
 
-            if (emailOrPasswordError.isNotBlank()) {
-                handleIntent(LoginIntent.IsLoadingChanged(false))
-            } else {
+            if (emailOrPasswordError.isBlank()) {
                 val signInResult = authRepository.signIn(currentState.email, currentState.password)
 
                 when (signInResult) {
@@ -93,8 +91,8 @@ class LoginViewModel(
                     delay(500)
                     sendEffect(LoginEffect.NavigateToNext)
                 }
-                handleIntent(LoginIntent.IsLoadingChanged(false))
             }
+            handleIntent(LoginIntent.IsLoadingChanged(false))
         }
     }
 

@@ -73,6 +73,7 @@ import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
@@ -102,20 +103,17 @@ fun ParticipantViewEventScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        var role = "ATTENDEE"
-        var isRegistered = false
         val event = state.currentEvent!!
+        var role = event.userRole
+        var isRegistered =
+            if (role == ParticipantType.ATTENDEE && event.isRegistered) true else false
 
-        if (event.isOrganizer) role = "ORGANIZER"
-        else if (event.isStaff) role = "STAFF"
-
-        if (role == "ATTENDEE" && event.isRegistered) isRegistered = true
-
-        Log.d("CREATE_EVENT", "Organizer: ${event.isOrganizer}")
+        if (role === ParticipantType.ORGANIZER)
+            Log.d("CREATE_EVENT", "User is Organizer")
 
         ParticipantViewEventContent(
             event = state.currentEvent!!,
-            role = role,
+            role = role.toString().toTitleCase(),
             isRegistered = isRegistered,
             onIntent = viewModel::handleIntent,
             onNavigate = viewModel::sendMainEffect
@@ -658,7 +656,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 ) {
                                     append("Organizer\n")
                                 }
-                                append(event.createdByName.toTitleCase())
+                                append(event.organizerName.toTitleCase())
                             },
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,

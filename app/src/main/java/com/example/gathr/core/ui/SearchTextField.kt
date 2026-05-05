@@ -61,7 +61,7 @@ fun SearchTextField(
                     fontFamily = AppFonts.rethinkSans,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black,
+                    color = Color.Gray,
                 ),
             )
         },
@@ -90,7 +90,7 @@ fun SearchTextField(
         },
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
-            cursorColor = Color.White,
+            cursorColor = Color.Black,
 
             unfocusedBorderColor = Color(0xFFD7D7D7),
             focusedBorderColor = Color(0xFFD7D7D7),

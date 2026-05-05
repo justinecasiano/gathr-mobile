@@ -1,9 +1,13 @@
 package com.example.gathr.data.model
 
+import com.example.gathr.utils.EventApprovalStatusSerializer
+import com.example.gathr.utils.EventComputedStatusSerializer
 import com.example.gathr.utils.JavaInstantSerializer
+import com.example.gathr.utils.ParticipantTypeSerializer
 import com.example.gathr.utils.UuidSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlin.time.ExperimentalTime
 import java.time.Instant
 import java.util.UUID
@@ -13,12 +17,8 @@ import java.util.UUID
 data class Event(
     val id: Long,
 
-    @SerialName("parent_event_id")
-    val parentEventId: Long? = null,
-
     val title: String,
     val description: String,
-    val roles: List<String>? = null,
 
     @SerialName("allowed_departments")
     val allowedDepartments: List<DepartmentType>? = null,
@@ -30,7 +30,7 @@ data class Event(
     val allowAlumni: Boolean,
 
     @SerialName("background_image")
-    val backgroundImage: String,
+    val backgroundImage: String?,
 
     val location: String,
 
@@ -47,29 +47,35 @@ data class Event(
     @SerialName("remaining_slots")
     val remainingSlots: Int,
 
-    @SerialName("evaluation_form")
-    val evaluationForm: String? = null,
+    @SerialName("feedback_form")
+    val feedbackForm: JsonElement? = null,
+
+    @SerialName("is_form_active")
+    val isFormActive: Boolean = false,
+
+    @SerialName("form_title")
+    val formTitle: String? = null,
 
     @SerialName("created_by")
     @Serializable(with = UuidSerializer::class)
     val createdBy: UUID,
 
-    @SerialName("created_by_name")
-    val createdByName: String,
-
+    @Serializable(with = EventApprovalStatusSerializer::class)
     val status: EventApprovalStatus,
 
-    @SerialName("computed_status")
-    val computedStatus: EventComputedStatus,
+    @SerialName("organizerName")
+    val organizerName: String,
+
+    @SerialName("user_role")
+    @Serializable(with = ParticipantTypeSerializer::class)
+    val userRole: ParticipantType,
 
     @SerialName("is_registered")
     val isRegistered: Boolean = false,
 
-    @SerialName("is_organizer")
-    val isOrganizer: Boolean = false,
-
-    @SerialName("is_staff")
-    val isStaff: Boolean = false,
+    @SerialName("computed_status")
+    @Serializable(with = EventComputedStatusSerializer::class)
+    val computedStatus: EventComputedStatus,
 
     @SerialName("submitted_at")
     @Serializable(with = JavaInstantSerializer::class)
@@ -93,12 +99,10 @@ data class Event(
     val isArchive: Boolean,
 )
 
-@Serializable
 enum class EventApprovalStatus {
     PENDING, REJECTED, APPROVED
 }
 
-@Serializable
 enum class EventComputedStatus {
-    UPCOMING, ONGOING, COMPLETED
+    UPCOMING, ONGOING, ENDED
 }

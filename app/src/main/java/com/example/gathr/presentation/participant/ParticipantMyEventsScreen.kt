@@ -52,6 +52,7 @@ import com.example.gathr.presentation.shared.LargeEventCard
 import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
@@ -90,11 +91,13 @@ fun ParticipantMyEventContent(
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
-    var eventList: List<Event> = state.currentEvents.filter { it.isOrganizer }
+    var eventList: List<Event> =
+        state.managedEvents.filter { it.userParticipantType === ParticipantType.ORGANIZER }
+            .map { it.event }
 
     val tabTitles = listOf("Pending", "Approved", "Rejected", "Removed")
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    var searchText by remember { mutableStateOf("") }
+    val selectedTabIndex = state.myEventsSelectedTabIndex
+    val searchText = state.myEventsSearchText
 
     Column(
         modifier = Modifier
@@ -135,8 +138,8 @@ fun ParticipantMyEventContent(
                 Spacer(modifier = Modifier.height(10.dp))
                 SearchTextField(
                     searchText,
-                    onValueChange = { searchText = it },
-                    onClearValue = { searchText = "" },
+                    onValueChange = { onIntent(UserIntent.MyEventsSearchTextChanged(it)) },
+                    onClearValue = { onIntent(UserIntent.MyEventsSearchTextChanged("")) },
                     placeholderText = "Search in My Events",
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
@@ -161,8 +164,7 @@ fun ParticipantMyEventContent(
                             selectedContentColor = Color(0xFF473163),
                             unselectedContentColor = Color(0xFF473163),
                             onClick = {
-                                selectedTabIndex = index
-                                searchText = ""
+                                onIntent(UserIntent.MyEventsSelectedTabChanged(index))
                             },
                             text = {
                                 Text(
@@ -216,7 +218,6 @@ fun ParticipantMyEventContent(
                     MyEventsCards(
                         events = eventList,
                         showBanner = false,
-                        isOrganizer = true,
                         isETicket = false,
                         onIntent = onIntent,
                         onNavigate = onNavigate,
@@ -231,7 +232,6 @@ fun ParticipantMyEventContent(
                 MyEventsCards(
                     events = eventList,
                     showBanner = searchText.isBlank(),
-                    isOrganizer = true,
                     isETicket = false,
                     onIntent = onIntent,
                     onNavigate = onNavigate,
@@ -287,7 +287,6 @@ fun ParticipantMyEventContent(
 private fun MyEventsCards(
     events: List<Event> = emptyList(),
     showBanner: Boolean = true,
-    isOrganizer: Boolean = false,
     isETicket: Boolean = false,
     onTextButtonClick: () -> Unit,
     onIntent: (UserIntent) -> Unit,
@@ -329,7 +328,7 @@ private fun MyEventsCards(
                 }
             }
         }
-        items(events, key = { event -> event.id }) { event ->
+        items(events, key = { event -> event.id }, contentType = { "large_card" }) { event ->
             val isRejectedOrRemoved =
                 event.status == EventApprovalStatus.REJECTED || event.isArchive
             LargeEventCard(

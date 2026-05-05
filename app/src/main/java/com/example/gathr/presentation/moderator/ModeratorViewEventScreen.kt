@@ -164,7 +164,7 @@ fun ModeratorViewEventContent(
     val event2 = event.copy(
         startTime = Instant.now().minusSeconds(6000),
         endTime = Instant.now().minusSeconds(3600),
-        computedStatus = EventComputedStatus.COMPLETED
+        computedStatus = EventComputedStatus.ENDED
     )
     val event3 = event.copy(
         startTime = Instant.now().plusSeconds(5),
@@ -651,7 +651,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 ) {
                                     append("Organizer\n")
                                 }
-                                append(event.createdByName.toTitleCase())
+                                append(event.organizerName.toTitleCase())
                             },
                             style = TextStyle(
                                 fontFamily = AppFonts.rethinkSans,

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
@@ -49,6 +51,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.request.fallback
+import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
 import com.example.gathr.ui.theme.AppFonts
@@ -69,19 +72,15 @@ fun LargeEventCard(
 ) {
     Card(
         modifier = Modifier
-            .dropShadow(
-                shape = RoundedCornerShape(20.dp),
-                shadow = Shadow(
-                    radius = 20.dp,
-                    spread = 0.dp,
-                    color = Color(0xFF000000).copy(alpha = 0.5f),
-                    offset = DpOffset(x = 0.dp, (10).dp)
-                )
-            )
             .fillMaxWidth()
             .height(250.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Black.copy(0.1f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 10.dp,
+            pressedElevation = 2.dp,
+            hoveredElevation = 12.dp
         ),
         shape = RoundedCornerShape(20.dp),
         onClick = onCardClicked,
@@ -92,6 +91,7 @@ fun LargeEventCard(
                 model = ImageRequest.Builder(LocalContext.current)
                     .fallback(R.drawable.placeholder_landscape)
                     .data(event.backgroundImage)
+                    .size(Size.ORIGINAL)
                     .crossfade(true)
                     .listener(
                         onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
@@ -168,28 +168,34 @@ fun LargeEventCard(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .height(70.dp)
+                        .wrapContentHeight()
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color.White.copy(alpha = 0.9f))
                         .padding(start = 5.dp, end = 5.dp)
                         .padding(vertical = 12.dp)
                         .align(Alignment.BottomEnd)
                 ) {
-                    Row(Modifier.fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Column(
                             Modifier.weight(8f),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "${event.title}\n",
+                                text = event.title,
                                 style = TextStyle(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF232222)
                                 ),
-                                maxLines = 1,
+                                modifier = Modifier.padding(horizontal = 2.dp),
+                                maxLines = 4,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
@@ -220,11 +226,14 @@ fun LargeEventCard(
                         }
                         if (!isRejectedOrRemoved) {
                             Spacer(Modifier.width(5.dp))
-                            VerticalDivider(color = Color.Black)
+                            VerticalDivider(color = Color.Black,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .padding(vertical = 4.dp) //
+                            )
                             TextButton(
                                 modifier = Modifier
-                                    .weight(2.5f)
-                                    .defaultMinSize(minHeight = 1.dp),
+                                    .weight(3f),
                                 contentPadding = PaddingValues(
                                     vertical = 5.dp
                                 ),

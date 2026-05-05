@@ -28,9 +28,18 @@ sealed interface UserIntent {
     data class IsLoadingChanged(val value: Boolean) : UserIntent
     data class IsUpdateEventChanged(val value: Boolean) : UserIntent
 
-    // DATA FETCHING
+    data class EventsSearchTextChanged(val value: String) : UserIntent
+    data class MyEventsSelectedTabChanged(val value: Int) : UserIntent
+    data class MyEventsSearchTextChanged(val value: String) : UserIntent
+    data class ETicketsSelectedTabChanged(val value: Int) : UserIntent
+    data class ETicketsSearchTextChanged(val value: String) : UserIntent
+
+    data object FetchManagedEvents: UserIntent
+    data object FetchJoinableEvents : UserIntent
+    data object FetchJoinedEvents: UserIntent
+    data object FetchAvailableStaff: UserIntent
+    data object FetchNotifications: UserIntent
     data object FetchAttendance: UserIntent
-    data object FetchEvents : UserIntent
 
     data object MarkAttendance: UserIntent
 
