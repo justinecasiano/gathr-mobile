@@ -117,7 +117,7 @@ fun SmallEventCard(
                     withStyle(
                         style = SpanStyle(
                             fontFamily = AppFonts.rethinkSans,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF676767)
                         )
@@ -127,7 +127,7 @@ fun SmallEventCard(
                     withStyle(
                         style = SpanStyle(
                             fontFamily = AppFonts.rethinkSans,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = if (event.remainingSlots <= 20) Color(0xFF820006)
                             else Color(0xFF9FC090)

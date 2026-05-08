@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -70,7 +71,9 @@ import coil3.request.fallback
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.ElevatedButton
+import com.example.gathr.core.ui.ImageViewer
 import com.example.gathr.core.ui.LoadingOverlay
+import com.example.gathr.data.model.DepartmentType
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
@@ -80,7 +83,6 @@ import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppFonts
-import com.example.gathr.utils.dummyEvents
 import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
@@ -105,7 +107,7 @@ fun ParticipantViewEventScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        val event = state.currentEvent!!
+        val event = state.currentEvent ?: return
         var role = event.userRole
         var isRegistered =
             if (role == ParticipantType.ATTENDEE && event.isRegistered) true else false
@@ -114,7 +116,7 @@ fun ParticipantViewEventScreen(
 
         ParticipantViewEventContent(
             event = state.currentEvent!!,
-            role = role.toString(),
+            role = role,
             isRegistered = isRegistered,
             onIntent = viewModel::handleIntent,
             onNavigate = viewModel::sendMainEffect
@@ -133,8 +135,29 @@ fun ParticipantViewEventScreen(
                 )
             }
 
-            state.actionTitle == "Cancel Registration" ||
-                    state.actionTitle == "Delete Event" -> {
+            state.actionTitle == "Registration Cancelled" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = state.actionOnConfirm,
+                )
+            }
+
+            state.actionTitle == "Cancel Registration" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    confirmButtonText = "Confirm",
+                    onConfirmClicked = state.actionOnConfirm,
+                    cancelButtonText = "Cancel",
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                )
+            }
+
+            state.actionTitle == "Delete Event" -> {
                 Alert(
                     title = state.actionTitle,
                     message = state.actionError,
@@ -143,6 +166,16 @@ fun ParticipantViewEventScreen(
                     onConfirmClicked = state.actionOnConfirm,
                     cancelButtonText = "Cancel",
                     onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                )
+            }
+
+            state.actionTitle == "Event Deleted" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = state.actionOnConfirm,
                 )
             }
 
@@ -163,29 +196,32 @@ fun ParticipantViewEventScreen(
 @Composable
 fun ParticipantViewEventContent(
     event: Event,
-    role: String,
+    role: ParticipantType,
     isRegistered: Boolean,
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
+    var selectedImage by remember { mutableStateOf("") }
+
     var buttonText: String = ""
     var buttonColor = Color(0xFF7B55A3)
     var buttonOutlineColor = Color(0xFF4C2576)
     var onButtonClick: () -> Unit = {}
 
-    val isRejectedOrRemoved = event.isArchive || event.status == EventApprovalStatus.REJECTED
+    val isRemoved = event.isArchive
     val isUpcoming = event.startTime.isAfter(Instant.now())
-    var bottomBorderThickness = 5.dp
+    val isPastEnd = Instant.now().isAfter(event.endTime)
+
+    val bottomBorderThickness = 5.dp
     val eventStatusColor =
         if (isUpcoming && !isRegistered) Color.Black.copy(0.8f) else Color(0xFF9FC090)
     var eventStatus = event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-    var eventDateTime = "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+    var eventDateTime = "${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
 
-    if (role == "ATTENDEE") {
+    if (role == ParticipantType.ATTENDEE) {
         if (!isRegistered) {
             buttonText = "REGISTER"
             onButtonClick = {
-                onIntent(UserIntent.IsLoadingChanged(true))
                 onIntent(UserIntent.RegisterEvent)
             }
         } else {
@@ -195,47 +231,57 @@ fun ParticipantViewEventContent(
                 onIntent(UserIntent.ActionTitleChanged("Cancel Registration"))
                 onIntent(UserIntent.ActionErrorChanged("Are you sure you want to cancel your registration?"))
                 onIntent(UserIntent.ActionOnConfirmClicked {
-                    onIntent(UserIntent.IsLoadingChanged(true))
                     onIntent(UserIntent.CancelEvent)
+                    onIntent(UserIntent.ActionOnClear)
                 })
             }
             buttonColor = Color(0xFFFC3436)
             buttonOutlineColor = Color(0xFF820006)
             eventDateTime = "${
                 event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
         }
     }
 
-    if (!isRejectedOrRemoved && isRegistered) {
+    if (!isRemoved && isRegistered) {
         if (Instant.now().isAfter(event.endTime)) {
-            eventStatus = "COMPLETED EVENT"
+            eventStatus = "EVENT ENDED"
             eventDateTime = "${
                 event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
 
             buttonText = "GIVE FEEDBACK"
             buttonColor = Color(0xFF7B55A3)
-            bottomBorderThickness = 0.dp
+            buttonOutlineColor = Color(0xFF4C2576)
             onButtonClick = {}
         } else if (Instant.now().isAfter(event.startTime)) {
             eventStatus = "ONGOING EVENT"
             eventDateTime = "${
                 event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
 
             buttonText = "SHOW QR"
             buttonColor = Color(0xFF7B986E)
-            bottomBorderThickness = 0.dp
+            buttonOutlineColor = Color(0xFF3E6831)
             onButtonClick = { onNavigate(MainEffect.NavigateQrCode) }
         }
     }
 
-    if (role == "ORGANIZER" || role == "STAFF") {
-        Log.d("VIEW_EVENT", "THIS IS A STAFF")
+    if (role == ParticipantType.ORGANIZER || role == ParticipantType.STAFF) {
+        Log.d("INSIDE ORGANIZER OR STAFF", "User Role is $role")
         buttonText = "TRACK ATTENDANCE"
         buttonColor = Color(0xFF7B55A3)
         onButtonClick = { onNavigate(MainEffect.NavigateAttendance) }
+    }
+
+    val showRegisterButton = when {
+        event.isArchive -> false
+        role == ParticipantType.ORGANIZER || role == ParticipantType.STAFF -> true
+        role == ParticipantType.ATTENDEE -> {
+            if (isRegistered) true
+            else !isPastEnd
+        }
+        else -> false
     }
 
     Scaffold(
@@ -265,14 +311,40 @@ fun ParticipantViewEventContent(
                     }
                 },
                 actions = {
-                    if (role != "ATTENDEE")
-                        ThreeDotMenu(role, isRejectedOrRemoved, onIntent, onNavigate)
+                    val isOrganizer = role == ParticipantType.ORGANIZER
+                    val isStaff = role == ParticipantType.STAFF
+                    val isPending = event.status == EventApprovalStatus.PENDING
+                    val isUpcoming = event.computedStatus == EventComputedStatus.UPCOMING
+                    val isApproved = event.status == EventApprovalStatus.APPROVED
+                    val isRejected = event.status == EventApprovalStatus.REJECTED
+                    val isArchived = event.isArchive
+
+                    val showMenu = when {
+                        isOrganizer -> when {
+                            isRemoved -> false // Archived/Deleted = No menu
+                            isPending && !isUpcoming -> false // Pending + Ongoing/Ended = No menu
+                            else -> true // Pending+Upcoming, Rejected, and all Approved show the menu
+                        }
+                        // Staff Rules
+                        isStaff -> when {
+                            isApproved && !isArchived -> true // Only show for approved events
+                            else -> false // Pending/Rejected/Archived = No menu for staff
+                        }
+
+                        else -> false
+                    }
+
+                    if (showMenu) {
+                        ThreeDotMenu(event, role, isRemoved, onIntent, onNavigate)
+                    }
                 })
         },
     ) { outerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
-                modifier = Modifier.fillMaxHeight(0.6f),
+                modifier = Modifier
+                    .fillMaxHeight(0.6f)
+                    .clickable { selectedImage = event.backgroundImage ?: "" },
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(event.backgroundImage)
                     .fallback(R.drawable.placeholder_landscape)
@@ -327,7 +399,7 @@ fun ParticipantViewEventContent(
                     )
                 }
                 Spacer(Modifier.width(5.dp))
-                if (event.status == EventApprovalStatus.APPROVED) {
+                if (event.status == EventApprovalStatus.APPROVED && showRegisterButton) {
                     ElevatedButton(
                         text = buttonText,
                         onClick = onButtonClick,
@@ -347,18 +419,27 @@ fun ParticipantViewEventContent(
                     )
                 }
             }
+            if (selectedImage.isNotBlank())
+                ImageViewer(selectedImage, onDismiss = { selectedImage = "" })
         }
     }
 }
 
 @Composable
 fun ThreeDotMenu(
-    role: String,
-    isRejectedOrRemoved: Boolean = false,
+    event: Event,
+    role: ParticipantType,
+    isRemoved: Boolean = false,
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+
+    val isOrganizer = role == ParticipantType.ORGANIZER
+    val isApproved = event.status == EventApprovalStatus.APPROVED
+    val isUpcoming = event.computedStatus == EventComputedStatus.UPCOMING
+    val isRejected = event.status == EventApprovalStatus.REJECTED
+    val isPending = event.status == EventApprovalStatus.PENDING
 
     Box(
         modifier = Modifier.wrapContentSize(Alignment.TopStart)
@@ -392,84 +473,24 @@ fun ThreeDotMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
             ) {
-                DropdownMenuItem(
-                    onClick = {
-                        expanded = false
-                        onNavigate(MainEffect.NavigateAttendance)
-                    },
-                    text = {
-                        Row {
-                            Icon(
-                                painter = painterResource(R.drawable.attendees),
-                                contentDescription = "Attendees",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "See who registered", style = TextStyle(
-                                    fontFamily = AppFonts.rethinkSans,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = Color.White
-                                )
-                            )
-                        }
-                    })
-                if (role == "ORGANIZER" || role == "MODERATOR") {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 15.dp),
-                        color = Color.Black,
-                        thickness = 0.8.dp
-                    )
-                    DropdownMenuItem(onClick = {
-                        onIntent(UserIntent.ActionTitleChanged("Delete Event"))
-                        onIntent(UserIntent.ActionErrorChanged("Are you sure you want to delete this event?"))
-                        onIntent(UserIntent.ActionOnConfirmClicked {
-                            onIntent(UserIntent.IsLoadingChanged(true))
-                            onIntent(UserIntent.ActionOnClear)
-                            onIntent(UserIntent.DeleteEvent)
-                        })
-                    }, text = {
-                        Row {
-                            Icon(
-                                painter = painterResource(R.drawable.delete),
-                                contentDescription = "Delete Event",
-                                tint = Color.White
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "Delete Event", style = TextStyle(
-                                    fontFamily = AppFonts.rethinkSans,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = Color.White
-                                )
-                            )
-                        }
-                    })
-                }
-
-                if (role == "ORGANIZER" && !isRejectedOrRemoved) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 15.dp),
-                        color = Color.Black,
-                        thickness = 0.8.dp
-                    )
+                val canSeeAttendance = !isRemoved && !isRejected && isApproved &&
+                        (isOrganizer || role == ParticipantType.STAFF)
+                if (canSeeAttendance) {
                     DropdownMenuItem(
                         onClick = {
                             expanded = false
-                            onNavigate(MainEffect.NavigateUpdateEvent)
+                            onNavigate(MainEffect.NavigateAttendance)
                         },
                         text = {
                             Row {
                                 Icon(
-                                    painter = painterResource(R.drawable.edit),
-                                    contentDescription = "Edit Event",
+                                    painter = painterResource(R.drawable.attendees),
+                                    contentDescription = "Attendees",
                                     tint = Color.White
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    "Edit Event", style = TextStyle(
+                                    "See Attendance", style = TextStyle(
                                         fontFamily = AppFonts.rethinkSans,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Normal,
@@ -477,9 +498,88 @@ fun ThreeDotMenu(
                                     )
                                 )
                             }
-                        },
-                    )
+                        })
                 }
+                if (isOrganizer && !isRemoved) {
+                    val canModify =
+                        (isPending && isUpcoming) || isRejected || (isApproved && isUpcoming)
+
+                    if (canModify) {
+                        if (canSeeAttendance) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 15.dp),
+                                color = Color.Black,
+                                thickness = 0.8.dp
+                            )
+                        }
+                        DropdownMenuItem(
+                            onClick = {
+                                expanded = false
+                                onNavigate(MainEffect.NavigateUpdateEvent)
+                            },
+                            text = {
+                                Row {
+                                    Icon(
+                                        painter = painterResource(R.drawable.edit),
+                                        contentDescription = "Edit Event",
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Edit Event", style = TextStyle(
+                                            fontFamily = AppFonts.rethinkSans,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Normal,
+                                            color = Color.White
+                                        )
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+
+                if (isOrganizer && !isRemoved) {
+                    val canDelete =
+                        (event.status == EventApprovalStatus.PENDING && isUpcoming) ||
+                                isRejected ||
+                                (isApproved && isUpcoming)
+
+                    if (canDelete) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 15.dp),
+                            color = Color.Black,
+                            thickness = 0.8.dp
+                        )
+                        DropdownMenuItem(onClick = {
+                            onIntent(UserIntent.ActionTitleChanged("Delete Event"))
+                            onIntent(UserIntent.ActionErrorChanged("Are you sure you want to delete this event?"))
+                            onIntent(UserIntent.ActionOnConfirmClicked {
+                                expanded = false
+                                onIntent(UserIntent.ActionOnClear)
+                                onIntent(UserIntent.DeleteEvent)
+                            })
+                        }, text = {
+                            Row {
+                                Icon(
+                                    painter = painterResource(R.drawable.delete),
+                                    contentDescription = "Delete Event",
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Delete Event", style = TextStyle(
+                                        fontFamily = AppFonts.rethinkSans,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = Color.White
+                                    )
+                                )
+                            }
+                        })
+                    }
+                }
+
             }
         }
     }
@@ -655,7 +755,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                     Spacer(Modifier.height(10.dp))
                     HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 0.81.dp)
                     Spacer(Modifier.height(15.dp))
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.width(2.dp))
                         Icon(
                             modifier = Modifier.size(28.dp),
@@ -676,7 +776,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 ) {
                                     append("Organizer\n")
                                 }
-                                append(event.organizerName.toTitleCase())
+                                append("@${event.organizerDisplayName} | ${event.organizerName.toTitleCase()}")
                             },
                             maxLines = 3,
                             overflow = TextOverflow.Ellipsis,
@@ -691,7 +791,59 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         )
                     }
                     Spacer(Modifier.height(15.dp))
-                    Row {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            modifier = Modifier.size(32.dp),
+                            painter = painterResource(R.drawable.attendees),
+                            tint = Color.Black,
+                            contentDescription = "Departments Icon"
+                        )
+                        Spacer(Modifier.width(20.dp))
+                        Text(
+                            buildAnnotatedString {
+                                withStyle(
+                                    style = SpanStyle(
+                                        fontFamily = AppFonts.instrumentSans,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.Black
+                                    )
+                                ) {
+                                    append("Who can join?\n")
+                                }
+                                val allowedDepts = event.allowedDepartments ?: emptyList()
+                                val alumniSuffix = if (event.allowAlumni) " and Alumni" else ""
+
+                                val displayText = when {
+                                    allowedDepts.contains(DepartmentType.ALL) -> {
+                                        "Everyone can join${if (event.allowAlumni) " (including Alumni)" else ""}"
+                                    }
+
+                                    allowedDepts.isEmpty() -> {
+                                        if (event.allowAlumni) "Alumni only" else "No departments specified"
+                                    }
+
+                                    else -> {
+                                        val deptsString =
+                                            allowedDepts.joinToString(separator = ", ") { it.name }
+                                        "$deptsString$alumniSuffix"
+                                    }
+                                }
+
+                                append(displayText)
+                            },
+                            style = TextStyle(
+                                fontFamily = AppFonts.rethinkSans,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp,
+                                textAlign = TextAlign.Start,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Normal,
+                            ),
+                        )
+                    }
+                    Spacer(Modifier.height(15.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             modifier = Modifier.size(32.dp),
                             painter = painterResource(R.drawable.description),
@@ -723,6 +875,42 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                             ),
                         )
                     }
+                    Spacer(Modifier.height(15.dp))
+                    if (event.status == EventApprovalStatus.REJECTED)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                modifier = Modifier.size(30.dp),
+                                painter = painterResource(R.drawable.clear),
+                                tint = Color.Black,
+                                contentDescription = "Comment Icon"
+                            )
+                            Spacer(Modifier.width(20.dp))
+                            Text(
+                                buildAnnotatedString {
+                                    withStyle(
+                                        style = SpanStyle(
+                                            fontFamily = AppFonts.instrumentSans,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.Black
+                                        )
+                                    ) {
+                                        append("Moderator's Comment\n")
+                                    }
+                                    val content =
+                                        if (event.comment !== null) event.comment else "No specific reason provided."
+                                    append(content)
+                                },
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp,
+                                    textAlign = TextAlign.Start,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Normal,
+                                ),
+                            )
+                        }
                 }
             }
         },

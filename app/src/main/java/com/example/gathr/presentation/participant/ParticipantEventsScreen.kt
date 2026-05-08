@@ -68,6 +68,8 @@ import com.example.gathr.presentation.shared.LargeEventCard
 import com.example.gathr.presentation.shared.SearchNotFound
 import com.example.gathr.presentation.shared.SmallEventCard
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.toAbbreviatedString
+import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toTitleCase
 import kotlin.math.max
 
@@ -113,8 +115,8 @@ fun ParticipantEventContent(
         Tab("Ended", R.drawable.completed_icon)
     )
     val searchText = state.eventsSearchText
-    var hasClicked by remember { mutableStateOf(false) }
-    var selectedFilter by remember { mutableStateOf("") }
+    val selectedFilter = state.activeEventsFilter
+    val isFilterActive = selectedFilter != null
 
     val userDept = state.currentUser?.department ?: DepartmentType.ALL
 
@@ -138,7 +140,12 @@ fun ParticipantEventContent(
                     true
                 } else {
                     event.title.contains(searchText, ignoreCase = true) ||
-                            event.description.contains(searchText, ignoreCase = true) ||
+                            event.startTime.toPrettyString("MMM. d, yyyy").contains(
+                                searchText,
+                                ignoreCase = true
+                            ) ||
+                            event.remainingSlots.toAbbreviatedString()
+                                .contains(searchText, ignoreCase = true) ||
                             event.organizerName.contains(searchText, ignoreCase = true)
                 }
             }
@@ -150,7 +157,12 @@ fun ParticipantEventContent(
         eventList.filter { it -> it.computedStatus == EventComputedStatus.ONGOING }
     val endedEvents: List<Event> =
         eventList.filter { it -> it.computedStatus == EventComputedStatus.ENDED }
-    val popularEvent = upcomingEvents.sortedBy { it.remainingSlots }
+
+    val activeEvents = eventList.filter {
+        it.computedStatus == EventComputedStatus.UPCOMING ||
+                it.computedStatus == EventComputedStatus.ONGOING
+    }
+    val popularEvent = activeEvents.sortedBy { it.remainingSlots }
         .maxByOrNull { event ->
             val slotsTaken = max(0, event.capacity - event.remainingSlots)
             val fillRatio = slotsTaken.toFloat() / event.capacity.toFloat()
@@ -158,22 +170,21 @@ fun ParticipantEventContent(
         }
 
     AnimatedContent(
-        targetState = hasClicked,
+        targetState = isFilterActive,
         transitionSpec = {
             fadeIn(animationSpec = tween(300)) togetherWith
                     fadeOut(animationSpec = tween(300))
         },
         label = "FilterTransition"
-    ) { targetHasClicked ->
-        if (targetHasClicked) {
+    ) { filterVisible ->
+        if (filterVisible && selectedFilter != null) {
             ParticipantFilterScreen(
                 title = selectedFilter,
                 eventList = eventList.filter { event ->
                     event.computedStatus.toString().lowercase() == selectedFilter.lowercase()
                 },
                 onBack = {
-                    selectedFilter = ""
-                    hasClicked = false
+                    onIntent(UserIntent.ActiveEventsFilterChanged(null))
                 },
                 onIntent,
                 onNavigate
@@ -277,8 +288,7 @@ fun ParticipantEventContent(
                                         .width(oneThirdWidth)
                                         //                        .weight(1f)
                                         .clickable {
-                                            hasClicked = true
-                                            selectedFilter = tabs[index].title
+                                            onIntent(UserIntent.ActiveEventsFilterChanged(tabs[index].title))
                                         },
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center
@@ -330,7 +340,7 @@ fun ParticipantEventContent(
                                         modifier = Modifier
                                             .fillMaxWidth(0.65f)
                                             .align(Alignment.CenterStart)
-                                            .padding(start = 30.dp, top = 25.dp)
+                                            .padding(start = 30.dp, top = 5.dp)
                                     )
                                 }
                                 Column(Modifier.padding(horizontal = 20.dp)) {
@@ -365,8 +375,7 @@ fun ParticipantEventContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            hasClicked = true
-                                            selectedFilter = "Upcoming"
+                                            onIntent(UserIntent.ActiveEventsFilterChanged("Upcoming"))
                                         }
                                         .padding(vertical = 5.dp, horizontal = 20.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -422,8 +431,7 @@ fun ParticipantEventContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            hasClicked = true
-                                            selectedFilter = "Ongoing"
+                                            onIntent(UserIntent.ActiveEventsFilterChanged("Ongoing"))
                                         }
                                         .padding(vertical = 5.dp, horizontal = 20.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -479,8 +487,7 @@ fun ParticipantEventContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {
-                                            hasClicked = true
-                                            selectedFilter = "Ended"
+                                            onIntent(UserIntent.ActiveEventsFilterChanged("Ended"))
                                         }
                                         .padding(vertical = 5.dp, horizontal = 20.dp),
                                     verticalAlignment = Alignment.CenterVertically

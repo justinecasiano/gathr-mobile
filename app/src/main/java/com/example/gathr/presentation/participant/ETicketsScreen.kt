@@ -44,12 +44,15 @@ import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
 import com.example.gathr.presentation.shared.SearchNotFound
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.dummyEvents
+import com.example.gathr.utils.toAbbreviatedString
+import com.example.gathr.utils.toSimpleTime
 
 @Composable
 fun ETicketsScreen(
@@ -82,7 +85,8 @@ fun ETicketsContent(
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
-    var eventList: List<Event> = state.joinedEvents
+    var eventList: List<Event> =
+        state.joinedEvents.filter { it.isRegistered && it.userRole == ParticipantType.ATTENDEE }
     var eTicketsList: List<Event> = emptyList()
 
     val tabTitles = listOf("Upcoming", "Ongoing", "Completed")
@@ -185,7 +189,12 @@ fun ETicketsContent(
                 true
             } else {
                 event.title.contains(searchText, ignoreCase = true) ||
-                        event.description.contains(searchText, ignoreCase = true)
+                        "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}".contains(
+                            searchText,
+                            ignoreCase = true
+                        ) ||
+                        event.remainingSlots.toAbbreviatedString()
+                            .contains(searchText, ignoreCase = true)
             }
         }
 
@@ -254,7 +263,7 @@ private fun MyEventsCards(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        modifier = Modifier.width(379.dp),
+                        modifier = Modifier.width(500.dp),
                         painter = painterResource(R.drawable.etickets_banner),
                         contentDescription = "Events banner",
                         contentScale = ContentScale.FillWidth
@@ -270,7 +279,7 @@ private fun MyEventsCards(
                         ),
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = 25.dp, top = 10.dp)
+                            .padding(start = 15.dp, top = 10.dp)
                     )
                 }
             }

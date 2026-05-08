@@ -15,7 +15,7 @@ data class User(
     val id: UUID,
 
     @SerialName("display_name")
-    val displayName: String,
+    val displayName: String?,
 
     @SerialName("first_name")
     val firstName: String,

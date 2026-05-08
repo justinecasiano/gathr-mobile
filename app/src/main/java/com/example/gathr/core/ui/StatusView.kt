@@ -45,43 +45,44 @@ import com.example.gathr.ui.theme.AppFonts
 fun StatusScreen(
     title: String,
     buttonText: String,
-//    hasTopBar: Boolean = true,
+    hasTopBar: Boolean = false,
     message: @Composable () -> Unit,
     @DrawableRes id: Int = R.drawable.parachute,
     onNavigateBack: () -> Unit = {},
     onNavigateNext: () -> Unit = {}
 ) {
-    Box(modifier = Modifier.fillMaxHeight()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id),
             contentDescription = "Background",
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.FillBounds
         )
         Scaffold(
             containerColor = Color.Transparent,
-//            topBar = if (hasTopBar) {
-//                {
-//                    CenterAlignedTopAppBar(
-//                        modifier = Modifier.padding(top = 10.dp, start = 10.dp),
-//                        title = {},
-//                        colors = TopAppBarDefaults.topAppBarColors(
-//                            containerColor = Color.Transparent,
-//                        ),
-//                        navigationIcon = {
-//                            IconButton(onClick = onNavigateBack) {
-//                                Icon(
-//                                    modifier = Modifier.size(37.dp),
-//                                    tint = Color(0xFFBFB6CA),
-//                                    painter = painterResource(R.drawable.arrow_back),
-//                                    contentDescription = "Back"
-//                                )
-//                            }
-//                        },
-//                    )
-//                }
-//            } else {
-//                {}
-//            },
+            topBar = if (hasTopBar) {
+                {
+                    CenterAlignedTopAppBar(
+                        modifier = Modifier.padding(top = 10.dp, start = 10.dp),
+                        title = {},
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                        ),
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(
+                                    modifier = Modifier.size(37.dp),
+                                    tint = Color(0xFFBFB6CA),
+                                    painter = painterResource(R.drawable.arrow_back),
+                                    contentDescription = "Back"
+                                )
+                            }
+                        },
+                    )
+                }
+            } else {
+                {}
+            },
         ) { paddingValues ->
             Column(
                 modifier = Modifier
@@ -141,6 +142,7 @@ private fun StatusScreenPreview() {
     StatusScreen(
         title = "Password changed",
         buttonText = "NEXT",
+        hasTopBar = true,
         message = {
             Text(
                 buildAnnotatedString {

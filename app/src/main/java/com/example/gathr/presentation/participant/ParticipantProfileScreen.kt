@@ -1,9 +1,11 @@
 package com.example.gathr.presentation.participant
 
 import android.preference.CheckBoxPreference
+import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -41,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -51,8 +55,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
+import coil3.request.fallback
+import coil3.request.placeholder
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
+import com.example.gathr.core.ui.ImageViewer
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
@@ -72,6 +82,7 @@ fun ParticipantProfileScreen(
     val initial = userName.firstOrNull()?.uppercase() ?: "?"
     val school = user?.school?.toTitleCase() ?: "?"
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var selectedImage by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -93,7 +104,14 @@ fun ParticipantProfileScreen(
                 fontFamily = rethinkSans,
             )
             Spacer(modifier = Modifier.height(10.dp))
-            ProfileCard(name = userName, initial = initial, school = school, onClick = {})
+            ProfileCard(
+                name = userName,
+                displayName = user?.displayName,
+                initial = initial,
+                school = school,
+                avatarUrl = user?.avatarUrl,
+                onImageClick = { selectedImage = it },
+                onClick = {})
             Spacer(modifier = Modifier.height(10.dp))
             ProfileBanner(
                 onClick = onNext,
@@ -134,6 +152,10 @@ fun ParticipantProfileScreen(
             }
 
         }
+
+        if (selectedImage.isNotBlank())
+            ImageViewer(selectedImage, onDismiss = { selectedImage = "" })
+
         if (showLogoutDialog) {
             Alert(
                 title = "Logout",
@@ -161,11 +183,18 @@ fun ParticipantProfileScreen(
 }
 
 @Composable
-fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Unit) {
+fun ProfileCard(
+    name: String,
+    displayName: String?,
+    avatarUrl: String?,
+    onImageClick: (String) -> Unit,
+    initial: String,
+    school: String,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(Color.White),
         contentAlignment = Alignment.Center
@@ -192,24 +221,60 @@ fun ProfileCard(name: String, initial: String, school: String, onClick: () -> Un
             }
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF473163)), contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = initial,
-                    color = Color.White,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold
+            if (avatarUrl != null)
+                AsyncImage(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .border(color = Color.Black, shape = CircleShape, width = 2.dp)
+                        .clickable {
+                            onImageClick(avatarUrl)
+                        },
+                    model = ImageRequest.Builder(LocalContext.current).data(avatarUrl)
+                        .placeholder(R.drawable.profile)
+                        .fallback(R.drawable.profile).crossfade(true)
+                        .listener(onStart = { request ->
+                            Log.d(
+                                "IMAGE_LOAD", "Image started loading"
+                            )
+                        }, onError = { request, result ->
+                            Log.e(
+                                "IMAGE_LOAD", "FAILED: ${result.throwable.message}"
+                            )
+                        }).build(),
+                    contentDescription = "User Avatar Photo",
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(R.drawable.profile)
                 )
-            }
+            else
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFF473163)), contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initial,
+                        color = Color.White,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
             Spacer(modifier = Modifier.height(10.dp))
+            if (displayName != null)
+                Text(
+                    text = "@$displayName",
+                    color = Color(0xFF583181),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
 
             Text(
-                text = name, color = Color.Black, fontSize = 18.sp, fontWeight = FontWeight.Bold
+                text = name,
+                color = Color.Black,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Text(

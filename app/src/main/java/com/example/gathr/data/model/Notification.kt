@@ -9,8 +9,7 @@ import java.util.UUID
 
 @Serializable
 data class Notification(
-    val id: Int,
-    val type: String,
+    val id: Long,
     val message: String,
 
     @SerialName("is_read")

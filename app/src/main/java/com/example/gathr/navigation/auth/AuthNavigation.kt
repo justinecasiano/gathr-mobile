@@ -277,6 +277,7 @@ fun AuthNavigation(onLogin: () -> Unit) {
                 StatusScreen(
                     title = "Reset Password",
                     buttonText = "NEXT",
+                    hasTopBar = true,
                     message = {
                         Text(
                             buildAnnotatedString {

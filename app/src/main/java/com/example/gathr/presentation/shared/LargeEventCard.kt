@@ -55,12 +55,17 @@ import coil3.request.fallback
 import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.EventComputedStatus
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toDayOfMonth
 import com.example.gathr.utils.toLocalDateTime
 import com.example.gathr.utils.toMonthAbbreviation
 import com.example.gathr.utils.toSimpleTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun LargeEventCard(
@@ -156,11 +161,13 @@ fun LargeEventCard(
                         )
                     }
                     Spacer(Modifier.weight(1f))
-                    if (role == "ORGANIZER" && !isRejectedOrRemoved)
+                    if (role == "ORGANIZER" && !isRejectedOrRemoved && event.computedStatus == EventComputedStatus.UPCOMING)
                         Box(
                             Modifier
                                 .clip(RoundedCornerShape(20.dp))
-                                .clickable { onUpdateClicked() }
+                                .clickable {
+                                    onUpdateClicked()
+                                }
                                 .padding(10.dp))
                         {
                             Icon(
@@ -242,7 +249,7 @@ fun LargeEventCard(
                                 maxLines = 1,
                             )
                         }
-                        if (!isRejectedOrRemoved) {
+                        if (!isRejectedOrRemoved  && event.status != EventApprovalStatus.PENDING && event.computedStatus == EventComputedStatus.ONGOING) {
                             Spacer(Modifier.width(5.dp))
                             VerticalDivider(
                                 color = Color.Black,

@@ -63,8 +63,11 @@ data class Event(
     @Serializable(with = EventApprovalStatusSerializer::class)
     val status: EventApprovalStatus,
 
-    @SerialName("organizerName")
+    @SerialName("organizer_name")
     val organizerName: String,
+
+    @SerialName("organizer_display_name")
+    val organizerDisplayName: String = "",
 
     @SerialName("user_role")
     @Serializable(with = ParticipantTypeSerializer::class)
@@ -94,6 +97,10 @@ data class Event(
     @SerialName("approved_at")
     @Serializable(with = JavaInstantSerializer::class)
     val approvedAt: Instant? = null,
+
+    @SerialName("deleted_at")
+    @Serializable(with = JavaInstantSerializer::class)
+    val deletedAt: Instant? = null,
 
     @SerialName("is_archive")
     val isArchive: Boolean,

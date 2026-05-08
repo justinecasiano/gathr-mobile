@@ -10,16 +10,17 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.participant.QrScannerScreen
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserScreen
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.presentation.moderator.ModeratorViewEventScreen
-import com.example.gathr.presentation.participant.AddStaffScreen
 import com.example.gathr.presentation.participant.AttendanceScreen
+import com.example.gathr.presentation.participant.CreateEventScreen
 import com.example.gathr.presentation.participant.EditProfileScreen
-import com.example.gathr.presentation.participant.ModifyEventScreen
+import com.example.gathr.presentation.participant.UpdateEventScreen
 import com.example.gathr.presentation.participant.ParticipantViewEventScreen
 import com.example.gathr.presentation.participant.QrCodeScreen
 import com.example.gathr.presentation.participant.StaffScreen
@@ -33,16 +34,12 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
             when (effect) {
                 MainEffect.NavigateLogout -> onLogout()
                 MainEffect.NavigateBackUser -> backStack.removeLastOrNull()
-                MainEffect.NavigateUpdateEvent -> {
-                    userViewModel.handleIntent(UserIntent.IsUpdateEventChanged(true))
-                    backStack.add(MainScreen.ModifyEvent)
-                }
-
-                MainEffect.NavigateCreateEvent -> backStack.add(MainScreen.ModifyEvent)
+                MainEffect.NavigateUpdateEvent -> backStack.add(MainScreen.UpdateEvent)
+                MainEffect.NavigateCreateEvent -> backStack.add(MainScreen.CreateEvent)
                 MainEffect.NavigateParticipantViewEvent -> backStack.add(MainScreen.ParticipantViewEvent)
                 MainEffect.NavigateModeratorViewEvent -> backStack.add(MainScreen.ModeratorViewEvent)
                 MainEffect.NavigateEditProfile -> backStack.add(MainScreen.EditProfile)
-                MainEffect.NavigateAttendance ->  backStack.add(MainScreen.ViewAttendance)
+                MainEffect.NavigateAttendance -> backStack.add(MainScreen.ViewAttendance)
                 MainEffect.NavigateFeedback -> backStack.add(MainScreen.Feedback)
                 MainEffect.NavigateQrCode -> backStack.add(MainScreen.QrCode)
                 MainEffect.NavigateQrScanner -> backStack.add(MainScreen.QrScanner)
@@ -60,35 +57,28 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
         ),
         entryProvider = entryProvider {
             entry<MainScreen.User> {
-                userViewModel.handleIntent(UserIntent.CurrentEventChanged(null))
                 UserScreen(
                     viewModel = userViewModel,
                 )
             }
-            entry<MainScreen.ModifyEvent> {
-                ModifyEventScreen(
+            entry<MainScreen.CreateEvent> {
+                CreateEventScreen(
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()
-                        userViewModel.handleIntent(UserIntent.CreateEventOnClear)
                     },
                     onNavigateNext = {
-                        backStack.add(MainScreen.AddStaff)
+                        backStack.add(MainScreen.ParticipantViewEvent)
                     },
                 )
             }
-            entry<MainScreen.AddStaff> {
-                AddStaffScreen(
+            entry<MainScreen.UpdateEvent> {
+                UpdateEventScreen(
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()
                     },
-                    onNavigateNext = {
-                        backStack.clear()
-                        backStack.add(MainScreen.ParticipantViewEvent)
-                        userViewModel.handleIntent(UserIntent.FetchJoinableEvents)
-                        userViewModel.handleIntent(UserIntent.CreateEventOnClear)
-                    },
+                    onNavigateNext = {},
                 )
             }
             entry<MainScreen.ParticipantViewEvent> {

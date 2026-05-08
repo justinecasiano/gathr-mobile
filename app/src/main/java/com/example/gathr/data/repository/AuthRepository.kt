@@ -183,7 +183,7 @@ class AuthRepositoryImpl(private val auth: Auth, private val postgrest: Postgres
 
             else -> {
                 e.printStackTrace()
-                ApiResult.Error("An unknown error occurred.")
+                ApiResult.Error("An unknown error occurred")
             }
         }
     }

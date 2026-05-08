@@ -30,6 +30,9 @@ data class Participant(
     @SerialName("display_name")
     val displayName: String? = null,
 
+    @SerialName("avatar_url")
+    val avatarUrl: String? = null,
+
     @SerialName("participant_type")
     @Serializable(with = ParticipantTypeSerializer::class)
     val participantType: ParticipantType,

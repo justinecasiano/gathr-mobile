@@ -18,7 +18,6 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.remote.ApiResult
-import com.example.gathr.presentation.main.CreateEventValidationState
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
@@ -26,13 +25,14 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
 import kotlinx.io.IOException
-import java.time.Clock
 import java.time.Instant
 import java.util.EnumMap
 import androidx.core.net.toUri
+import com.example.gathr.data.model.CreateEventValidationState
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
+import java.time.Duration
 
 object Utils {
     fun saveBitmapToGallery(
@@ -208,22 +208,33 @@ object Utils {
 
     fun validateCreateEvent(event: CreateEvent): CreateEventValidationState {
         val currentMoment = Instant.now()
+        val minLeadTime = currentMoment.plus(Duration.ofMinutes(30))
+        val minDuration = Duration.ofMinutes(30)
 
-        val titleError = if (event.title.trim().length < 5) {
-            "Title is too short (minimum 5 characters)"
-        } else ""
+        val titleError = when {
+            event.title.trim().length < 5 -> "Title is too short (minimum 5 characters)"
+            event.title.trim().length > 100 -> "Title is too long (maximum 100 characters)"
+            else -> ""
+        }
 
-        val descriptionError = if (event.description.trim().length < 10) {
-            "Description is too short (minimum 10 characters)"
-        } else ""
+        val descriptionError = when {
+            event.description.trim().length < 10 -> "Description is too short (minimum 10 characters)"
+            event.description.trim().length > 2000 -> "Description is too long (maximum 2000 characters)"
+            else -> ""
+        }
 
-        val locationError = if (event.location.trim().length < 3) {
-            "Location is too short (minimum 3 characters)"
-        } else ""
+        val locationError = when {
+            event.location.trim().length < 3 -> "Location is too short"
+            event.location.trim().length > 255 -> "Location is too long"
+            else -> ""
+        }
 
-        val capacityError = if (event.capacity == null || event.capacity <= 2) {
-            "Please enter a valid capacity greater than 2"
-        } else ""
+        val capacityError = when {
+            event.capacity == null -> "Capacity is required"
+            event.capacity <= 2 -> "Capacity must be greater than 2"
+            event.capacity > 10000 -> "Maximum capacity is 10,000"
+            else -> ""
+        }
 
         val MAX_IMAGE_SIZE = 5_242_880
         val backgroundImageError = when {
@@ -232,22 +243,24 @@ object Utils {
             else -> ""
         }
 
-        val startDateError = if (event.startDateAndTime < currentMoment) {
-            "Start time cannot be in the past"
-        } else ""
+        val startDateError = when {
+            event.startDateAndTime < minLeadTime -> "Start time must be at least 30 minutes from now"
+            else -> ""
+        }
 
-        val endDateError = if (event.endDateAndTime <= event.startDateAndTime) {
-            "End time must be after the start time"
-        } else ""
+        val endDateError = when {
+            event.endDateAndTime <= event.startDateAndTime -> "End time must be after the start time"
+            Duration.between(event.startDateAndTime, event.endDateAndTime) < minDuration ->
+                "Event duration must be at least 30 minutes"
+            else -> ""
+        }
+
+        val staffError = if (event.staffs.size > 30) "You cannot add more than 30 staff members" else ""
 
         val hasErrors = listOf(
-            titleError,
-            descriptionError,
-            locationError,
-            capacityError,
-            backgroundImageError,
-            startDateError,
-            endDateError
+            titleError, descriptionError, locationError,
+            capacityError, backgroundImageError, startDateError,
+            endDateError, staffError
         ).any { it.isNotBlank() }
 
         return CreateEventValidationState(

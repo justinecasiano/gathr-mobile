@@ -79,6 +79,18 @@ fun UserScreen(
 
     LaunchedEffect(Unit) {
         viewModel.startPolling()
+        viewModel.handleIntent(UserIntent.CurrentEventChanged(null))
+    }
+
+    LaunchedEffect(
+        state.currentUser,
+        state.managedEvents.size,
+        state.joinedEvents.size,
+        state.joinableEvents.size
+    ) {
+        if (state.currentUser != null) {
+            viewModel.startGlobalRealtime()
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -128,7 +140,8 @@ fun ParticipantContent(
                         modifier = Modifier,
                         selected = currentBottomBarScreen == destination,
                         icon = {
-                            if (destination.title == "E-tickets" && state.joinedEvents.count { it.computedStatus === EventComputedStatus.UPCOMING } > 0) {
+                            if (destination.title == "E-tickets" && state.joinedEvents.filter { it.isRegistered }
+                                    .count { it.computedStatus !== EventComputedStatus.ENDED } > 0) {
                                 BadgedBox(
                                     badge = {
                                         Badge(
@@ -141,7 +154,33 @@ fun ParticipantContent(
                                                     shape = CircleShape,
                                                 ),
                                         ) {
-                                            Text(text = state.joinedEvents.count { it.computedStatus === EventComputedStatus.UPCOMING }.toString())
+                                            Text(text = state.joinedEvents.filter { it.isRegistered }
+                                                .count { it.computedStatus !== EventComputedStatus.ENDED }
+                                                .toString())
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(28.dp),
+                                        painter = painterResource(destination.icon),
+                                        contentDescription = "$destination icon",
+                                    )
+                                }
+                            } else if (destination.title == "Notifications" && state.notifications.count { !it.isRead } > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            containerColor = Color(0xFFF36F44),
+                                            contentColor = Color.White,
+                                            modifier = Modifier
+                                                .border(
+                                                    width = 1.5.dp,
+                                                    color = Color.Black,
+                                                    shape = CircleShape,
+                                                ),
+                                        ) {
+                                            Text(text = state.notifications.count { !it.isRead }
+                                                .toString())
                                         }
                                     },
                                 ) {
@@ -223,12 +262,18 @@ fun ParticipantContent(
                         ETicketsScreen(state, onIntent, onNavigate)
                     }
                     entry<ParticipantBottomBarScreen.Notifications> {
-                        ParticipantNotificationsScreen(state, onIntent, onNavigate)
+                        ParticipantNotificationsScreen(
+                            state, onIntent, onNavigate,
+                            onNext = {
+                                currentBottomBarScreen = ParticipantBottomBarScreen.MyEvents
+                                backStack.add(ParticipantBottomBarScreen.MyEvents)
+                            })
                     }
                     entry<ParticipantBottomBarScreen.Profile> {
                         ParticipantProfileScreen(
                             state, onIntent, onNavigate,
                             onNext = {
+                                currentBottomBarScreen = ParticipantBottomBarScreen.MyEvents
                                 backStack.add(ParticipantBottomBarScreen.MyEvents)
                             })
                     }

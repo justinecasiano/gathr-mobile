@@ -59,6 +59,12 @@ import com.example.gathr.presentation.main.UserState
 import com.example.gathr.presentation.shared.SearchNotFound
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.dummyEvents
+import com.example.gathr.utils.toAbbreviatedString
+import com.example.gathr.utils.toSimpleTime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ParticipantMyEventsScreen(
@@ -184,11 +190,11 @@ fun ParticipantMyEventContent(
 
         eventList = eventList.filter {
             when (selectedTabIndex) {
-                0 -> it.status == EventApprovalStatus.PENDING
+                0 -> it.status == EventApprovalStatus.PENDING && !it.isArchive
 
-                1 -> it.status == EventApprovalStatus.APPROVED
+                1 -> it.status == EventApprovalStatus.APPROVED && !it.isArchive
 
-                2 -> it.status == EventApprovalStatus.REJECTED
+                2 -> it.status == EventApprovalStatus.REJECTED && !it.isArchive
 
                 else -> it.isArchive
             }
@@ -197,7 +203,18 @@ fun ParticipantMyEventContent(
                 true
             } else {
                 event.title.contains(searchText, ignoreCase = true) ||
-                        event.description.contains(searchText, ignoreCase = true)
+                        "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}".contains(
+                            searchText,
+                            ignoreCase = true
+                        ) ||
+                        event.remainingSlots.toAbbreviatedString()
+                            .contains(searchText, ignoreCase = true)
+            }
+        }.let { filtered ->
+            if (selectedTabIndex >= 3) {
+                filtered.sortedByDescending { it.deletedAt ?: it.submittedAt }
+            } else {
+                filtered.sortedByDescending { it.submittedAt }
             }
         }
 
@@ -245,7 +262,7 @@ fun ParticipantMyEventContent(
             Button(
                 modifier = Modifier
                     .align(alignment = Alignment.BottomEnd)
-                    .padding(bottom = 35.dp, end = 20.dp),
+                    .padding(bottom = 25.dp, end = 20.dp),
                 onClick = {},
                 shape = RoundedCornerShape(20.dp),
                 contentPadding = PaddingValues(0.dp),
@@ -323,12 +340,13 @@ private fun MyEventsCards(
                         ),
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = 25.dp)
+                            .padding(start = 15.dp)
                     )
                 }
             }
         }
         items(events, key = { event -> event.id }, contentType = { "large_card" }) { event ->
+            val scope = CoroutineScope(Dispatchers.Main)
             val isRejectedOrRemoved =
                 event.status == EventApprovalStatus.REJECTED || event.isArchive
             LargeEventCard(
@@ -345,8 +363,11 @@ private fun MyEventsCards(
                     onTextButtonClick()
                 },
                 onUpdateClicked = {
-                    onIntent(UserIntent.CurrentEventChanged(event))
-                    onNavigate(MainEffect.NavigateUpdateEvent)
+                    scope.launch {
+                        onIntent(UserIntent.IsLoadingChanged(true))
+                        onIntent(UserIntent.CurrentEventChanged(event))
+                        onNavigate(MainEffect.NavigateUpdateEvent)
+                    }
                 }
             )
         }

@@ -96,6 +96,7 @@ fun SplashScreen(
                     status.joinableEvents == FetchStatus.DONE && status.joinedEvents == FetchStatus.DONE &&
                     status.notifications == FetchStatus.DONE
 
+        Log.d("FETCH_STATUS", status.toString())
         if (user !== null && hasFetchedData) {
             onLoaded(authRepository.isLoggedIn())
         }

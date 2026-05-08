@@ -147,7 +147,6 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 1: Registration Success (Read)
     Notification(
         id = 1,
-        type = "REGISTRATION",
         message = "You have successfully registered for event: Graduation 2025.",
         isRead = true,
         createdAt = Instant.parse("2026-04-28T10:00:00Z")
@@ -156,7 +155,6 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 2: Evaluation Ready (Unread)
     Notification(
         id = 2,
-        type = "ACTION_REQUIRED",
         message = "Evaluation form is ready for event: CCIS Tech Summit 2026.",
         isRead = false,
         createdAt = Instant.parse("2026-05-03T15:30:00Z")
@@ -165,7 +163,6 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 3: Upcoming Events Alert (Unread)
     Notification(
         id = 3,
-        type = "REMINDER",
         message = "You have incoming events this week including the Kotlin Workshop.",
         isRead = false,
         createdAt = Instant.now()
@@ -174,7 +171,6 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 4: Schedule Update (Read)
     Notification(
         id = 4,
-        type = "ALERT",
         message = "A new schedule update has been posted for the morning sessions.",
         isRead = true,
         createdAt = Instant.parse("2026-05-02T08:15:00Z")
@@ -183,7 +179,6 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 5: Event Approval (Unread)
     Notification(
         id = 5,
-        type = "APPROVAL",
         message = "Your event 'Mobile Dev Meetup' has been approved by the Moderator.",
         isRead = false,
         createdAt = Instant.now().minus(2, ChronoUnit.HOURS)
@@ -192,42 +187,36 @@ val dummyNotifications: List<Notification> = listOf(
     // Notification 6-11: Various Alerts (Mixed States)
     Notification(
         id = 6,
-        type = "ALERT",
         message = "Room change: Kotlin Workshop moved from Lab 502 to the University Theater.",
         isRead = false,
         createdAt = Instant.parse("2026-05-04T09:00:00Z")
     ),
     Notification(
         id = 7,
-        type = "ALERT",
         message = "System maintenance scheduled for this Saturday at 10:00 PM.",
         isRead = false,
         createdAt = Instant.parse("2026-05-04T13:45:00Z")
     ),
     Notification(
         id = 8,
-        type = "REGISTRATION",
         message = "Registration for 'Battle of the Bands' is closing in 2 hours!",
         isRead = true,
         createdAt = Instant.parse("2026-05-01T14:20:00Z")
     ),
     Notification(
         id = 9,
-        type = "ACTION_REQUIRED",
         message = "Please complete your profile to access all event features.",
         isRead = false,
         createdAt = Instant.now().minus(1, ChronoUnit.DAYS)
     ),
     Notification(
         id = 10,
-        type = "ALERT",
         message = "New announcement from the Dean regarding the CCIS Tech Summit.",
         isRead = false,
         createdAt = Instant.now().minus(3, ChronoUnit.HOURS)
     ),
     Notification(
         id = 11,
-        type = "REMINDER",
         message = "Don't forget to check in for the Ongoing Workshop in Lab 502.",
         isRead = false,
         createdAt = Instant.now().minus(5, ChronoUnit.MINUTES)

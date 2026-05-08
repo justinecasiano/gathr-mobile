@@ -5,6 +5,8 @@ import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.AuthRepositoryImpl
 import com.example.gathr.data.repository.EventParticipantRepository
 import com.example.gathr.data.repository.EventParticipantRepositoryImpl
+import com.example.gathr.data.repository.NotificationRepository
+import com.example.gathr.data.repository.NotificationRepositoryImpl
 import com.example.gathr.data.repository.UserRepository
 import com.example.gathr.data.repository.UserRepositoryImpl
 import com.example.gathr.presentation.auth.forgot_password.ForgotPasswordViewModel
@@ -86,11 +88,15 @@ val appModule = module {
     }
 
     single<EventParticipantRepository> {
-        EventParticipantRepositoryImpl(get(), get(), get(), get())
+        EventParticipantRepositoryImpl(androidContext(), get(), get(), get(), get())
+    }
+
+    single<NotificationRepository> {
+        NotificationRepositoryImpl(get(), get())
     }
 
     viewModel { SignUpViewModel(get(), get()) }
     viewModel { LoginViewModel(get()) }
     viewModel { ForgotPasswordViewModel(get()) }
-    viewModel { UserViewModel(get(), get(), get(), get(), get()) }
+    viewModel { UserViewModel(get(), get(), get(), get(), get(), get()) }
 }

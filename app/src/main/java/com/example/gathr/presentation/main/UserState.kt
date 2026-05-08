@@ -1,7 +1,7 @@
 package com.example.gathr.presentation.main
 
 import com.example.gathr.data.model.CreateEvent
-import com.example.gathr.data.model.CreateStaff
+import com.example.gathr.data.model.CreateEventValidationState
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Notification
@@ -9,7 +9,6 @@ import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.User
 import com.example.gathr.presentation.participant.ParticipantPayload
 import kotlinx.serialization.Serializable
-import java.io.File
 
 data class UserState(
     val managedEvents: List<ManagedEvent> = emptyList(),
@@ -20,29 +19,27 @@ data class UserState(
 
     val currentUser: User? = null,
     val currentEvent: Event? = null,
+    val currentCreateEvent: CreateEvent = CreateEvent(),
     val currentAttendees: List<Participant> = emptyList(),
     val availableStaff: List<User> = emptyList(),
 
+    val activeEventsFilter: String? = null,
     val eventsSearchText: String = "",
     val myEventsSelectedTabIndex: Int = 0,
     val myEventsSearchText: String = "",
     val eTicketsSelectedTabIndex: Int = 0,
     val eTicketsSearchText: String = "",
+    val staffSelectedTabIndex: Int = 0,
+    val staffSearchText: String = "",
 
-    val currentParticipant: Participant? = null,
     val currentParticipants: List<Participant> = emptyList(),
     val scanParticipant: ParticipantPayload? = null,
-    val createEvent: CreateEvent = CreateEvent(),
-    val createEventImageFile: File? = null,
-    val addStaffs: List<CreateStaff> = emptyList(),
     val searchStaff: String = "",
-    val searchStaffError: String = "",
-    val isUpdateEvent: Boolean = false,
+
     val actionTitle: String = "",
     val actionError: String = "",
     val actionOnConfirm: () -> Unit = {},
     val isLoading: Boolean = false,
-    val createEventValidationState: CreateEventValidationState = CreateEventValidationState()
 )
 
 @Serializable
@@ -68,16 +65,5 @@ data class UserCache(
     val notifications: List<Notification>,
     val currentUser: User?,
     val dataFetchStatus: StateFetchStatus = StateFetchStatus(),
-)
-
-data class CreateEventValidationState(
-    val titleError: String = "",
-    val descriptionError: String = "",
-    val backgroundImageError: String = "",
-    val capacityError: String = "",
-    val locationError: String = "",
-    val startDateAndTimeError: String = "",
-    val endDateAndTimeError: String = "",
-    val hasErrors: Boolean = false
 )
 

@@ -42,6 +42,7 @@ import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.core.ui.SearchTextField
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventComputedStatus
 import com.example.gathr.data.model.ParticipantStatus
 import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.presentation.main.MainEffect
@@ -110,15 +111,19 @@ fun AttendanceContent(
 
     val event: Event = state.currentEvent!!
     val participantList =
-        state.currentAttendees.sortedBy { it.joinedAt }
+        state.currentAttendees.sortedByDescending { it.joinedAt }
+    val isEventOngoing = event.computedStatus == EventComputedStatus.ONGOING
 
     var searchList = participantList
-
     if (searchText.isNotBlank())
         searchList =
             participantList.filter { p ->
-                p.fullName?.contains(searchText, ignoreCase = true) == true ||
-                        p.participantStatus.toString().contains(searchText, ignoreCase = true)
+                p.fullName?.contains(
+                    searchText,
+                    ignoreCase = true
+                ) == true || p.joinedAt.toPrettyString("MMM. d, yyyy - h:mm a")
+                    .contains(searchText, ignoreCase = true) || p.participantStatus.toString()
+                    .contains(searchText, ignoreCase = true)
             }
 
     Scaffold(
@@ -156,20 +161,21 @@ fun AttendanceContent(
             )
         },
         floatingActionButton = {
-            Box(Modifier.padding(end = 10.dp, bottom = 30.dp)) {
-                FloatingActionButton(
-                    onClick = { onNavigate(MainEffect.NavigateQrScanner) },
-                    containerColor = Color(0xFF6A3BA8),
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .size(70.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.scan_icon),
-                        contentDescription = "Scan",
-                        tint = Color.White,
-                        modifier = Modifier.size(30.dp)
-                    )
+            if (isEventOngoing) {
+                Box(Modifier.padding(end = 10.dp, bottom = 30.dp)) {
+                    FloatingActionButton(
+                        onClick = { onNavigate(MainEffect.NavigateQrScanner) },
+                        containerColor = Color(0xFF6A3BA8),
+                        shape = CircleShape,
+                        modifier = Modifier.size(70.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.scan_icon),
+                            contentDescription = "Scan",
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
                 }
             }
         }
@@ -413,6 +419,7 @@ fun RegisteredRow(user: RegisteredUser) {
         ParticipantStatus.CANCELLED -> Color(0xFFF36F44)
         ParticipantStatus.PRESENT -> Color(0xFF9FC090)
         ParticipantStatus.CHECKED_IN -> Color(0xFF9FC090)
+        ParticipantStatus.REGISTERED -> Color(0xFF9FC090)
         ParticipantStatus.ABSENT -> Color(0xFF820006)
         else -> Color.Transparent
     }

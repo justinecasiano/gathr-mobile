@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -94,11 +95,12 @@ import com.example.gathr.utils.toSimpleTime
 fun ParticipantNotificationsScreen(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
-    onNavigate: (MainEffect) -> Unit
+    onNavigate: (MainEffect) -> Unit,
+    onNext: () -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
         ParticipantNotificationsContent(
-            state, onIntent, onNavigate
+            state, onIntent, onNavigate, onNext
         )
 
         when {
@@ -119,13 +121,15 @@ fun ParticipantNotificationsScreen(
 fun ParticipantNotificationsContent(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
-    onNavigate: (MainEffect) -> Unit
+    onNavigate: (MainEffect) -> Unit,
+    onNext: () -> Unit
 ) {
-    val newNotifications = emptyList<Notification>()
-//        dummyNotifications.filter { it -> !it.isRead }.sortedByDescending { it.createdAt }
-    val pastNotifications = emptyList<Notification>()
-//        dummyNotifications.filter { it -> it.isRead }.sortedByDescending { it.createdAt }
-    val eventsCount = state.managedEvents.count {it.userParticipantType === ParticipantType.ORGANIZER}
+    val newNotifications =
+        state.notifications.filter { it -> !it.isRead }.sortedByDescending { it.createdAt }
+    val pastNotifications =
+        state.notifications.filter { it -> it.isRead }.sortedByDescending { it.createdAt }
+    val eventsCount =
+        state.managedEvents.count { it.userParticipantType === ParticipantType.ORGANIZER }
 
     Box(
         modifier = Modifier
@@ -163,7 +167,7 @@ fun ParticipantNotificationsContent(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            "You have $eventsCount,\ncreated events",
+                            "You have $eventsCount\ncreated events",
                             style = TextStyle(
                                 fontFamily = AppFonts.instrumentSans,
                                 fontSize = 18.sp,
@@ -175,7 +179,7 @@ fun ParticipantNotificationsContent(
                         Spacer(Modifier.height(5.dp))
                         Row(
                             Modifier
-                                .clickable {}
+                                .clickable { onNext() }
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(Color(0xFFF8F8F8))
                                 .padding(horizontal = 20.dp, vertical = 5.dp),
@@ -213,7 +217,7 @@ fun ParticipantNotificationsContent(
                     Spacer(Modifier.weight(1f))
                     Box(
                         Modifier
-                            .clickable {}
+                            .clickable { onIntent(UserIntent.MarkAllNotificationsAsRead) }
                             .padding(5.dp),
                     ) {
                         Text(
@@ -232,7 +236,9 @@ fun ParticipantNotificationsContent(
             items(
                 items = newNotifications,
                 key = { notification -> notification.id }) { notification ->
-                NotificationRow(notification)
+                NotificationRow(
+                    notification,
+                    { onIntent(UserIntent.MarkNotificationAsRead(notification.id)) })
                 Spacer(Modifier.height(10.dp))
             }
             item {
@@ -266,10 +272,38 @@ fun ParticipantNotificationsContent(
 }
 
 @Composable
-fun NotificationRow(notification: Notification) {
+private fun NotificationRow(notification: Notification, onClick: (() -> Unit)? = null) {
+    val msg = notification.message
+    val style = when {
+        msg.contains("rejected", ignoreCase = true) ||
+                msg.contains("not approved", ignoreCase = true) ->
+            NotificationStyle(Color(0xFFEE101A), R.drawable.info)
+
+        msg.contains("approved", ignoreCase = true) ||
+                msg.contains("re-registered", ignoreCase = true) ||
+                msg.contains("successfully registered", ignoreCase = true) ->
+            NotificationStyle(Color(0xFF81AC6E), R.drawable.updates_icon)
+
+        msg.contains("absent", ignoreCase = true) ||
+                msg.contains("Cancelled", ignoreCase = true) ->
+            NotificationStyle(Color(0xFFF36F44), R.drawable.info)
+
+        msg.contains("assigned as Staff", ignoreCase = true) ||
+                msg.contains("forget", ignoreCase = true) ||
+                msg.contains("Preparation", ignoreCase = true) ||
+                msg.contains("slots", ignoreCase = true) ->
+            NotificationStyle(Color(0xFF603C8D), R.drawable.info)
+
+        else -> NotificationStyle(Color(0xFF3B3B3B), R.drawable.details_icon)
+    }
+
     Row(
+        modifier = Modifier
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Start
     ) {
         if (!notification.isRead) {
             Box(
@@ -284,44 +318,84 @@ fun NotificationRow(notification: Notification) {
                     )
                     .clip(CircleShape)
                     .background(Color(0xFF820006))
-                    .size(10.dp),
+                    .size(8.dp),
             )
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(8.dp))
         }
+
         Box(
             Modifier
                 .clip(RoundedCornerShape(13.dp))
-                .background(Color.Black.copy(0.3f))
-                .padding(8.dp),
+                .background(style.color.copy(alpha = 0.3f))
+                .padding(10.dp),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painterResource(R.drawable.updates_icon),
-                contentDescription = "Notification",
-                modifier = Modifier.size(33.dp)
+                painter = painterResource(style.iconRes),
+                contentDescription = "Notification Icon",
+                modifier = Modifier.size(28.dp),
+                tint = style.color
             )
         }
-        Spacer(Modifier.width(10.dp))
+
+        Spacer(Modifier.width(12.dp))
+
         Column {
             Text(
-                notification.message,
+                text = formatNotificationMessage(notification.message, style.color),
                 style = TextStyle(
                     fontFamily = rethinkSans,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF3B3B3B)
+                    color = Color(0xFF3B3B3B),
+                    lineHeight = 18.sp
                 ),
             )
-            Spacer(Modifier.height(5.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
                 notification.createdAt.toSimpleTime(),
                 style = TextStyle(
                     fontFamily = rethinkSans,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF3B3B3B)
+                    color = Color(0xFF3B3B3B).copy(alpha = 0.6f)
                 ),
             )
+        }
+    }
+}
+
+private data class NotificationStyle(val color: Color, val iconRes: Int)
+
+@Composable
+private fun formatNotificationMessage(message: String, highlightColor: Color): AnnotatedString {
+    val keywords = listOf(
+        "approved",
+        "rejected",
+        "auto-rejected",
+        "absent",
+        "Staff",
+        "re-registered",
+        "successfully registered",
+        "Cancelled",
+        "unsubscribed"
+    )
+
+    return buildAnnotatedString {
+        val parts = message.split(" ")
+        parts.forEachIndexed { index, word ->
+            val cleanWord =
+                word.trim().replace("\"", "").replace(".", "").replace("!", "").replace(":", "")
+
+            if (keywords.any { it.equals(cleanWord, ignoreCase = true) }) {
+                withStyle(SpanStyle(color = highlightColor, fontWeight = FontWeight.Black)) {
+                    append(word)
+                }
+            } else {
+                append(word)
+            }
+
+            if (index < parts.size - 1) append(" ")
         }
     }
 }

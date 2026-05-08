@@ -1,8 +1,10 @@
 package com.example.gathr.data.repository
 
+import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gathr.data.model.CreateEvent
-import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Participant
@@ -13,7 +15,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
-import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
@@ -23,14 +24,19 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import java.io.File
 import java.time.Instant
@@ -40,24 +46,28 @@ interface EventParticipantRepository {
     suspend fun fetchManagedEvents(): ApiResult<List<ManagedEvent>>
     suspend fun fetchJoinableEvents(): ApiResult<List<Event>>
     suspend fun fetchJoinedEvents(): ApiResult<List<Event>>
-    suspend fun fetchAvailableStaff(eventId: Long): ApiResult<List<User>>
+    suspend fun fetchAvailableStaff(
+        organizerId: String,
+        alreadySelectedStaffIds: List<String>
+    ): ApiResult<List<User>>
+
     suspend fun fetchAttendance(eventId: Long): ApiResult<List<Participant>>
     fun observeAttendance(eventId: Long): Flow<Unit>
     suspend fun markAttendance(eventId: Long, userId: UUID): ApiResult<Unit>
     suspend fun registerEvent(eventId: Long, userId: UUID): ApiResult<Unit>
     suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit>
-    suspend fun deleteEvent(eventId: Long, userId: UUID): ApiResult<Unit>
+    suspend fun deleteEvent(eventId: Long, userId: UUID, imageUrl: String?): ApiResult<Unit>
 
-    suspend fun createEvent(
-        user: User,
-        event: CreateEvent,
-        staffs: List<CreateStaff>,
-        imageFile: File?
-    ): ApiResult<Event>
+    suspend fun createEvent(user: User, event: CreateEvent): ApiResult<ManagedEvent>
+    suspend fun updateEvent(user: User, event: CreateEvent): ApiResult<ManagedEvent>
+    suspend fun fetchUserEventToUpdate(eventId: Long, userId: UUID): ApiResult<ManagedEvent>
 
+    fun observeEventsAndParticipants(): Flow<Long>
+    suspend fun fetchSingleEvent(eventId: Long, userId: UUID): ApiResult<Event>
 }
 
 class EventParticipantRepositoryImpl(
+    private val context: Context,
     private val auth: Auth,
     private val storage: Storage,
     private val realtime: Realtime,
@@ -123,14 +133,20 @@ class EventParticipantRepositoryImpl(
         }
     }
 
-    override suspend fun fetchAvailableStaff(eventId: Long): ApiResult<List<User>> {
+    override suspend fun fetchAvailableStaff(
+        organizerId: String,
+        alreadySelectedStaffIds: List<String>
+    ): ApiResult<List<User>> {
         return try {
             val rpcParams = buildJsonObject {
-                put("p_event_id", eventId)
+                put("p_organizer_id", organizerId)
+                put("p_excluded_ids", buildJsonArray {
+                    alreadySelectedStaffIds.forEach { add(it) }
+                })
             }
 
             val response = supabase.postgrest.rpc(
-                function = "get_available_staff",
+                function = "get_available_staff_simple",
                 parameters = rpcParams
             )
 
@@ -214,63 +230,81 @@ class EventParticipantRepositoryImpl(
         }
     }
 
-    override suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
-        return try {
-            val updateParticipant = buildJsonObject {
-                put("status", "CANCELLED")
-            }
-
-            supabase.from("participants").update(updateParticipant) {
-                filter {
-                    eq("event_id", eventId)
-                    eq("user_id", userId)
-                }
-            }
-
-            ApiResult.Success(Unit)
-        } catch (e: Exception) {
-            val errorMessage = when (e) {
-                is RestException -> "Database error has occurred"
-                is HttpRequestException -> "Network Error: Check your internet connection."
-                else -> "An unexpected error occurred"
-            }
-            Log.e("CANCEL_EVENT", "Operation failed", e)
-            ApiResult.Error(errorMessage)
-        }
-    }
-
     override suspend fun registerEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
         return try {
-
-            val newParticipant = buildJsonObject {
-                put("event_id", eventId)
-                put("user_id", userId.toString())
-                put("participant_type", "ATTENDEE")
-                put("status", "REGISTERED")
+            val params = buildJsonObject {
+                put("p_event_id", eventId)
+                put("p_user_id", userId.toString())
             }
 
-            supabase.from("participants").insert(newParticipant)
+            supabase.postgrest.rpc("register_for_event", params)
 
             ApiResult.Success(Unit)
         } catch (e: Exception) {
             val errorMessage = when (e) {
-                is RestException -> "Database error has occurred"
+                is RestException -> {
+                    e.message
+                        ?: "Registration failed: The event might be full or you are already registered."
+                }
+
+                is HttpRequestTimeoutException -> "Request timed out. Please try again."
                 is HttpRequestException -> "Network Error: Check your internet connection."
-                else -> "An unexpected error occurred"
+                else -> e.message ?: "An unexpected error occurred"
             }
+
             Log.e("REGISTER_EVENT", "Operation failed", e)
             ApiResult.Error(errorMessage)
         }
     }
 
-    override suspend fun deleteEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
+    override suspend fun cancelEvent(eventId: Long, userId: UUID): ApiResult<Unit> {
         return try {
-            supabase.from("events").delete {
+            val params = buildJsonObject {
+                put("p_event_id", eventId)
+                put("p_user_id", userId.toString())
+            }
+
+            supabase.postgrest.rpc("cancel_event_registration", params)
+
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            val errorMessage = when (e) {
+                is RestException -> e.message ?: "Failed to cancel registration."
+                else -> "An unexpected error occurred while canceling."
+            }
+            ApiResult.Error(errorMessage)
+        }
+    }
+
+    override suspend fun deleteEvent(
+        eventId: Long,
+        userId: UUID,
+        imageUrl: String?
+    ): ApiResult<Unit> {
+        return try {
+            if (!imageUrl.isNullOrBlank()) {
+                try {
+                    val path = imageUrl.substringAfterLast("/public/event-images/")
+
+                    storage.from("events-background-image").delete(path)
+                    Log.d("DELETE_STORAGE", "Successfully removed image: $path")
+                } catch (e: Exception) {
+                    Log.e("DELETE_STORAGE", "Failed to delete image from bucket: ${e.message}")
+                }
+            }
+
+            supabase.from("events").update(
+                {
+                    set("is_archive", true)
+                    set("deleted_at", Instant.now().toString())
+                }
+            ) {
                 filter {
                     eq("id", eventId)
                     eq("created_by", userId)
                 }
             }
+
             ApiResult.Success(Unit)
         } catch (e: Exception) {
             val errorMessage = when (e) {
@@ -283,40 +317,30 @@ class EventParticipantRepositoryImpl(
         }
     }
 
-    override suspend fun createEvent(
-        user: User,
-        event: CreateEvent,
-        staffs: List<CreateStaff>,
-        imageFile: File?
-    ): ApiResult<Event> {
-        if (imageFile == null) return ApiResult.Error("Image file is missing")
+    override suspend fun createEvent(user: User, event: CreateEvent): ApiResult<ManagedEvent> {
+        val imageUri = event.backgroundImage?.toUri() ?: return ApiResult.Error("Image is missing")
 
-        val fileName = "${UUID.randomUUID()}.${imageFile.extension}"
+        val fileName = "${UUID.randomUUID()}.jpg"
         val bucketName = "events-background-image"
         val bucket = storage.from(bucketName)
 
         return try {
-            bucket.upload(
-                path = fileName,
-                data = imageFile.readBytes()
-            ) {
-                upsert = false
-            }
+            val imageBytes =
+                context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                    ?: return ApiResult.Error("Could not read image file")
 
+            bucket.upload(path = fileName, data = imageBytes) { upsert = false }
             val imageUrl = bucket.publicUrl(fileName)
 
             try {
-                val staffsWithOrganizer = staffs + CreateStaff(
-                    userId = user.id,
-                    participantType = ParticipantType.ORGANIZER
-                )
-                val jsonParticipants = buildJsonArray {
-                    staffsWithOrganizer.forEach { staff ->
-                        addJsonObject {
-                            put("user_id", staff.userId.toString())
-                            put("participant_type", staff.participantType.toString())
-                        }
+                val allParticipants = event.staffs.map {
+                    buildJsonObject {
+                        put("user_id", it.userId.toString())
+                        put("participant_type", it.participantType.toString())
                     }
+                } + buildJsonObject {
+                    put("user_id", user.id.toString())
+                    put("participant_type", ParticipantType.ORGANIZER.toString())
                 }
 
                 val rpcParams = buildJsonObject {
@@ -328,43 +352,191 @@ class EventParticipantRepositoryImpl(
                     put("p_start_time", event.startDateAndTime.toString())
                     put("p_end_time", event.endDateAndTime.toString())
                     put("p_created_by", user.id.toString())
-
-                    put("p_participants", jsonParticipants)
+                    put("p_allow_alumni", event.allowAlumni)
+                    put("p_allow_non_umak", true)
+                    put("p_allowed_departments", buildJsonArray {
+                        event.allowedDepartments.forEach { add(it.name) }
+                    })
+                    put("p_participants", buildJsonArray {
+                        allParticipants.forEach { add(it) }
+                    })
                 }
 
-                val response = supabase.postgrest.rpc(
-                    function = "create_event_with_participants",
-                    parameters = rpcParams
-                )
+                val response = supabase.postgrest.rpc("create_event_with_participants", rpcParams)
 
                 val json = Json { ignoreUnknownKeys = true }
-                val createdEvent = json.decodeFromString<Event>(response.data)
-
-                Log.d("CREATE_EVENT", "Created Event: ${createdEvent.toString()}")
+                val createdEvent = json.decodeFromString<ManagedEvent>(response.data)
 
                 ApiResult.Success(createdEvent)
-
             } catch (dbError: Exception) {
-                Log.d("CREATE_EVENT", "DB Transaction failed. Rolling back storage...")
-                try {
-                    bucket.delete(listOf(fileName))
-                } catch (e: Exception) {
-                    Log.e("CREATE_EVENT", "Critical: Failed to rollback image: $fileName", e)
-                }
+                bucket.delete(listOf(fileName))
                 throw dbError
             }
         } catch (e: Exception) {
-            val errorMessage = when (e) {
-                is RestException -> "Database error has occurred"
-                is HttpRequestException -> "Network Error: Check your internet connection."
-                else -> "An unexpected error occurred"
+            Log.e("CREATE_EVENT", "Failed", e)
+            ApiResult.Error(e.message ?: "An unexpected error occurred")
+        }
+    }
+
+    override suspend fun updateEvent(user: User, event: CreateEvent): ApiResult<ManagedEvent> {
+        val eventId = event.id ?: return ApiResult.Error("Event ID is missing")
+
+        val oldImageUrl = event.oldBackgroundImageUrl
+
+        var currentImageUrl = event.backgroundImage ?: ""
+        val bucketName = "events-background-image"
+        val bucket = storage.from(bucketName)
+        var newFileName: String? = null
+        var isNewImageUploaded = false
+
+        return try {
+            if (currentImageUrl.isNotBlank() && !currentImageUrl.startsWith("http")) {
+                val imageUri = currentImageUrl.toUri()
+                val fileName = "${UUID.randomUUID()}.jpg"
+                newFileName = fileName
+
+                val imageBytes =
+                    context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                        ?: return ApiResult.Error("Could not read image file")
+
+                bucket.upload(path = fileName, data = imageBytes) { upsert = false }
+                currentImageUrl = bucket.publicUrl(fileName)
+                isNewImageUploaded = true
             }
-            Log.e("CREATE_EVENT", "Operation failed", e)
-            ApiResult.Error(errorMessage)
-        } finally {
-            if (imageFile.exists()) {
-                imageFile.delete()
+
+            try {
+                val allStaff = event.staffs.map {
+                    buildJsonObject {
+                        put("user_id", it.userId.toString())
+                        put("participant_type", it.participantType.toString())
+                    }
+                }
+
+                val rpcParams = buildJsonObject {
+                    put("p_event_id", eventId)
+                    put("p_title", event.title)
+                    put("p_description", event.description)
+                    put("p_background_image", currentImageUrl)
+                    put("p_capacity", event.capacity)
+                    put("p_location", event.location)
+                    put("p_start_time", event.startDateAndTime.toString())
+                    put("p_end_time", event.endDateAndTime.toString())
+                    put("p_allow_alumni", event.allowAlumni)
+                    put("p_allow_non_umak", true)
+                    put("p_allowed_departments", buildJsonArray {
+                        event.allowedDepartments.forEach { add(it.name) }
+                    })
+                    put("p_participants", buildJsonArray {
+                        allStaff.forEach { add(it) }
+                    })
+                }
+
+                val response = supabase.postgrest.rpc("update_event_with_participants", rpcParams)
+
+                val json = Json { ignoreUnknownKeys = true }
+                val updatedManagedEvent = json.decodeFromString<ManagedEvent>(response.data)
+
+                if (isNewImageUploaded && !oldImageUrl.isNullOrBlank()) {
+                    try {
+                        val oldFileName = oldImageUrl.substringAfterLast("/")
+                        bucket.delete(listOf(oldFileName))
+                    } catch (e: Exception) {
+                        Log.e("STORAGE_CLEANUP", "Failed to delete old image: $oldImageUrl")
+                    }
+                }
+
+                Log.e("UPDATE_EVENT_INPUT", event.toString())
+                Log.e("UPDATE_EVENT_UPDATED", updatedManagedEvent.toString())
+                ApiResult.Success(updatedManagedEvent)
+            } catch (dbError: Exception) {
+                newFileName?.let { bucket.delete(listOf(it)) }
+                throw dbError
             }
+        } catch (e: Exception) {
+            Log.e("UPDATE_EVENT", "Failed to update event", e)
+            ApiResult.Error(e.message ?: "An unexpected error occurred")
+        }
+    }
+
+    override suspend fun fetchUserEventToUpdate(
+        eventId: Long,
+        userId: UUID
+    ): ApiResult<ManagedEvent> {
+        return try {
+            val rpcParams = buildJsonObject {
+                put("p_event_id", eventId)
+                put("p_user_id", userId.toString())
+            }
+
+            val response = supabase.postgrest.rpc(
+                function = "get_user_event_to_update",
+                parameters = rpcParams
+            )
+
+            val events = jsonConfig.decodeFromString<ManagedEvent>(response.data)
+            ApiResult.Success(events)
+        } catch (e: Exception) {
+            Log.d("FETCH_USER_EVENT_TO_UPDATE", e.message.toString())
+            ApiResult.Error(e.message.toString())
+        }
+    }
+
+    override fun observeEventsAndParticipants(): Flow<Long> = callbackFlow {
+        val channel = supabase.channel("global_broadcast_${System.currentTimeMillis()}")
+
+        val eventChangeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "events"
+        }
+
+        val participantChangeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "participants"
+        }
+
+        val job = launch {
+            merge(eventChangeFlow, participantChangeFlow).collect { action ->
+                val affectedEventId = when (action) {
+                    is PostgresAction.Update -> action.record["id"]?.jsonPrimitive?.longOrNull
+                        ?: action.record["event_id"]?.jsonPrimitive?.longOrNull
+
+                    is PostgresAction.Insert -> action.record["id"]?.jsonPrimitive?.longOrNull
+                        ?: action.record["event_id"]?.jsonPrimitive?.longOrNull
+
+                    is PostgresAction.Delete -> action.oldRecord["id"]?.jsonPrimitive?.longOrNull
+                        ?: action.oldRecord["event_id"]?.jsonPrimitive?.longOrNull
+
+                    else -> null
+                }
+
+                if (affectedEventId != null) {
+                    send(affectedEventId)
+                }
+            }
+        }
+
+        channel.subscribe()
+
+        awaitClose {
+            launch {
+                realtime.removeAllChannels()
+                realtime.removeChannel(channel)
+                channel.unsubscribe()
+            }
+            job.cancel()
+        }
+    }
+
+    override suspend fun fetchSingleEvent(eventId: Long, userId: UUID): ApiResult<Event> {
+        return try {
+            val rpcParams = buildJsonObject {
+                put("p_event_id", eventId)
+                put("p_user_id", userId.toString())
+            }
+
+            val response = supabase.postgrest.rpc("get_single_event_details", rpcParams)
+            val event = jsonConfig.decodeFromString<Event>(response.data)
+            ApiResult.Success(event)
+        } catch (e: Exception) {
+            ApiResult.Error(e.message.toString())
         }
     }
 }

@@ -15,7 +15,10 @@ sealed class MainScreen : NavKey {
     data object ModeratorViewEvent : MainScreen()
 
     @Serializable
-    data object ModifyEvent : MainScreen()
+    data object CreateEvent : MainScreen()
+
+    @Serializable
+    data object UpdateEvent: MainScreen()
 
     @Serializable
     data object AddStaff : MainScreen()

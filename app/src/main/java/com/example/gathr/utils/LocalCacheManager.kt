@@ -28,4 +28,10 @@ class LocalCacheManager(private val context: Context) {
             null
         }
     }
+
+    suspend fun clearCache() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(CACHE_KEY)
+        }
+    }
 }

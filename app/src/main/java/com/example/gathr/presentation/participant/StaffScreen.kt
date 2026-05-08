@@ -67,6 +67,8 @@ import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.presentation.shared.SearchNotFound
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.dummyEvents
+import com.example.gathr.utils.toAbbreviatedString
+import com.example.gathr.utils.toSimpleTime
 
 @Composable
 fun StaffScreen(
@@ -121,8 +123,8 @@ fun StaffContent(
     var eventList: List<Event> = emptyList()
 
     val tabTitles = listOf("Pending", "Approved", "Rejected", "Removed")
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    var searchText by remember { mutableStateOf("") }
+    var selectedTabIndex = state.staffSelectedTabIndex
+    var searchText = state.staffSearchText
 
     Scaffold(
         containerColor = Color(0xFFF6F6F6),
@@ -184,8 +186,8 @@ fun StaffContent(
                     Spacer(modifier = Modifier.height(10.dp))
                     SearchTextField(
                         searchText,
-                        onValueChange = { searchText = it },
-                        onClearValue = { searchText = "" },
+                        onValueChange = { onIntent(UserIntent.StaffSearchTextChanged(it)) },
+                        onClearValue = { onIntent(UserIntent.StaffSearchTextChanged("")) },
                         placeholderText = "Search in Staffed Events",
                         modifier = Modifier.padding(horizontal = 20.dp)
                     )
@@ -210,8 +212,7 @@ fun StaffContent(
                                 selectedContentColor = Color(0xFF473163),
                                 unselectedContentColor = Color(0xFF473163),
                                 onClick = {
-                                    selectedTabIndex = index
-                                    searchText = ""
+                                    onIntent(UserIntent.StaffSelectedTabChanged(index))
                                 },
                                 text = {
                                     Text(
@@ -229,14 +230,13 @@ fun StaffContent(
                 }
             }
 
-            Log.d("EVENT_LIST", eventList.toString())
             eventList = staffedEvents.filter {
                 when (selectedTabIndex) {
-                    0 -> it.status == EventApprovalStatus.PENDING
+                    0 -> it.status == EventApprovalStatus.PENDING && !it.isArchive
 
-                    1 -> it.status == EventApprovalStatus.APPROVED
+                    1 -> it.status == EventApprovalStatus.APPROVED && !it.isArchive
 
-                    2 -> it.status == EventApprovalStatus.REJECTED
+                    2 -> it.status == EventApprovalStatus.REJECTED && !it.isArchive
 
                     else -> it.isArchive
                 }
@@ -245,7 +245,12 @@ fun StaffContent(
                     true
                 } else {
                     event.title.contains(searchText, ignoreCase = true) ||
-                            event.description.contains(searchText, ignoreCase = true)
+                            "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}".contains(
+                                searchText,
+                                ignoreCase = true
+                            ) ||
+                            event.remainingSlots.toAbbreviatedString()
+                                .contains(searchText, ignoreCase = true)
                 }
             }
 
@@ -336,7 +341,7 @@ private fun MyEventsCards(
                         ),
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = 25.dp)
+                            .padding(start = 15.dp)
                     )
                 }
             }

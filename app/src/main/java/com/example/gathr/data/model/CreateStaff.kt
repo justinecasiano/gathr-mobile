@@ -20,6 +20,8 @@ data class CreateStaff(
 
     val displayName: String = "",
 
+    val avatarUrl: String = "",
+
     val firstName: String = "",
 
     val lastName: String = "",
