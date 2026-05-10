@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -55,6 +57,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -111,7 +114,7 @@ fun ParticipantProfileScreen(
                 school = school,
                 avatarUrl = user?.avatarUrl,
                 onImageClick = { selectedImage = it },
-                onClick = {})
+                onClick = { onNavigate(MainEffect.NavigateEditProfile) })
             Spacer(modifier = Modifier.height(10.dp))
             ProfileBanner(
                 onClick = onNext,
@@ -196,56 +199,37 @@ fun ProfileCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(Color.White),
+            .background(Color(0xFFFCFCFC)),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            Modifier
-                .align(Alignment.Center)
-                .padding(start = 150.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF616162).copy(0.2f))
-                    .size(width = 55.dp, height = 28.dp)
-                    .clickable { onClick }, contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Edit",
-                    color = Color.Black,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = rethinkSans
-                )
-            }
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.verticalScroll(rememberScrollState())) {
             if (avatarUrl != null)
-                AsyncImage(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .border(color = Color.Black, shape = CircleShape, width = 2.dp)
-                        .clickable {
-                            onImageClick(avatarUrl)
-                        },
-                    model = ImageRequest.Builder(LocalContext.current).data(avatarUrl)
-                        .placeholder(R.drawable.profile)
-                        .fallback(R.drawable.profile).crossfade(true)
-                        .listener(onStart = { request ->
-                            Log.d(
-                                "IMAGE_LOAD", "Image started loading"
-                            )
-                        }, onError = { request, result ->
-                            Log.e(
-                                "IMAGE_LOAD", "FAILED: ${result.throwable.message}"
-                            )
-                        }).build(),
-                    contentDescription = "User Avatar Photo",
-                    contentScale = ContentScale.Crop,
-                    error = painterResource(R.drawable.profile)
-                )
+                Surface(
+                    modifier = Modifier.size(110.dp),
+                    shape = CircleShape,
+                    color = Color(0xFF473163),
+                    onClick = {
+                        onImageClick(avatarUrl)
+                    }
+                ) {
+                    AsyncImage(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape),
+                        model = ImageRequest.Builder(LocalContext.current).data(avatarUrl)
+                            .listener(onStart = { request ->
+                                Log.d(
+                                    "IMAGE_LOAD", "Image started loading"
+                                )
+                            }, onError = { request, result ->
+                                Log.e(
+                                    "IMAGE_LOAD", "FAILED: ${result.throwable.message}"
+                                )
+                            }).build(),
+                        contentDescription = "User Avatar Photo",
+                        contentScale = ContentScale.Crop,
+                    )
+                }
             else
                 Box(
                     modifier = Modifier
@@ -284,6 +268,27 @@ fun ProfileCard(
                 fontFamily = rethinkSans,
                 fontWeight = FontWeight.Normal
             )
+        }
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .padding(start = 150.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF616162).copy(0.2f))
+                    .size(width = 55.dp, height = 28.dp)
+                    .clickable { onClick() }, contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Edit",
+                    color = Color.Black,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    fontFamily = rethinkSans
+                )
+            }
         }
     }
 }

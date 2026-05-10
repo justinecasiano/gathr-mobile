@@ -1,7 +1,12 @@
 package com.example.gathr.presentation.participant
 
+import android.app.Activity
+import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.slideInHorizontally
@@ -103,10 +108,14 @@ import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.ui.theme.fadeIn
 import com.example.gathr.ui.theme.fadeOut
 import com.example.gathr.utils.toTitleCase
+import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
+import java.util.UUID
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun CreateEventScreen(
@@ -357,18 +366,16 @@ fun CreateEventContent(
                                         selectedImageUriString = state.currentCreateEvent.backgroundImage,
                                         onImageClick = { selectedImage = it },
                                         onImageSelected = { uriString ->
-                                            if (uriString != null) {
-                                                val size = Utils.getFileSize(context, uriString)
-                                                onIntent(
-                                                    UserIntent.CurrentCreateEventChanged(
-                                                        state.currentCreateEvent.copy(
-                                                            backgroundImage = uriString,
-                                                            backgroundImageSizeBytes = size
-                                                        )
-                                                    )
+                                            val size = if (uriString != null) Utils.getFileSize(context, uriString) else 0L
+
+                                            onIntent(UserIntent.CurrentCreateEventChanged(
+                                                state.currentCreateEvent.copy(
+                                                    backgroundImage = uriString,
+                                                    backgroundImageSizeBytes = size
                                                 )
-                                            }
-                                        })
+                                            ))
+                                        }
+                                    )
                                     Spacer(Modifier.height(2.dp))
                                     if (errors.backgroundImageError.isNotBlank()) {
                                         Text(
@@ -666,9 +673,6 @@ fun CreateEventContent(
                                         .padding(bottom = paddingValues.calculateBottomPadding()),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val context = LocalContext.current
-                                    val scope = rememberCoroutineScope()
-
                                     ElevatedButton(
                                         text = "NEXT",
                                         onClick = {

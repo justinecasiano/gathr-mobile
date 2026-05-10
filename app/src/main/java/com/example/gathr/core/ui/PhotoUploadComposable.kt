@@ -1,5 +1,6 @@
 package com.example.gathr.core.ui
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -24,13 +25,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.gathr.R
 import com.example.gathr.ui.theme.AppFonts
+import com.yalantis.ucrop.UCrop
+import java.io.File
+import java.util.UUID
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun PhotoUploadComposable(
@@ -38,16 +45,48 @@ fun PhotoUploadComposable(
     onImageSelected: (String?) -> Unit,
     onImageClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
+
+    val uCropLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val resultUri = result.data?.let { UCrop.getOutput(it) }
+            onImageSelected(resultUri?.toString())
+        }
+    }
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
-        onImageSelected(uri?.toString())
+        uri?.let { sourceUri ->
+            val destinationUri = Uri.fromFile(
+                File(context.cacheDir, "event_banner_${UUID.randomUUID()}.webp")
+            )
+
+            val options = UCrop.Options().apply {
+                setCompressionFormat(Bitmap.CompressFormat.WEBP)
+                setCompressionQuality(90)
+                setHideBottomControls(false)
+                setFreeStyleCropEnabled(false)
+                val purple = "#7B55A3".toColorInt()
+                setToolbarColor(purple)
+                setActiveControlsWidgetColor(purple)
+                setToolbarTitle("Crop Event Banner")
+            }
+
+            val uCropIntent = UCrop.of(sourceUri, destinationUri)
+                .withAspectRatio(16f, 9f)
+                .withMaxResultSize(1280, 720)
+                .withOptions(options)
+                .getIntent(context)
+
+            uCropLauncher.launch(uCropIntent)
+        }
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        if (selectedImageUriString != null && selectedImageUriString.isNotBlank()) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (!selectedImageUriString.isNullOrBlank()) {
             Box(
                 modifier = Modifier
                     .width(150.dp)
@@ -60,7 +99,6 @@ fun PhotoUploadComposable(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(8.dp))
                         .clickable { onImageClick(selectedImageUriString) }
                 )
 
@@ -73,7 +111,7 @@ fun PhotoUploadComposable(
                         modifier = Modifier
                             .background(Color.White, CircleShape)
                             .size(20.dp)
-                            .clickable { onImageSelected("") },
+                            .clickable { onImageSelected(null) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -105,18 +143,18 @@ fun PhotoUploadComposable(
                         painter = painterResource(R.drawable.add_photo_icon),
                         contentDescription = "Add photo",
                         tint = Color.White,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .align(Alignment.Center)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     text = "Add photo",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = AppFonts.rethinkSans,
-                    color = Color.Black.copy(0.8f)
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = AppFonts.rethinkSans,
+                        color = Color.Black.copy(0.8f)
+                    )
                 )
             }
         }

@@ -3,7 +3,6 @@ package com.example.gathr.data.repository
 import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.ManagedEvent
@@ -25,6 +24,7 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.github.jan.supabase.storage.Storage
 import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.http.ContentType
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -318,9 +318,10 @@ class EventParticipantRepositoryImpl(
     }
 
     override suspend fun createEvent(user: User, event: CreateEvent): ApiResult<ManagedEvent> {
-        val imageUri = event.backgroundImage?.toUri() ?: return ApiResult.Error("Image is missing")
+        val imageUriString = event.backgroundImage ?: return ApiResult.Error("Image is missing")
+        val imageUri = imageUriString.toUri()
 
-        val fileName = "${UUID.randomUUID()}.jpg"
+        val fileName = "${UUID.randomUUID()}.webp"
         val bucketName = "events-background-image"
         val bucket = storage.from(bucketName)
 
@@ -329,8 +330,21 @@ class EventParticipantRepositoryImpl(
                 context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
                     ?: return ApiResult.Error("Could not read image file")
 
-            bucket.upload(path = fileName, data = imageBytes) { upsert = false }
+            bucket.upload(path = fileName, data = imageBytes) {
+                upsert = false
+                contentType = ContentType.parse("image/webp")
+            }
             val imageUrl = bucket.publicUrl(fileName)
+
+            try {
+                val file = File(imageUri.path ?: "")
+                if (file.exists()) {
+                    file.delete()
+                    Log.d("CREATE_EVENT", "Local cache file deleted: ${imageUri.path}")
+                }
+            } catch (cleanupError: Exception) {
+                Log.e("CREATE_EVENT", "Cleanup failed", cleanupError)
+            }
 
             try {
                 val allParticipants = event.staffs.map {
@@ -382,7 +396,6 @@ class EventParticipantRepositoryImpl(
         val eventId = event.id ?: return ApiResult.Error("Event ID is missing")
 
         val oldImageUrl = event.oldBackgroundImageUrl
-
         var currentImageUrl = event.backgroundImage ?: ""
         val bucketName = "events-background-image"
         val bucket = storage.from(bucketName)
@@ -392,16 +405,26 @@ class EventParticipantRepositoryImpl(
         return try {
             if (currentImageUrl.isNotBlank() && !currentImageUrl.startsWith("http")) {
                 val imageUri = currentImageUrl.toUri()
-                val fileName = "${UUID.randomUUID()}.jpg"
+                val fileName = "${UUID.randomUUID()}.webp"
                 newFileName = fileName
 
-                val imageBytes =
-                    context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
-                        ?: return ApiResult.Error("Could not read image file")
+                val imageBytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                    ?: return ApiResult.Error("Could not read image file")
 
-                bucket.upload(path = fileName, data = imageBytes) { upsert = false }
+                bucket.upload(path = fileName, data = imageBytes) {
+                    upsert = false
+                    contentType = ContentType.parse("image/webp")
+                }
+
                 currentImageUrl = bucket.publicUrl(fileName)
                 isNewImageUploaded = true
+
+                try {
+                    val file = File(imageUri.path ?: "")
+                    if (file.exists()) file.delete()
+                } catch (e: Exception) {
+                    Log.e("STORAGE_CLEANUP", "Failed to delete local temp file")
+                }
             }
 
             try {
@@ -439,9 +462,10 @@ class EventParticipantRepositoryImpl(
                 if (isNewImageUploaded && !oldImageUrl.isNullOrBlank()) {
                     try {
                         val oldFileName = oldImageUrl.substringAfterLast("/")
-                        bucket.delete(listOf(oldFileName))
+                        val cleanOldFileName = oldFileName.substringBefore("?")
+                        bucket.delete(listOf(cleanOldFileName))
                     } catch (e: Exception) {
-                        Log.e("STORAGE_CLEANUP", "Failed to delete old image: $oldImageUrl")
+                        Log.e("STORAGE_CLEANUP", "Failed to delete old image from bucket: $oldImageUrl")
                     }
                 }
 

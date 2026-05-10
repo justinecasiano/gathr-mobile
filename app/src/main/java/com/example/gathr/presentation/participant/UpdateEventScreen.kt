@@ -373,18 +373,21 @@ fun UpdateEventContent(
                                         selectedImageUriString = state.currentCreateEvent.backgroundImage,
                                         onImageClick = { selectedImage = it },
                                         onImageSelected = { uriString ->
-                                            if (uriString != null) {
-                                                val size = Utils.getFileSize(context, uriString)
-                                                onIntent(
-                                                    UserIntent.CurrentCreateEventChanged(
-                                                        state.currentCreateEvent.copy(
-                                                            backgroundImage = uriString,
-                                                            backgroundImageSizeBytes = size
-                                                        )
+                                            val size = if (uriString != null) Utils.getFileSize(
+                                                context,
+                                                uriString
+                                            ) else 0L
+
+                                            onIntent(
+                                                UserIntent.CurrentCreateEventChanged(
+                                                    state.currentCreateEvent.copy(
+                                                        backgroundImage = uriString,
+                                                        backgroundImageSizeBytes = size
                                                     )
                                                 )
-                                            }
-                                        })
+                                            )
+                                        }
+                                    )
                                     Spacer(Modifier.height(2.dp))
                                     if (errors.backgroundImageError.isNotBlank()) {
                                         Text(

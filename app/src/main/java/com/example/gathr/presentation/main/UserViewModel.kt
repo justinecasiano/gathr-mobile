@@ -1,7 +1,9 @@
 package com.example.gathr.presentation.main
 
 import LocalCacheManager
+import android.net.Uri
 import android.util.Log
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gathr.data.model.CreateEvent
@@ -36,6 +38,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.UUID
 
 class UserViewModel(
@@ -240,6 +244,15 @@ class UserViewModel(
                 }
             }
 
+            is UserIntent.UpdateUserProfile -> {
+                updateUserProfile(
+                    intent.firstName,
+                    intent.lastName,
+                    intent.displayName,
+                    intent.newAvatarUri
+                )
+            }
+
             is UserIntent.CurrentCreateEventChanged -> {
                 _state.update { it.copy(currentCreateEvent = intent.value) }
                 viewModelScope.launch {
@@ -327,7 +340,6 @@ class UserViewModel(
                     staffSelectedTabIndex = intent.value
                 )
             }
-
         }
     }
 
@@ -943,6 +955,96 @@ class UserViewModel(
                 }
             }
             handleIntent(UserIntent.IsLoadingChanged(false))
+        }
+    }
+
+    private fun updateUserProfile(
+        fName: String,
+        lName: String,
+        dName: String,
+        avatarUri: String?,
+    ) {
+        val currentUser = _state.value.currentUser ?: return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            if (dName != currentUser.displayName) {
+                val usernameResult = authRepository.checkIfDisplayNameExists(dName)
+
+                when (usernameResult) {
+                    is ApiResult.Success -> {
+                        if (usernameResult.data) {
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    actionError = "Username '@$dName' is already taken."
+                                )
+                            }
+                            return@launch
+                        }
+                    }
+
+                    is ApiResult.Error -> {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                actionError = "Error checking username: ${usernameResult.message}"
+                            )
+                        }
+                        return@launch
+                    }
+                }
+            }
+
+            var finalAvatarUrl = currentUser.avatarUrl
+
+            if (avatarUri != null) {
+                val uploadResult = userRepository.uploadAvatar(currentUser.id.toString(), avatarUri)
+
+                when (uploadResult) {
+                    is ApiResult.Success -> {
+                        finalAvatarUrl = "${uploadResult.data}?t=${System.currentTimeMillis()}"
+                    }
+
+                    is ApiResult.Error -> {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                actionError = uploadResult.message
+                            )
+                        }
+                        return@launch
+                    }
+                }
+            }
+
+            val updates = buildJsonObject {
+                put("first_name", fName)
+                put("last_name", lName)
+                put("display_name", dName)
+                put("avatar_url", finalAvatarUrl)
+            }
+
+            val result = userRepository.updateUserProfile(currentUser.id.toString(), updates)
+
+            when (result) {
+                is ApiResult.Success -> {
+                    _state.update {
+                        it.copy(
+                            currentUser = result.data,
+                            isLoading = false,
+                            actionTitle = "Success",
+                            actionError = "Profile updated successfully"
+                        )
+                    }
+                    onFetchSuccess()
+                }
+
+                is ApiResult.Error -> {
+                    _state.update { it.copy(isLoading = false, actionError = result.message) }
+                }
+            }
         }
     }
 

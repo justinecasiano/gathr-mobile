@@ -2,9 +2,12 @@ package com.example.gathr.presentation.participant
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -169,377 +172,374 @@ fun ParticipantEventContent(
             fillRatio
         }
 
-    AnimatedContent(
-        targetState = isFilterActive,
-        transitionSpec = {
-            fadeIn(animationSpec = tween(300)) togetherWith
-                    fadeOut(animationSpec = tween(300))
-        },
-        label = "FilterTransition"
-    ) { filterVisible ->
-        if (filterVisible && selectedFilter != null) {
-            ParticipantFilterScreen(
-                title = selectedFilter,
-                eventList = eventList.filter { event ->
-                    event.computedStatus.toString().lowercase() == selectedFilter.lowercase()
-                },
-                onBack = {
-                    onIntent(UserIntent.ActiveEventsFilterChanged(null))
-                },
-                onIntent,
-                onNavigate
-            )
-        } else {
-            Box {
-                Column(
-                    Modifier
-                        .fillMaxHeight()
-                        .padding(top = 30.dp)
-                        .background(Color.White)
-                ) {
-                    Box(Modifier.padding(horizontal = 20.dp)) {
-                        SearchTextField(
-                            searchText,
-                            onValueChange = { onIntent(UserIntent.EventsSearchTextChanged(it)) },
-                            onClearValue = { onIntent(UserIntent.EventsSearchTextChanged("")) },
-                            placeholderText = "Search for events",
-                        )
-                    }
-                    Spacer(Modifier.height(20.dp))
-                    if (searchText.isNotBlank()) {
-                        if (eventList.isNotEmpty()) {
-                            LazyColumn(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 20.dp),
+
+    Box(Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .padding(top = 30.dp)
+                .background(Color.White)
+        ) {
+            Box(Modifier.padding(horizontal = 20.dp)) {
+                SearchTextField(
+                    searchText,
+                    onValueChange = { onIntent(UserIntent.EventsSearchTextChanged(it)) },
+                    onClearValue = { onIntent(UserIntent.EventsSearchTextChanged("")) },
+                    placeholderText = "Search for events",
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            if (searchText.isNotBlank()) {
+                if (eventList.isNotEmpty()) {
+                    LazyColumn(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                    ) {
+                        item {
+                            Text(
+                                "Search result(s) for \"$searchText\"",
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                ),
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+                        item {
+                            FlowRow(
+                                Modifier.fillMaxWidth(),
+                                maxItemsInEachRow = 2,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalArrangement = Arrangement.spacedBy(15.dp)
                             ) {
-                                item {
-                                    Text(
-                                        "Search result(s) for \"$searchText\"",
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.Black,
-                                        ),
+                                eventList.forEach { event ->
+                                    SmallEventCard(
+                                        event, onClick = {
+                                            onIntent(UserIntent.CurrentEventChanged(event))
+                                            onNavigate(MainEffect.NavigateParticipantViewEvent)
+                                        },
+                                        cardWidth = 160.dp,
+                                        isDetailed = true
                                     )
-                                    Spacer(Modifier.height(10.dp))
-                                }
-                                item {
-                                    FlowRow(
-                                        Modifier.fillMaxWidth(),
-                                        maxItemsInEachRow = 2,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalArrangement = Arrangement.spacedBy(15.dp)
-                                    ) {
-                                        eventList.forEach { event ->
-                                            SmallEventCard(
-                                                event, onClick = {
-                                                    onIntent(UserIntent.CurrentEventChanged(event))
-                                                    onNavigate(MainEffect.NavigateParticipantViewEvent)
-                                                },
-                                                cardWidth = 160.dp,
-                                                isDetailed = true
-                                            )
-                                        }
-                                    }
-                                }
-                                item {
-                                    Spacer(Modifier.height(20.dp))
                                 }
                             }
-                        } else if (eventList.isEmpty()) {
-                            SearchNotFound(
-                                Modifier
-                                    .padding(horizontal = 20.dp)
-                                    .offset(y = (-70).dp)
+                        }
+                        item {
+                            Spacer(Modifier.height(20.dp))
+                        }
+                    }
+                } else if (eventList.isEmpty()) {
+                    SearchNotFound(
+                        Modifier
+                            .padding(horizontal = 20.dp)
+                            .offset(y = (-70).dp)
+                    )
+                }
+            } else {
+                var rowSize by remember { mutableStateOf(IntSize.Zero) }
+                val density = LocalDensity.current
+                val rowWidthDp = with(density) { rowSize.width.toDp() - 100.dp }
+
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .drawBehind {
+                            val strokeWidth = 1.dp.toPx()
+                            val y = size.height - strokeWidth / 2
+
+                            drawLine(
+                                color = Color.LightGray,
+                                start = Offset(0f, y),
+                                end = Offset(size.width, y),
+                                strokeWidth = strokeWidth
                             )
                         }
-                    } else {
-                        var rowSize by remember { mutableStateOf(IntSize.Zero) }
-                        val density = LocalDensity.current
-                        val rowWidthDp = with(density) { rowSize.width.toDp() - 100.dp }
+                        .padding(bottom = 20.dp)
+                        .onGloballyPositioned { coordinates -> rowSize = coordinates.size },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    repeat(3) { index ->
+                        val oneThirdWidth = rowWidthDp / 3f
 
-                        Row(
+                        Column(
                             Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
-                                .drawBehind {
-                                    val strokeWidth = 1.dp.toPx()
-                                    val y = size.height - strokeWidth / 2
-
-                                    drawLine(
-                                        color = Color.LightGray,
-                                        start = Offset(0f, y),
-                                        end = Offset(size.width, y),
-                                        strokeWidth = strokeWidth
-                                    )
-                                }
-                                .padding(bottom = 20.dp)
-                                .onGloballyPositioned { coordinates -> rowSize = coordinates.size },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                                .width(oneThirdWidth)
+                                //                        .weight(1f)
+                                .clickable {
+                                    onIntent(UserIntent.ActiveEventsFilterChanged(tabs[index].title))
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            repeat(3) { index ->
-                                val oneThirdWidth = rowWidthDp / 3f
-
-                                Column(
-                                    Modifier
-                                        .width(oneThirdWidth)
-                                        //                        .weight(1f)
-                                        .clickable {
-                                            onIntent(UserIntent.ActiveEventsFilterChanged(tabs[index].title))
-                                        },
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    Image(
-                                        painterResource(tabs[index].icon),
-                                        contentDescription = tabs[index].title,
-                                        Modifier.size(65.dp)
-                                    )
-                                    Spacer(Modifier.height(10.dp))
-                                    Text(
-                                        text = tabs[index].title,
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF473163)
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-                        LazyColumn {
-                            item {
-                                Spacer(Modifier.height(10.dp))
-                                Box(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 20.dp)
-                                ) {
-                                    Image(
-                                        modifier = Modifier.width(388.dp),
-                                        painter = painterResource(R.drawable.events_banner),
-                                        contentDescription = "Event Banner",
-                                        contentScale = ContentScale.FillWidth
-                                    )
-                                    val user = state.currentUser!!
-                                    Text(
-                                        "Welcome to Gathr,\n${user.firstName.toTitleCase()}",
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.instrumentSans,
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            textAlign = TextAlign.Start,
-                                            color = Color.White
-                                        ),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier
-                                            .fillMaxWidth(0.65f)
-                                            .align(Alignment.CenterStart)
-                                            .padding(start = 30.dp, top = 5.dp)
-                                    )
-                                }
-                                Column(Modifier.padding(horizontal = 20.dp)) {
-                                    if (popularEvent != null) {
-                                        Spacer(Modifier.height(10.dp))
-                                        Text(
-                                            "Popular",
-                                            style = TextStyle(
-                                                fontFamily = AppFonts.instrumentSans,
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.ExtraBold,
-                                                textAlign = TextAlign.Start,
-                                                color = Color.Black
-                                            ),
-                                        )
-                                        Spacer(Modifier.height(10.dp))
-                                        LargeEventCard(
-                                            event = popularEvent,
-                                            onCardClicked = {
-                                                onIntent(UserIntent.CurrentEventChanged(popularEvent))
-                                                onNavigate(MainEffect.NavigateParticipantViewEvent)
-                                            },
-                                            isETicket = false,
-                                            onTextButtonClick = {}
-                                        )
-                                    }
-                                }
-                            }
-                            item {
-                                Spacer(Modifier.height(20.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            onIntent(UserIntent.ActiveEventsFilterChanged("Upcoming"))
-                                        }
-                                        .padding(vertical = 5.dp, horizontal = 20.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "Upcoming events",
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            textAlign = TextAlign.Start,
-                                            color = Color(0xFF232222)
-                                        ),
-                                    )
-                                    Spacer(Modifier.width(15.dp))
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.right_arrow),
-                                        contentDescription = "View upcoming events",
-                                        tint = Color.Black,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                Spacer(Modifier.height(10.dp))
-                            }
-                            item {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                    items(
-                                        items = upcomingEvents,
-                                        key = { event -> event.id }) { event ->
-                                        SmallEventCard(
-                                            event,
-                                            onClick = {
-                                                onIntent(UserIntent.CurrentEventChanged(event))
-                                                onNavigate(MainEffect.NavigateParticipantViewEvent)
-                                            },
-                                        )
-                                    }
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                }
-                                Spacer(Modifier.height(20.dp))
-                            }
-                            item {
-                                Spacer(Modifier.height(10.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            onIntent(UserIntent.ActiveEventsFilterChanged("Ongoing"))
-                                        }
-                                        .padding(vertical = 5.dp, horizontal = 20.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "Ongoing events",
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            textAlign = TextAlign.Start,
-                                            color = Color(0xFF232222)
-                                        ),
-                                    )
-                                    Spacer(Modifier.width(15.dp))
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.right_arrow),
-                                        contentDescription = "View ongoing events",
-                                        tint = Color.Black,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                Spacer(Modifier.height(10.dp))
-                            }
-                            item {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                    items(
-                                        items = ongoingEvents,
-                                        key = { event -> event.id }) { event ->
-                                        SmallEventCard(
-                                            event,
-                                            onClick = {
-                                                onIntent(UserIntent.CurrentEventChanged(event))
-                                                onNavigate(MainEffect.NavigateParticipantViewEvent)
-                                            },
-                                        )
-                                    }
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                }
-                                Spacer(Modifier.height(20.dp))
-                            }
-                            item {
-                                Spacer(Modifier.height(10.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            onIntent(UserIntent.ActiveEventsFilterChanged("Ended"))
-                                        }
-                                        .padding(vertical = 5.dp, horizontal = 20.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        "Ended events",
-                                        style = TextStyle(
-                                            fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            textAlign = TextAlign.Start,
-                                            color = Color(0xFF232222)
-                                        ),
-                                    )
-                                    Spacer(Modifier.width(15.dp))
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.right_arrow),
-                                        contentDescription = "View ended events",
-                                        tint = Color.Black,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                                Spacer(Modifier.height(10.dp))
-                            }
-                            item {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(15.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                    items(
-                                        items = endedEvents,
-                                        key = { event -> event.id }) { event ->
-                                        SmallEventCard(
-                                            event,
-                                            onClick = {
-                                                onIntent(UserIntent.CurrentEventChanged(event))
-                                                onNavigate(MainEffect.NavigateParticipantViewEvent)
-                                            },
-                                        )
-                                    }
-                                    item {
-                                        Spacer(Modifier.width(1.dp))
-                                    }
-                                }
-                                Spacer(Modifier.height(20.dp))
-                            }
+                            Image(
+                                painterResource(tabs[index].icon),
+                                contentDescription = tabs[index].title,
+                                Modifier.size(65.dp)
+                            )
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = tabs[index].title,
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF473163)
+                                ),
+                            )
                         }
                     }
                 }
+                LazyColumn {
+                    item {
+                        Spacer(Modifier.height(10.dp))
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp)
+                        ) {
+                            Image(
+                                modifier = Modifier.width(388.dp),
+                                painter = painterResource(R.drawable.events_banner),
+                                contentDescription = "Event Banner",
+                                contentScale = ContentScale.FillWidth
+                            )
+                            val user = state.currentUser!!
+                            Text(
+                                "Welcome to Gathr,\n${user.firstName.toTitleCase()}",
+                                style = TextStyle(
+                                    fontFamily = AppFonts.instrumentSans,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Start,
+                                    color = Color.White
+                                ),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .fillMaxWidth(0.65f)
+                                    .align(Alignment.CenterStart)
+                                    .padding(start = 30.dp, top = 5.dp)
+                            )
+                        }
+                        Column(Modifier.padding(horizontal = 20.dp)) {
+                            if (popularEvent != null) {
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    "Popular",
+                                    style = TextStyle(
+                                        fontFamily = AppFonts.instrumentSans,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        textAlign = TextAlign.Start,
+                                        color = Color.Black
+                                    ),
+                                )
+                                Spacer(Modifier.height(10.dp))
+                                LargeEventCard(
+                                    event = popularEvent,
+                                    onCardClicked = {
+                                        onIntent(UserIntent.CurrentEventChanged(popularEvent))
+                                        onNavigate(MainEffect.NavigateParticipantViewEvent)
+                                    },
+                                    isETicket = false,
+                                    onTextButtonClick = {}
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        Spacer(Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onIntent(UserIntent.ActiveEventsFilterChanged("Upcoming"))
+                                }
+                                .padding(vertical = 5.dp, horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Upcoming events",
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Start,
+                                    color = Color(0xFF232222)
+                                ),
+                            )
+                            Spacer(Modifier.width(15.dp))
+                            Icon(
+                                painter = painterResource(id = R.drawable.right_arrow),
+                                contentDescription = "View upcoming events",
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                            items(
+                                items = upcomingEvents,
+                                key = { event -> event.id }) { event ->
+                                SmallEventCard(
+                                    event,
+                                    onClick = {
+                                        onIntent(UserIntent.CurrentEventChanged(event))
+                                        onNavigate(MainEffect.NavigateParticipantViewEvent)
+                                    },
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(20.dp))
+                    }
+                    item {
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onIntent(UserIntent.ActiveEventsFilterChanged("Ongoing"))
+                                }
+                                .padding(vertical = 5.dp, horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Ongoing events",
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Start,
+                                    color = Color(0xFF232222)
+                                ),
+                            )
+                            Spacer(Modifier.width(15.dp))
+                            Icon(
+                                painter = painterResource(id = R.drawable.right_arrow),
+                                contentDescription = "View ongoing events",
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                            items(
+                                items = ongoingEvents,
+                                key = { event -> event.id }) { event ->
+                                SmallEventCard(
+                                    event,
+                                    onClick = {
+                                        onIntent(UserIntent.CurrentEventChanged(event))
+                                        onNavigate(MainEffect.NavigateParticipantViewEvent)
+                                    },
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(20.dp))
+                    }
+                    item {
+                        Spacer(Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onIntent(UserIntent.ActiveEventsFilterChanged("Ended"))
+                                }
+                                .padding(vertical = 5.dp, horizontal = 20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Ended events",
+                                style = TextStyle(
+                                    fontFamily = AppFonts.rethinkSans,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Start,
+                                    color = Color(0xFF232222)
+                                ),
+                            )
+                            Spacer(Modifier.width(15.dp))
+                            Icon(
+                                painter = painterResource(id = R.drawable.right_arrow),
+                                contentDescription = "View ended events",
+                                tint = Color.Black,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    item {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(15.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                            items(
+                                items = endedEvents,
+                                key = { event -> event.id }) { event ->
+                                SmallEventCard(
+                                    event,
+                                    onClick = {
+                                        onIntent(UserIntent.CurrentEventChanged(event))
+                                        onNavigate(MainEffect.NavigateParticipantViewEvent)
+                                    },
+                                )
+                            }
+                            item {
+                                Spacer(Modifier.width(1.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(20.dp))
+                    }
+                }
+            }
+        }
+        AnimatedVisibility(
+            visible = isFilterActive,
+            enter = slideInHorizontally(initialOffsetX = { it }) + fadeIn(),
+            exit = slideOutHorizontally(targetOffsetX = { it }) + fadeOut()
+        ) {
+            if (selectedFilter != null) {
+                ParticipantFilterScreen(
+                    title = selectedFilter,
+                    eventList = eventList.filter { event ->
+                        event.computedStatus.toString().lowercase() == selectedFilter.lowercase()
+                    },
+                    onBack = {
+                        onIntent(UserIntent.ActiveEventsFilterChanged(null))
+                    },
+                    onIntent,
+                    onNavigate
+                )
             }
         }
     }

@@ -84,7 +84,7 @@ val appModule = module {
     }
 
     single<UserRepository> {
-        UserRepositoryImpl(get(), get())
+        UserRepositoryImpl(get(), get(), androidContext())
     }
 
     single<EventParticipantRepository> {

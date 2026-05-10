@@ -125,6 +125,8 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:3.3.2")
     implementation("io.ktor:ktor-client-android:3.3.2")
     implementation("io.github.jan-tennert.supabase:storage-kt:3.2.6")
+    implementation ("com.github.yalantis:ucrop:2.2.11")
+    implementation("androidx.transition:transition:1.7.0")
 
     implementation(libs.face.detection)
     implementation(libs.androidx.camera.core)

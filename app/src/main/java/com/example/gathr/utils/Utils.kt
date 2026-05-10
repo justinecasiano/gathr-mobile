@@ -29,6 +29,7 @@ import java.time.Instant
 import java.util.EnumMap
 import androidx.core.net.toUri
 import com.example.gathr.data.model.CreateEventValidationState
+import com.example.gathr.presentation.main.ProfileValidationState
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -123,28 +124,6 @@ object Utils {
                 } else 0L
             } else 0L
         } ?: 0L
-    }
-
-    fun createTempFileFromUri(context: Context, uri: Uri): File? {
-        return try {
-            val contentResolver = context.contentResolver
-
-            val mimeType = contentResolver.getType(uri)
-
-            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
-
-            val tempFile = File.createTempFile("upload_", ".$extension", context.cacheDir)
-
-            contentResolver.openInputStream(uri)?.use { input ->
-                FileOutputStream(tempFile).use { output ->
-                    input.copyTo(output)
-                }
-            }
-            tempFile
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
     }
 
     fun validateInput(type: String, value: String): String {
@@ -272,6 +251,25 @@ object Utils {
             startDateAndTimeError = startDateError,
             endDateAndTimeError = endDateError,
             hasErrors = hasErrors
+        )
+    }
+
+    fun validateProfile(firstName: String, lastName: String, displayName: String): ProfileValidationState {
+        val fNameError = if (firstName.isBlank()) "First name is required" else ""
+        val lNameError = if (lastName.isBlank()) "Last name is required" else ""
+
+        val usernameRegex = Regex("^[a-zA-Z0-9_]{3,20}$")
+        val dNameError = when {
+            displayName.isBlank() -> "Username is required"
+            !usernameRegex.matches(displayName) -> "Username must have 3-20 characters, using only letters, numbers, and underscores."
+            else -> ""
+        }
+
+        return ProfileValidationState(
+            firstNameError = fNameError,
+            lastNameError = lNameError,
+            displayNameError = dNameError,
+            hasErrors = fNameError.isNotBlank() || lNameError.isNotBlank() || dNameError.isNotBlank()
         )
     }
 

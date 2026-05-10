@@ -67,3 +67,11 @@ data class UserCache(
     val dataFetchStatus: StateFetchStatus = StateFetchStatus(),
 )
 
+@Serializable
+data class ProfileValidationState(
+    val firstNameError: String = "",
+    val lastNameError: String = "",
+    val displayNameError: String = "",
+    val hasErrors: Boolean = false
+)
+
