@@ -223,126 +223,109 @@ fun PrivacyPolicyContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) {
                                 )
                         ) {
                             Text("1. Information We Collect", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("We may collect the following information:")
-                            BulletItem("You must provide accurate registration information and keep it updated.")
-                            BulletItem("We may suspend or terminate accounts that violate school policies or these Terms.")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("2. Events Creation & Participation", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Organizers may create and manage school-related events.")
-                            BulletItem("Students may browse and register for available events.")
-                            BulletItem {
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
-                                    buildAnnotatedString {
-                                        withStyle(
-                                            style = SpanStyle(
-                                                fontFamily = AppFonts.instrumentSans,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        ) {
-                                            append("Gathr ")
-                                        }
-                                        append("does not host or manage events. Schools and organizations are solely responsible for event safety, rules, and admission decisions.")
-                                    },
-                                    style = regularTextStyle,
-                                    lineHeight = 16.sp,
+                                    "We may collect the following information:",
+                                    style = regularTextStyle
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Personal Information",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Full name")
+                                BulletItem("Email address / school email")
+                                BulletItem("Organization name (for organizers)")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Activity and App Usage Data",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Events viewed")
+                                BulletItem("Events registered for")
+                                BulletItem("Attendance records")
+                                BulletItem("Scanned QR codes")
+                                BulletItem("Device information (model, OS version)")
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("2. How Your Data Is Used", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "We use your data to:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Manage your account")
+                                BulletItem("Display your profile to event organizers")
+                                BulletItem("Register you for events")
+                                BulletItem("Generate attendance records")
+                                BulletItem("Send event reminders")
+                                BulletItem("Improve the app")
+                                BulletItem("Prevent fraud and misuse")
+                                Text(
+                                    "We do not sell or share your personal data with third parties for advertising.",
+                                    style = regularTextStyle
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("3. User Conduct", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "You agree to use the Service in a lawful and respectful manner. Prohibited behavior includes, but is not limited to:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(7.dp))
-                            BulletItem("Harassment, bullying, or threatening content")
-                            BulletItem("Events or actions that violate school rules or laws")
-                            BulletItem("Unauthorized access to other users’ information")
-                            BulletItem("Attempts to disrupt or exploit the Service")
-                            Spacer(modifier = Modifier.height(9.dp))
-                            Text(
-                                "Violations may lead to account restrictions or removal.",
-                                style = regularTextStyle
-                            )
+                            Text("3. Sharing of Information", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Your information may be shared with:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("School organizations managing events you register for")
+                                BulletItem("IT personnel or developers maintaining the app (only when necessary)")
+                                Text(
+                                    "Your data is never sold, traded, or given to advertisers.",
+                                    style = regularTextStyle
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("4. User Content", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "You may submit content such as event details, comments, and media (\"User Content\"). You retain ownership but grant Gather a non-exclusive, worldwide license to use that content solely for operating the Service. We may remove content that is inappropriate or poses safety, privacy, or legal concerns.",
-                                style = regularTextStyle
-                            )
+                            Text("4. Data Storage and Security", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Gathr uses secure servers and encryption methods to protect your data.",
+                                    style = regularTextStyle
+                                )
+                                Text(
+                                    "However, no system is 100% secure. Users are responsible for:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Protecting their password")
+                                BulletItem("Avoiding account sharing")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("5. Privacy", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "Your use of Gather is also governed by our Privacy Policy, which explains how student information is collected and protected. Certain school staff and organizers may access student attendance information for school-related purposes.",
-                                style = regularTextStyle
-                            )
+                            Text("5. User Rights (RA 10173)", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "You have the right to:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Access your personal data")
+                                BulletItem("Correct inaccurate data")
+                                BulletItem("Request deletion of your account")
+                                BulletItem("Withdraw consent")
+                                BulletItem("File complaints with the National Privacy Commission (NPC)")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("6. Moderator Rights", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text("Gathr moderator may:", style = regularTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Remove events violating policies or safety standards")
-                            BulletItem("Restrict user access for misconduct or rule violations")
+                            Text("6. Retention of Data", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                BulletItem("Attendance and event logs are kept as long as required by the school.")
+                                BulletItem("Account information is retained until you request deletion.")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("7. Intellectual Property", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "All intellectual property belonging to Gather, including branding, code, and design (excluding User Content), is protected by copyright and trademark law.",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("8. Disclaimers", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "Gathr is provided “as is” without warranties or guarantees of any kind. We do not promise:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("The accuracy or availability of event listings")
-                            BulletItem("Error-free or uninterrupted operation")
-                            BulletItem("That any event will meet expectations")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("9. Limitation of Liability", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "To the fullest extent permitted by law, Gather is not liable for:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Injuries or damages resulting from participation in events")
-                            BulletItem("Loss of data or access disruptions")
-                            BulletItem("User or organizer actions or misconduct")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("10. Changes", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "We may modify these Terms or the Service at any time. Continued use after changes means you accept the updated Terms.",
-                                style = regularTextStyle
-                            )
+                            Text("7. Changes to This Privacy Policy", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                BulletItem("We may update this policy from time to time. Notification will be sent through the app or email.")
+                            }
                         }
-                        Spacer(modifier = Modifier.height(15.dp))
-                        Text(
-                            buildAnnotatedString {
-                                append("By tapping \"")
-                                withStyle(
-                                    style = SpanStyle(
-                                        fontFamily = AppFonts.instrumentSans,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                ) {
-                                    append("Accept")
-                                }
-                                append("\", you confirm that you have read, understood, and agree to be bound by these Terms of Service.")
-                            },
-                            style = regularTextStyle,
-                            modifier = Modifier.padding(horizontal = 18.dp)
-                        )
                         Spacer(modifier = Modifier.height(30.dp))
                     }
                 }
@@ -351,7 +334,7 @@ fun PrivacyPolicyContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) {
                 bottomPadding = paddingValues.calculateBottomPadding(),
                 textButtonText = "I ALREADY HAVE AN ACCOUNT",
                 onTextButtonClick = { onIntent(SignUpIntent.LoginClicked) },
-                buttonText = "ACCEPT",
+                buttonText = "NEXT",
                 isButtonEnabled = hasScrolledDown,
                 onButtonClick = {
                     onIntent(SignUpIntent.NextClicked)

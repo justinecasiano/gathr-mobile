@@ -222,123 +222,175 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                                     end = 15.dp
                                 )
                         ) {
-                            Text("1. Accounts", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("You are responsible for your login information and account activity.")
-                            BulletItem("You must provide accurate registration information and keep it updated.")
-                            BulletItem("We may suspend or terminate accounts that violate school policies or these Terms.")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("2. Events Creation & Participation", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Organizers may create and manage school-related events.")
-                            BulletItem("Students may browse and register for available events.")
-                            BulletItem {
+                            Text("1. Introduction", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
-                                    buildAnnotatedString {
-                                        withStyle(
-                                            style = SpanStyle(
-                                                fontFamily = AppFonts.instrumentSans,
-                                                fontSize = 13.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        ) {
-                                            append("Gathr ")
-                                        }
-                                        append("does not host or manage events. Schools and organizations are solely responsible for event safety, rules, and admission decisions.")
-                                    },
-                                    style = regularTextStyle,
-                                    lineHeight = 16.sp,
+                                    "Gathr is an event ticketing and attendance application created for schools, organizations, and students. School organizations can create events, and students can register and attend events through the app.",
+                                    style = regularTextStyle
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("3. User Conduct", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "You agree to use the Service in a lawful and respectful manner. Prohibited behavior includes, but is not limited to:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(7.dp))
-                            BulletItem("Harassment, bullying, or threatening content")
-                            BulletItem("Events or actions that violate school rules or laws")
-                            BulletItem("Unauthorized access to other users’ information")
-                            BulletItem("Attempts to disrupt or exploit the Service")
-                            Spacer(modifier = Modifier.height(9.dp))
-                            Text(
-                                "Violations may lead to account restrictions or removal.",
-                                style = regularTextStyle
-                            )
+                            Text("2. Eligibility", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "By using Gathr, you confirm that:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("You are a student, faculty member, or school organization representative authorized to use the platform.")
+                                BulletItem("You are providing accurate information.")
+                                BulletItem("You agree to follow all school policies and Philippine laws while using the app.")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("4. User Content", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "You may submit content such as event details, comments, and media (\"User Content\"). You retain ownership but grant Gather a non-exclusive, worldwide license to use that content solely for operating the Service. We may remove content that is inappropriate or poses safety, privacy, or legal concerns.",
-                                style = regularTextStyle
-                            )
+                            Text("3. Account Creation and Responsibilities", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "To use Gathr, users must create an account with their:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Full name")
+                                BulletItem("Email address or school email")
+                                BulletItem("Student ID number (if applicable)")
+                                Spacer(modifier = Modifier.height(9.dp))
+                                Text(
+                                    "Users must:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Keep login details private.")
+                                BulletItem("Immediately report unauthorized account access.")
+                                BulletItem("Be responsible for all activity done using their account.")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Gathr is not responsible for any damage or unauthorized use caused by weak passwords or account sharing.",
+                                    style = regularTextStyle
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("5. Privacy", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "Your use of Gather is also governed by our Privacy Policy, which explains how student information is collected and protected. Certain school staff and organizers may access student attendance information for school-related purposes.",
-                                style = regularTextStyle
-                            )
+                            Text("4. Use of the App", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Users agree NOT to:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Misuse the app or create fake events.")
+                                BulletItem("Impersonate another person or organization.")
+                                BulletItem("Post illegal, abusive, or fraudulent content.")
+                                BulletItem("Interfere with the platform’s security.")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Gathr may suspend or remove any user who violates these rules.",
+                                    style = regularTextStyle
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("6. Moderator Rights", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text("Gathr moderator may:", style = regularTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Remove events violating policies or safety standards")
-                            BulletItem("Restrict user access for misconduct or rule violations")
+                            Text("5. Event Registration and Attendance", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                BulletItem("School organizations may create, edit, or cancel events.")
+                                BulletItem("Students may register for events through the app.")
+                                BulletItem("Gathr does not control event schedules, locations, or policies.")
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Event organizers are fully responsible for:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Accuracy of event details")
+                                BulletItem("Safety protocols")
+                                BulletItem("Attendance records")
+                                BulletItem("Capacity and slot management")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Gathr only provides the platform.",
+                                    style = regularTextStyle
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("7. Intellectual Property", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "All intellectual property belonging to Gather, including branding, code, and design (excluding User Content), is protected by copyright and trademark law.",
-                                style = regularTextStyle
-                            )
+                            Text("6. Intellectual Property", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                BulletItem("All logos, designs, graphics, features, and code are owned by Gathr or its developers.")
+                                Text("Users may not:", style = regularTextStyle)
+                                BulletItem("Copy, modify, or reproduce app content")
+                                BulletItem("Reverse-engineer the app")
+                                BulletItem("Use Gathr for commercial purposes without permission")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("8. Disclaimers", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "Gathr is provided “as is” without warranties or guarantees of any kind. We do not promise:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("The accuracy or availability of event listings")
-                            BulletItem("Error-free or uninterrupted operation")
-                            BulletItem("That any event will meet expectations")
+                            Text("7. User Content", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "If a user creates content (e.g., profile image or event banner), they:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Confirm they own the content")
+                                BulletItem("Allow Gathr to display it inside the app")
+                                BulletItem("Accept responsibility for any legal issues arising from it")
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("8. Service Availability", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Gathr is provided “as is”, without guarantees that:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("It will always be error-free")
+                                BulletItem("It will never experience downtime")
+                                BulletItem("All event information is accurate (event organizers are responsible for this)")
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                             Text("9. Limitation of Liability", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "To the fullest extent permitted by law, Gather is not liable for:",
-                                style = regularTextStyle
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            BulletItem("Injuries or damages resulting from participation in events")
-                            BulletItem("Loss of data or access disruptions")
-                            BulletItem("User or organizer actions or misconduct")
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Gathr is NOT liable for:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Event cancellations or changes by organizers")
+                                BulletItem("Incorrect event information posted by organizations")
+                                BulletItem("Lost attendance records caused by organizer errors")
+                                BulletItem("User mistakes (wrong registration, incorrect details)")
+                                BulletItem("Damages resulting from hacking or misuse beyond our control")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Under Philippine law, liability for fraud or gross negligence cannot be waived, and Gathr will comply with this.",
+                                    style = regularTextStyle
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("10. Changes", style = boldTextStyle)
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                "We may modify these Terms or the Service at any time. Continued use after changes means you accept the updated Terms.",
-                                style = regularTextStyle
-                            )
+                            Text("10. Termination of Account", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "Gathr may suspend or delete accounts that:",
+                                    style = regularTextStyle
+                                )
+                                BulletItem("Violate school policies")
+                                BulletItem("Break Philippine laws")
+                                BulletItem("Post harmful or fraudulent content")
+                                BulletItem("Misuse the platform")
+                                Text(
+                                    "Users may request account deletion anytime.",
+                                    style = regularTextStyle
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("11. Updates to the Terms", style = boldTextStyle)
+                            Column(Modifier.padding(start = 8.dp)) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    "We may update these Terms at any time. Continued use of the app means you accept the updated terms.",
+                                    style = regularTextStyle
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(15.dp))
                         Text(
                             buildAnnotatedString {
-                                append("By tapping \"")
-                                withStyle(
-                                    style = SpanStyle(
-                                        fontFamily = AppFonts.instrumentSans,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                ) {
-                                    append("Accept")
-                                }
-                                append("\", you confirm that you have read, understood, and agree to be bound by these Terms of Service.")
+                                append("By creating an account or using Gathr, you agree to be bound by these Terms and Conditions and our Privacy Policy.")
                             },
                             style = regularTextStyle,
                             modifier = Modifier.padding(horizontal = 18.dp)
@@ -351,7 +403,7 @@ fun TermsOfServiceContent(state: SignUpState, onIntent: (SignUpIntent) -> Unit) 
                 bottomPadding = paddingValues.calculateBottomPadding(),
                 textButtonText = "I ALREADY HAVE AN ACCOUNT",
                 onTextButtonClick = { onIntent(SignUpIntent.LoginClicked) },
-                buttonText = "ACCEPT",
+                buttonText = "NEXT",
                 isButtonEnabled = hasScrolledDown,
                 onButtonClick = {
                     onIntent(SignUpIntent.NextClicked)
@@ -371,7 +423,7 @@ fun BulletItem(
             modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
         ) {
             Text(
-                text = "•  ", style = TextStyle(
+                text = "\t•  ", style = TextStyle(
                     fontFamily = AppFonts.instrumentSans,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
