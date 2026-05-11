@@ -2,6 +2,8 @@ package com.example.gathr.core.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -41,18 +44,36 @@ fun SearchTextField(
     onValueChange: (String) -> Unit,
     placeholderText: String = "",
     onClearValue: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isModerator: Boolean = false
 ) {
+    val moderatorPurpleDark = Color(0xFF312245)
+    val moderatorPurpleLight = Color(0xFF7954AB)
+
+    val backgroundModifier = if (isModerator) {
+        Modifier
+            .border(2.dp, moderatorPurpleDark, RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(moderatorPurpleDark, moderatorPurpleLight)
+                ),
+                shape = RoundedCornerShape(20.dp)
+            )
+    } else {
+        Modifier
+    }
+
     OutlinedTextField(
         value = text,
         onValueChange = onValueChange,
         modifier = modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .then(backgroundModifier),
         textStyle = TextStyle(
             fontFamily = AppFonts.rethinkSans,
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
-            color = Color.Black,
+            color = if (isModerator) Color.White else Color.Black,
         ),
         placeholder = {
             Text(
@@ -61,7 +82,7 @@ fun SearchTextField(
                     fontFamily = AppFonts.rethinkSans,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Gray,
+                    color = if (isModerator) Color.White.copy(alpha = 0.6f) else Color.Gray,
                 ),
             )
         },
@@ -70,7 +91,7 @@ fun SearchTextField(
         leadingIcon = {
             Icon(
                 painter = painterResource(R.drawable.search_icon),
-                tint = Color.Black,
+                tint = if (isModerator) Color.White else Color.Black,
                 contentDescription = "Search"
             )
         },
@@ -82,7 +103,7 @@ fun SearchTextField(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.clear_icon_filled),
-                        tint = Color(0xFFA9A9A9),
+                        tint = if (isModerator) Color.White.copy(alpha = 0.7f) else Color(0xFFA9A9A9),
                         contentDescription = "Clear Text"
                     )
                 }
@@ -90,21 +111,18 @@ fun SearchTextField(
         },
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
-            cursorColor = Color.Black,
+            cursorColor = if (isModerator) Color.White else Color.Black,
 
-            unfocusedBorderColor = Color(0xFFD7D7D7),
-            focusedBorderColor = Color(0xFFD7D7D7),
+            unfocusedBorderColor = if (isModerator) moderatorPurpleDark else Color(0xFFD7D7D7),
+            focusedBorderColor = if (isModerator) moderatorPurpleDark else Color(0xFFD7D7D7),
 
-            focusedTextColor = Color.Black,
-            unfocusedTextColor = Color.Black.copy(alpha = 0.9f),
+            focusedTextColor = if (isModerator) Color.White else Color.Black,
+            unfocusedTextColor = if (isModerator) Color.White.copy(alpha = 0.9f) else Color.Black.copy(
+                alpha = 0.9f
+            ),
 
-            unfocusedContainerColor = Color(0xFFFCFCFC),
-            focusedContainerColor = Color(0xFFFCFCFC),
-        )
+            unfocusedContainerColor = if (isModerator) Color.Transparent else Color(0xFFFCFCFC),
+            focusedContainerColor = if (isModerator) Color.Transparent else Color(0xFFFCFCFC),
+        ),
     )
-}
-
-@Preview
-@Composable
-private fun SearchTextFieldPreview() {
 }

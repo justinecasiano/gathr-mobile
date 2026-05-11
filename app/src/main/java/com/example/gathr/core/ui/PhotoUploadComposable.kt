@@ -68,7 +68,7 @@ fun PhotoUploadComposable(
                 setCompressionFormat(Bitmap.CompressFormat.WEBP)
                 setCompressionQuality(90)
                 setHideBottomControls(false)
-                setFreeStyleCropEnabled(false)
+                setFreeStyleCropEnabled(true)
                 val purple = "#7B55A3".toColorInt()
                 setToolbarColor(purple)
                 setActiveControlsWidgetColor(purple)
@@ -76,8 +76,7 @@ fun PhotoUploadComposable(
             }
 
             val uCropIntent = UCrop.of(sourceUri, destinationUri)
-                .withAspectRatio(16f, 9f)
-                .withMaxResultSize(1280, 720)
+                .withMaxResultSize(1080, 1920)
                 .withOptions(options)
                 .getIntent(context)
 
@@ -89,9 +88,9 @@ fun PhotoUploadComposable(
         if (!selectedImageUriString.isNullOrBlank()) {
             Box(
                 modifier = Modifier
-                    .width(150.dp)
-                    .height(100.dp)
+                    .size(120.dp)
                     .clip(RoundedCornerShape(16.dp))
+                    .background(Color.LightGray.copy(alpha = 0.2f))
             ) {
                 AsyncImage(
                     model = selectedImageUriString,

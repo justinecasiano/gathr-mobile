@@ -78,9 +78,8 @@ fun SplashScreen(
                 userViewModel.handleIntent(UserIntent.FetchManagedEvents)
                 userViewModel.handleIntent(UserIntent.FetchJoinableEvents)
                 userViewModel.handleIntent(UserIntent.FetchJoinedEvents)
-
             } else if (user.role === UserRole.MODERATOR) {
-                // fetch for moderator
+                userViewModel.handleIntent(UserIntent.FetchModeratorEvents)
             }
         } else {
             onLoaded(false)
@@ -92,9 +91,14 @@ fun SplashScreen(
         val user = userViewModel.getCurrentUser()
         val status = state.dataFetchStatus
         val hasFetchedData =
-            status.currentUser == FetchStatus.DONE && status.managedEvents == FetchStatus.DONE &&
-                    status.joinableEvents == FetchStatus.DONE && status.joinedEvents == FetchStatus.DONE &&
-                    status.notifications == FetchStatus.DONE
+            when {
+                user?.role == UserRole.PARTICIPANT ->
+                    status.currentUser == FetchStatus.DONE && status.managedEvents == FetchStatus.DONE &&
+                            status.joinableEvents == FetchStatus.DONE && status.joinedEvents == FetchStatus.DONE &&
+                            status.notifications == FetchStatus.DONE
+
+                else -> status.currentUser == FetchStatus.DONE && status.moderatorEvents == FetchStatus.DONE && status.notifications == FetchStatus.DONE
+            }
 
         Log.d("FETCH_STATUS", status.toString())
         if (user !== null && hasFetchedData) {

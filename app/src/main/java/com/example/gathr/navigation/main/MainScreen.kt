@@ -12,16 +12,10 @@ sealed class MainScreen : NavKey {
     data object ParticipantViewEvent : MainScreen()
 
     @Serializable
-    data object ModeratorViewEvent : MainScreen()
-
-    @Serializable
     data object CreateEvent : MainScreen()
 
     @Serializable
     data object UpdateEvent: MainScreen()
-
-    @Serializable
-    data object AddStaff : MainScreen()
 
     @Serializable
     data object ViewAttendance : MainScreen()
@@ -31,15 +25,6 @@ sealed class MainScreen : NavKey {
 
     @Serializable
     data object EditProfile : MainScreen()
-
-    @Serializable
-    data object EditName: MainScreen()
-
-    @Serializable
-    data object EditUsername: MainScreen()
-
-    @Serializable
-    data object EditSchool: MainScreen()
 
     @Serializable
     data object Staff : MainScreen()

@@ -24,12 +24,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.PopupProperties
 import com.example.gathr.ui.theme.AppFonts
 
-@OptIn(ExperimentalMaterial3Api::class) // BasicAlertDialog is experimental
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Alert(
     onDismissRequest: () -> Unit,
     title: String,
     message: String = "",
+    isModerator: Boolean = false,
     isContrast: Boolean = false,
     backgroundColor: Color = Color.White,
     backgroundBrush: Brush? = null,
@@ -47,6 +48,15 @@ fun Alert(
                 .clip(RoundedCornerShape(20.dp))
                 .then(
                     if (backgroundBrush != null) Modifier.background(backgroundBrush)
+                    else if (isModerator) Modifier
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF312245),
+                                    Color(0xFF7954AB)
+                                )
+                            )
+                        )
                     else Modifier.background(backgroundColor)
                 )
         ) {
@@ -59,7 +69,7 @@ fun Alert(
                 ) {
                     Text(
                         text = title,
-                        color = if (isContrast) Color.White else Color.Black,
+                        color = if (isContrast || isModerator) Color.White else Color.Black,
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 16.3.sp,
                         fontWeight = FontWeight.Bold
@@ -68,7 +78,7 @@ fun Alert(
                     if (content != null) content()
                     if (message.isNotBlank()) Text(
                         text = message,
-                        color = if (isContrast) Color.White else Color.Black,
+                        color = if (isContrast || isModerator) Color.White else Color.Black,
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 12.sp,
                         lineHeight = 17.3.sp,
@@ -94,7 +104,7 @@ fun Alert(
                                 .padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                             Text(
                                 text = cancelButtonText,
-                                color = if (isContrast) Color.White else Color.Black,
+                                color = if (isContrast || isModerator) Color.White else Color.Black,
                                 fontSize = 15.sp,
                                 fontFamily = AppFonts.rethinkSans,
                                 fontWeight = FontWeight.Bold
@@ -117,7 +127,7 @@ fun Alert(
                             .padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
                         val buttonColor =
                             if (cancelButtonText != null) Color(0xFFEE101A) else {
-                                if (isContrast) Color.White else Color.Black
+                                if (isContrast || isModerator) Color.White else Color.Black
                             }
 
                         Text(
@@ -134,22 +144,3 @@ fun Alert(
     }
 }
 
-@Preview
-@Composable
-fun AlertPreview() {
-    Alert(
-        onDismissRequest = {},
-        title = "Change Name",
-        message = "Are you sure you want to change your name?",
-        confirmButtonText = "Confirm",
-        onConfirmClicked = { /* Handle confirm */ },
-        cancelButtonText = "Cancel",
-        onCancelClicked = { /* Handle cancel */ })
-//    Alert(
-//        onDismissRequest = {},
-//        title = "Event Created",
-//        text = "Please wait for the moderator's approval",
-//        confirmButtonText = "Ok",
-//        onConfirmClicked = { /* Handle OK */ }
-//    )
-}

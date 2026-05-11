@@ -11,6 +11,7 @@ import com.example.gathr.presentation.participant.ParticipantPayload
 import kotlinx.serialization.Serializable
 
 data class UserState(
+    val moderatorEvents: List<Event> = emptyList(),
     val managedEvents: List<ManagedEvent> = emptyList(),
     val joinableEvents: List<Event> = emptyList(),
     val joinedEvents: List<Event> = emptyList(),
@@ -45,6 +46,7 @@ data class UserState(
 @Serializable
 data class StateFetchStatus(
     val currentUser: FetchStatus = FetchStatus.LOADING,
+    val moderatorEvents: FetchStatus = FetchStatus.LOADING,
     val managedEvents: FetchStatus = FetchStatus.LOADING,
     val joinableEvents: FetchStatus = FetchStatus.LOADING,
     val joinedEvents: FetchStatus = FetchStatus.LOADING,
@@ -59,6 +61,7 @@ enum class FetchStatus {
 
 @Serializable
 data class UserCache(
+    val moderatorEvents: List<Event>,
     val managedEvents: List<ManagedEvent>,
     val joinableEvents: List<Event>,
     val joinedEvents: List<Event>,

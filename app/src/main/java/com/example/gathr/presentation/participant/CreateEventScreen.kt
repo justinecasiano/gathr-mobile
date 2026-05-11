@@ -1,12 +1,7 @@
 package com.example.gathr.presentation.participant
 
-import android.app.Activity
-import android.graphics.Bitmap
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.slideInHorizontally
@@ -59,7 +54,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,14 +102,10 @@ import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.ui.theme.fadeIn
 import com.example.gathr.ui.theme.fadeOut
 import com.example.gathr.utils.toTitleCase
-import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.io.File
-import java.util.UUID
-import androidx.core.graphics.toColorInt
 
 @Composable
 fun CreateEventScreen(
@@ -220,7 +210,7 @@ fun CreateEventScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
                     confirmButtonText = "Ok",
                     onConfirmClicked = {
-                        viewModel.sendMainEffect(MainEffect.NavigateParticipantViewEvent)
+                        viewModel.sendMainEffect(MainEffect.ViewEvent)
                         viewModel.handleIntent(UserIntent.ActionOnClear)
                         state.actionOnConfirm()
                     },

@@ -1,8 +1,8 @@
 package com.example.gathr.presentation.main
 
-import android.content.Context
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.presentation.participant.ParticipantPayload
 
 sealed interface UserIntent {
@@ -34,7 +34,13 @@ sealed interface UserIntent {
     data class StaffSelectedTabChanged(val value: Int) : UserIntent
     data class StaffSearchTextChanged(val value: String) : UserIntent
     data class MarkNotificationAsRead(val value: Long) : UserIntent
+    data class ReviewEvent(
+        val eventId: Long,
+        val status: EventApprovalStatus,
+        val comment: String?
+    ) : UserIntent
 
+    data object FetchModeratorEvents: UserIntent
     data object FetchManagedEvents : UserIntent
     data object FetchJoinableEvents : UserIntent
     data object FetchJoinedEvents : UserIntent
@@ -65,15 +71,13 @@ sealed interface UserEffect {
 }
 
 sealed interface MainEffect {
-    data object NavigateModeratorViewEvent : MainEffect
-
     data object NavigateFeedback : MainEffect
     data object NavigateEditProfile : MainEffect
     data object NavigateQrCode : MainEffect
     data object NavigateQrScanner : MainEffect
     data object NavigateUpdateEvent : MainEffect
     data object NavigateCreateEvent : MainEffect
-    data object NavigateParticipantViewEvent : MainEffect
+    data object ViewEvent : MainEffect
     data object NavigateAttendance : MainEffect
     data object NavigateStaff : MainEffect
     data object NavigateBackUser : MainEffect

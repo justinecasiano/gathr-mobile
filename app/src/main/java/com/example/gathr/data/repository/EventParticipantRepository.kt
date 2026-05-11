@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.ParticipantType
@@ -43,6 +44,7 @@ import java.time.Instant
 import java.util.UUID
 
 interface EventParticipantRepository {
+    suspend fun fetchModeratorEvents(): ApiResult<List<Event>>
     suspend fun fetchManagedEvents(): ApiResult<List<ManagedEvent>>
     suspend fun fetchJoinableEvents(): ApiResult<List<Event>>
     suspend fun fetchJoinedEvents(): ApiResult<List<Event>>
@@ -64,6 +66,13 @@ interface EventParticipantRepository {
 
     fun observeEventsAndParticipants(): Flow<Long>
     suspend fun fetchSingleEvent(eventId: Long, userId: UUID): ApiResult<Event>
+    suspend fun fetchSingleEventForModerator(eventId: Long): ApiResult<Event>
+    suspend fun updateEventStatus(
+        eventId: Long,
+        moderatorId: UUID,
+        status: EventApprovalStatus,
+        comment: String?
+    ): ApiResult<Unit>
 }
 
 class EventParticipantRepositoryImpl(
@@ -75,6 +84,25 @@ class EventParticipantRepositoryImpl(
 ) : EventParticipantRepository {
 
     private val jsonConfig = Json { ignoreUnknownKeys = true }
+
+    override suspend fun fetchModeratorEvents(): ApiResult<List<Event>> {
+        return try {
+            val rpcParams = buildJsonObject {
+                put("p_user_id", auth.currentUserOrNull()?.id.toString())
+            }
+
+            val response = supabase.postgrest.rpc(
+                function = "get_moderator_management_events",
+                parameters = rpcParams
+            )
+
+            val events = jsonConfig.decodeFromString<List<Event>>(response.data)
+            ApiResult.Success(events)
+        } catch (e: Exception) {
+            Log.e("FETCH_MODERATOR_EVENTS", "Failed", e)
+            ApiResult.Error(e.message ?: "An unexpected error occurred")
+        }
+    }
 
     override suspend fun fetchManagedEvents(): ApiResult<List<ManagedEvent>> {
         return try {
@@ -408,8 +436,9 @@ class EventParticipantRepositoryImpl(
                 val fileName = "${UUID.randomUUID()}.webp"
                 newFileName = fileName
 
-                val imageBytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
-                    ?: return ApiResult.Error("Could not read image file")
+                val imageBytes =
+                    context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() }
+                        ?: return ApiResult.Error("Could not read image file")
 
                 bucket.upload(path = fileName, data = imageBytes) {
                     upsert = false
@@ -465,7 +494,10 @@ class EventParticipantRepositoryImpl(
                         val cleanOldFileName = oldFileName.substringBefore("?")
                         bucket.delete(listOf(cleanOldFileName))
                     } catch (e: Exception) {
-                        Log.e("STORAGE_CLEANUP", "Failed to delete old image from bucket: $oldImageUrl")
+                        Log.e(
+                            "STORAGE_CLEANUP",
+                            "Failed to delete old image from bucket: $oldImageUrl"
+                        )
                     }
                 }
 
@@ -561,6 +593,49 @@ class EventParticipantRepositoryImpl(
             ApiResult.Success(event)
         } catch (e: Exception) {
             ApiResult.Error(e.message.toString())
+        }
+    }
+
+    override suspend fun fetchSingleEventForModerator(eventId: Long): ApiResult<Event> {
+        return try {
+            val rpcParams = buildJsonObject {
+                put("p_event_id", eventId)
+            }
+
+            val response = supabase.postgrest.rpc("get_event_details_for_moderator", rpcParams)
+            val event = jsonConfig.decodeFromString<Event>(response.data)
+            ApiResult.Success(event)
+        } catch (e: Exception) {
+            Log.e("FETCH_MODERATOR_SINGLE", "Failed", e)
+            ApiResult.Error(e.message ?: "Failed to fetch event details")
+        }
+    }
+
+    override suspend fun updateEventStatus(
+        eventId: Long,
+        moderatorId: UUID,
+        status: EventApprovalStatus,
+        comment: String?
+    ): ApiResult<Unit> {
+        return try {
+            val updates = buildJsonObject {
+                put("status", status.name)
+                put("approved_by", moderatorId.toString())
+                put("comment", comment)
+                if (status == EventApprovalStatus.APPROVED) {
+                    put("approved_at", Instant.now().toString())
+                }
+                put("updated_at", Instant.now().toString())
+            }
+
+            supabase.from("events").update(updates) {
+                filter { eq("id", eventId) }
+            }
+
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            Log.e("MODERATOR_ACTION", "Failed to update event status", e)
+            ApiResult.Error(e.message ?: "Failed to update event status")
         }
     }
 }

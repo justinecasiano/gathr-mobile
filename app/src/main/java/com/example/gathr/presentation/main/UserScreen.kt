@@ -51,6 +51,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.gathr.core.ui.LoadingOverlay
+import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
 import com.example.gathr.data.model.UserRole
 import com.example.gathr.navigation.main.ModeratorBottomBarScreen
@@ -59,17 +60,17 @@ import com.example.gathr.navigation.main.ParticipantBottomBarScreen
 import com.example.gathr.navigation.main.ParticipantBottomBarScreenSaver
 import com.example.gathr.navigation.main.moderatorBottomBarItems
 import com.example.gathr.navigation.main.participantBottomBarItems
+import com.example.gathr.presentation.moderator.ModeratorEventsScreen
+import com.example.gathr.presentation.moderator.ModeratorNotificationsScreen
+import com.example.gathr.presentation.moderator.ModeratorPendingsContent
+import com.example.gathr.presentation.moderator.ModeratorPendingsScreen
 import com.example.gathr.presentation.moderator.ModeratorProfileScreen
 import com.example.gathr.presentation.participant.ETicketsScreen
 import com.example.gathr.presentation.participant.ParticipantEventsScreen
 import com.example.gathr.presentation.participant.ParticipantMyEventsScreen
 import com.example.gathr.presentation.participant.ParticipantNotificationsScreen
 import com.example.gathr.presentation.participant.ParticipantProfileScreen
-import com.example.gathr.presentation.shared.EventsScreen
-import com.example.gathr.presentation.shared.NotificationsScreen
 import com.example.gathr.ui.theme.AppFonts
-import com.example.gathr.ui.theme.scaleIn
-import com.example.gathr.ui.theme.scaleOut
 
 @Composable
 fun UserScreen(
@@ -310,7 +311,7 @@ fun ModeratorContent(
     val backStack = rememberNavBackStack(ModeratorBottomBarScreen.Events)
     var currentBottomBarScreen: ModeratorBottomBarScreen by rememberSaveable(
         stateSaver = ModeratorBottomBarScreenSaver,
-    ) { mutableStateOf(ModeratorBottomBarScreen.Pendings) }
+    ) { mutableStateOf(ModeratorBottomBarScreen.Events) }
 
     val colorStops = listOf(
         0f to Color(0xFF312245),
@@ -346,11 +347,10 @@ fun ModeratorContent(
                         modifier = Modifier,
                         selected = currentBottomBarScreen == destination,
                         icon = {
-                            if (destination.title == "Notifications") {
+                            if (destination.title == "Pendings" && state.moderatorEvents.count { it.status == EventApprovalStatus.PENDING && !it.isArchive } > 0) {
                                 BadgedBox(
                                     badge = {
                                         Badge(
-                                            //                                        containerColor = Color(0xFF312245),
                                             containerColor = Color(0xFFF7906E),
                                             contentColor = Color.White,
                                             modifier = Modifier
@@ -359,7 +359,34 @@ fun ModeratorContent(
                                                     color = Color.Black,
                                                     shape = CircleShape,
                                                 ),
-                                        ) { Text(text = "0") }
+                                        ) {
+                                            Text(text = state.moderatorEvents.count { it.status == EventApprovalStatus.PENDING && !it.isArchive }
+                                                .toString())
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(28.dp),
+                                        painter = painterResource(destination.icon),
+                                        contentDescription = "$destination icon",
+                                    )
+                                }
+                            } else if (destination.title == "Notifications" && state.notifications.count { !it.isRead } > 0) {
+                                BadgedBox(
+                                    badge = {
+                                        Badge(
+                                            containerColor = Color(0xFFF7906E),
+                                            contentColor = Color.White,
+                                            modifier = Modifier
+                                                .border(
+                                                    width = 1.5.dp,
+                                                    color = Color.Black,
+                                                    shape = CircleShape,
+                                                ),
+                                        ) {
+                                            Text(text = state.notifications.count { !it.isRead }
+                                                .toString())
+                                        }
                                     },
                                 ) {
                                     Icon(
@@ -399,7 +426,7 @@ fun ModeratorContent(
                             indicatorColor = Color.Transparent,
                             selectedIconColor = Color.White,
                             selectedTextColor = Color.White,
-                            unselectedIconColor = Color.White.copy(alpha = 0.5f),
+                            unselectedIconColor = Color(0xFFA5A5A5),
                             unselectedTextColor = Color.White.copy(alpha = 0.5f),
                             disabledIconColor = Color.Unspecified,
                             disabledTextColor = Color.Unspecified,
@@ -425,30 +452,42 @@ fun ModeratorContent(
                 ),
                 entryProvider = entryProvider {
                     entry<ModeratorBottomBarScreen.Events> {
-                        EventsScreen()
+                        ModeratorEventsScreen(state, onIntent, onNavigate)
                     }
                     entry<ModeratorBottomBarScreen.Pendings> {
-//                        MyEventsScreen()
+                        ModeratorPendingsScreen(state, onIntent, onNavigate)
                     }
                     entry<ModeratorBottomBarScreen.Notifications> {
-                        NotificationsScreen()
+                        ModeratorNotificationsScreen(state, onIntent, onNavigate, {})
                     }
                     entry<ModeratorBottomBarScreen.Account> {
-                        ModeratorProfileScreen(state, onIntent, onNavigate)
+                        ModeratorProfileScreen(state, onIntent, onNavigate, {})
                     }
                 },
                 transitionSpec = {
                     fadeIn(
-                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = LinearOutSlowInEasing
+                        )
                     ) togetherWith fadeOut(
-                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = FastOutLinearInEasing
+                        )
                     )
                 },
                 popTransitionSpec = {
                     fadeIn(
-                        animationSpec = tween(durationMillis = 250, easing = LinearOutSlowInEasing)
+                        animationSpec = tween(
+                            durationMillis = 250,
+                            easing = LinearOutSlowInEasing
+                        )
                     ) togetherWith fadeOut(
-                        animationSpec = tween(durationMillis = 200, easing = FastOutLinearInEasing)
+                        animationSpec = tween(
+                            durationMillis = 200,
+                            easing = FastOutLinearInEasing
+                        )
                     )
                 },
                 predictivePopTransitionSpec = {

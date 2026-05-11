@@ -1,4 +1,4 @@
-package com.example.gathr.presentation.participant
+package com.example.gathr.presentation.shared
 
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -29,10 +29,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -91,7 +95,7 @@ import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParticipantViewEventScreen(
+fun ViewEventScreen(
     viewModel: UserViewModel,
     onNavigateBack: () -> Unit,
 ) {
@@ -111,15 +115,17 @@ fun ParticipantViewEventScreen(
         var role = event.userRole
         var isRegistered =
             if (role == ParticipantType.ATTENDEE && event.isRegistered) true else false
+        val isModerator = state.currentUser!!.role.name == "MODERATOR"
 
         Log.d("VIEW_EVENT", "User Role is $role")
 
-        ParticipantViewEventContent(
+        ViewEventContent(
             event = state.currentEvent!!,
             role = role,
             isRegistered = isRegistered,
             onIntent = viewModel::handleIntent,
-            onNavigate = viewModel::sendMainEffect
+            onNavigate = viewModel::sendMainEffect,
+            isModerator = isModerator
         )
         if (state.isLoading) {
             LoadingOverlay()
@@ -166,6 +172,7 @@ fun ParticipantViewEventScreen(
                     onConfirmClicked = state.actionOnConfirm,
                     cancelButtonText = "Cancel",
                     onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    isModerator = isModerator
                 )
             }
 
@@ -176,6 +183,84 @@ fun ParticipantViewEventScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     confirmButtonText = "Ok",
                     onConfirmClicked = state.actionOnConfirm,
+                    isModerator = isModerator
+                )
+            }
+
+            state.actionTitle == "Review Success" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    confirmButtonText = "Ok",
+                    onConfirmClicked = state.actionOnConfirm,
+                    isModerator = isModerator
+                )
+            }
+
+            state.actionTitle == "Approve Event" -> {
+                val event = state.currentEvent!!
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    confirmButtonText = "Confirm",
+                    cancelButtonText = "Cancel",
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onConfirmClicked = {
+                        viewModel.handleIntent(UserIntent.ReviewEvent(
+                            eventId = event.id,
+                            status = EventApprovalStatus.APPROVED,
+                            comment = ""
+                        ))
+                        viewModel.handleIntent(UserIntent.ActionOnClear)
+                    },
+                    isModerator = true
+                )
+            }
+
+            state.actionTitle == "Reject Event" -> {
+                Alert(
+                    title = state.actionTitle,
+                    message = state.actionError,
+                    confirmButtonText = "Confirm",
+                    cancelButtonText = "Cancel",
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onConfirmClicked = state.actionOnConfirm,
+                    isModerator = true
+                )
+            }
+
+            state.actionTitle == "Reason" -> {
+                var selectedReason by remember { mutableStateOf("Inappropriate content") }
+                var otherReasonText by remember { mutableStateOf("") }
+                val event = state.currentEvent!!
+
+                Alert(
+                    title = "Reason",
+                    confirmButtonText = "Confirm",
+                    cancelButtonText = "Cancel",
+                    isModerator = true,
+                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    onConfirmClicked = {
+                        val finalComment = if (selectedReason == "Others") otherReasonText else selectedReason
+                        viewModel.handleIntent(UserIntent.ReviewEvent(
+                            eventId = event.id,
+                            status = EventApprovalStatus.REJECTED,
+                            comment = finalComment
+                        ))
+                        viewModel.handleIntent(UserIntent.ActionOnClear)
+                    },
+                    content = {
+                        RejectionReasonContent(
+                            selectedReason = selectedReason,
+                            onReasonSelected = { selectedReason = it },
+                            otherText = otherReasonText,
+                            onOtherTextChange = { otherReasonText = it }
+                        )
+                    }
                 )
             }
 
@@ -186,6 +271,7 @@ fun ParticipantViewEventScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     confirmButtonText = "Ok",
                     onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
+                    isModerator = isModerator
                 )
             }
         }
@@ -194,12 +280,13 @@ fun ParticipantViewEventScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ParticipantViewEventContent(
+fun ViewEventContent(
     event: Event,
     role: ParticipantType,
     isRegistered: Boolean,
     onIntent: (UserIntent) -> Unit,
-    onNavigate: (MainEffect) -> Unit
+    onNavigate: (MainEffect) -> Unit,
+    isModerator: Boolean = false
 ) {
     var selectedImage by remember { mutableStateOf("") }
 
@@ -216,62 +303,64 @@ fun ParticipantViewEventContent(
     val eventStatusColor =
         if (isUpcoming && !isRegistered) Color.Black.copy(0.8f) else Color(0xFF9FC090)
     var eventStatus = event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-    var eventDateTime = "${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
+    var eventDateTime = "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
 
-    if (role == ParticipantType.ATTENDEE) {
-        if (!isRegistered) {
-            buttonText = "REGISTER"
-            onButtonClick = {
-                onIntent(UserIntent.RegisterEvent)
+    if (!isModerator) {
+        if (role == ParticipantType.ATTENDEE) {
+            if (!isRegistered) {
+                buttonText = "REGISTER"
+                onButtonClick = {
+                    onIntent(UserIntent.RegisterEvent)
+                }
+            } else {
+                buttonText = "CANCEL"
+                eventStatus = "REGISTERED"
+                onButtonClick = {
+                    onIntent(UserIntent.ActionTitleChanged("Cancel Registration"))
+                    onIntent(UserIntent.ActionErrorChanged("Are you sure you want to cancel your registration?"))
+                    onIntent(UserIntent.ActionOnConfirmClicked {
+                        onIntent(UserIntent.CancelEvent)
+                        onIntent(UserIntent.ActionOnClear)
+                    })
+                }
+                buttonColor = Color(0xFFFC3436)
+                buttonOutlineColor = Color(0xFF820006)
+                eventDateTime = "${
+                    event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
             }
-        } else {
-            buttonText = "CANCEL"
-            eventStatus = "REGISTERED"
-            onButtonClick = {
-                onIntent(UserIntent.ActionTitleChanged("Cancel Registration"))
-                onIntent(UserIntent.ActionErrorChanged("Are you sure you want to cancel your registration?"))
-                onIntent(UserIntent.ActionOnConfirmClicked {
-                    onIntent(UserIntent.CancelEvent)
-                    onIntent(UserIntent.ActionOnClear)
-                })
-            }
-            buttonColor = Color(0xFFFC3436)
-            buttonOutlineColor = Color(0xFF820006)
-            eventDateTime = "${
-                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
         }
-    }
 
-    if (!isRemoved && isRegistered) {
-        if (Instant.now().isAfter(event.endTime)) {
-            eventStatus = "EVENT ENDED"
-            eventDateTime = "${
-                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
+        if (!isRemoved && isRegistered) {
+            if (Instant.now().isAfter(event.endTime)) {
+                eventStatus = "EVENT ENDED"
+                eventDateTime = "${
+                    event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
 
-            buttonText = "GIVE FEEDBACK"
+                buttonText = "GIVE FEEDBACK"
+                buttonColor = Color(0xFF7B55A3)
+                buttonOutlineColor = Color(0xFF4C2576)
+                onButtonClick = {}
+            } else if (Instant.now().isAfter(event.startTime)) {
+                eventStatus = "ONGOING EVENT"
+                eventDateTime = "${
+                    event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+
+                buttonText = "SHOW QR"
+                buttonColor = Color(0xFF7B986E)
+                buttonOutlineColor = Color(0xFF3E6831)
+                onButtonClick = { onNavigate(MainEffect.NavigateQrCode) }
+            }
+        }
+
+        if (role == ParticipantType.ORGANIZER || role == ParticipantType.STAFF) {
+            Log.d("INSIDE ORGANIZER OR STAFF", "User Role is $role")
+            buttonText = "TRACK ATTENDANCE"
             buttonColor = Color(0xFF7B55A3)
-            buttonOutlineColor = Color(0xFF4C2576)
-            onButtonClick = {}
-        } else if (Instant.now().isAfter(event.startTime)) {
-            eventStatus = "ONGOING EVENT"
-            eventDateTime = "${
-                event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-            } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toSimpleTime()}"
-
-            buttonText = "SHOW QR"
-            buttonColor = Color(0xFF7B986E)
-            buttonOutlineColor = Color(0xFF3E6831)
-            onButtonClick = { onNavigate(MainEffect.NavigateQrCode) }
+            onButtonClick = { onNavigate(MainEffect.NavigateAttendance) }
         }
-    }
-
-    if (role == ParticipantType.ORGANIZER || role == ParticipantType.STAFF) {
-        Log.d("INSIDE ORGANIZER OR STAFF", "User Role is $role")
-        buttonText = "TRACK ATTENDANCE"
-        buttonColor = Color(0xFF7B55A3)
-        onButtonClick = { onNavigate(MainEffect.NavigateAttendance) }
     }
 
     val showRegisterButton = when {
@@ -281,6 +370,7 @@ fun ParticipantViewEventContent(
             if (isRegistered) true
             else !isPastEnd
         }
+
         else -> false
     }
 
@@ -331,11 +421,16 @@ fun ParticipantViewEventContent(
                             else -> false // Pending/Rejected/Archived = No menu for staff
                         }
 
+                        isModerator -> when {
+                            isRemoved -> false
+                            else -> true
+                        }
+
                         else -> false
                     }
 
                     if (showMenu) {
-                        ThreeDotMenu(event, role, isRemoved, onIntent, onNavigate)
+                        ThreeDotMenu(event, role, isRemoved, onIntent, onNavigate, isModerator)
                     }
                 })
         },
@@ -359,12 +454,25 @@ fun ParticipantViewEventContent(
                 contentScale = ContentScale.Crop,
                 error = painterResource(R.drawable.placeholder_landscape)
             )
-            BottomScreenSheet(Modifier.padding(outerPadding), event)
+            BottomScreenSheet(Modifier.padding(outerPadding), event, isModerator)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
-                    .border(1.2.dp, color = Color(0xFFD7D7D7))
+                    .then(
+                        if (isModerator) {
+                            Modifier.background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(Color(0xFF312245), Color(0xFF7954AB))
+                                ),
+                            )
+                        } else {
+                            Modifier.background(Color.White)
+                        }
+                    )
+                    .border(
+                        1.2.dp,
+                        color = if (isModerator) Color(0xFF261A36) else Color(0xFFD7D7D7)
+                    )
                     .padding(
                         top = 20.dp,
                         bottom = outerPadding.calculateBottomPadding(),
@@ -375,7 +483,7 @@ fun ParticipantViewEventContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(modifier = Modifier.fillMaxWidth(0.49f)) {
+                Box(modifier = Modifier.fillMaxWidth(if (isModerator)0.4f else 0.49f)) {
                     Text(
                         buildAnnotatedString {
                             withStyle(
@@ -383,7 +491,7 @@ fun ParticipantViewEventContent(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = eventStatusColor
+                                    color = if (isModerator) Color.White else eventStatusColor
                                 )
                             ) {
                                 append("${eventStatus}\n")
@@ -394,12 +502,12 @@ fun ParticipantViewEventContent(
                             fontSize = 12.sp,
                             lineHeight = 20.sp,
                             fontWeight = FontWeight.Normal,
-                            color = Color.Black.copy(alpha = 0.8f)
+                            color = if (isModerator) Color.White else Color.Black.copy(alpha = 0.8f)
                         )
                     )
                 }
                 Spacer(Modifier.width(5.dp))
-                if (event.status == EventApprovalStatus.APPROVED && showRegisterButton) {
+                if (event.status == EventApprovalStatus.APPROVED && showRegisterButton && !isModerator) {
                     ElevatedButton(
                         text = buttonText,
                         onClick = onButtonClick,
@@ -418,6 +526,55 @@ fun ParticipantViewEventContent(
                         shouldAddShadow = true,
                     )
                 }
+                if (isModerator && event.status == EventApprovalStatus.PENDING && !event.isArchive) {
+                    Row(Modifier.fillMaxWidth()) {
+                        ElevatedButton(
+                            text = "REJECT",
+                            onClick = {
+                                onIntent(UserIntent.ActionTitleChanged("Reject Event"))
+                                onIntent(UserIntent.ActionErrorChanged("Are you sure you want to reject this event?"))
+                                onIntent(UserIntent.ActionOnConfirmClicked {
+                                    onIntent(UserIntent.ActionOnClear)
+                                    onIntent(UserIntent.ActionTitleChanged("Reason"))
+                                })
+                            },
+                            isEnabled = true,
+                            shouldFill = false,
+                            buttonColor = Color(0xFFFC3436),
+                            outlineColor = Color(0xFF820006),
+                            textStyle = TextStyle(
+                                fontFamily = AppFonts.instrumentSans,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            ),
+                            buttonShape = RoundedCornerShape(20.dp),
+                            bottomBorderThickness = bottomBorderThickness,
+                            shouldAddShadow = true,
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        ElevatedButton(
+                            text = "APPROVE",
+                            onClick = {
+                                onIntent(UserIntent.ActionTitleChanged("Approve Event"))
+                                onIntent(UserIntent.ActionErrorChanged("Are you sure you want to approve this event?"))
+                            },
+                            isEnabled = true,
+                            shouldFill = false,
+                            buttonColor = Color(0xFF9FC090),
+                            outlineColor = Color(0xFF61924B),
+                            textStyle = TextStyle(
+                                fontFamily = AppFonts.instrumentSans,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            ),
+                            buttonShape = RoundedCornerShape(20.dp),
+                            bottomBorderThickness = bottomBorderThickness,
+                            shouldAddShadow = true,
+                        )
+                    }
+                }
             }
             if (selectedImage.isNotBlank())
                 ImageViewer(selectedImage, onDismiss = { selectedImage = "" })
@@ -431,7 +588,8 @@ fun ThreeDotMenu(
     role: ParticipantType,
     isRemoved: Boolean = false,
     onIntent: (UserIntent) -> Unit,
-    onNavigate: (MainEffect) -> Unit
+    onNavigate: (MainEffect) -> Unit,
+    isModerator: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -474,7 +632,7 @@ fun ThreeDotMenu(
                 onDismissRequest = { expanded = false },
             ) {
                 val canSeeAttendance = !isRemoved && !isRejected && isApproved &&
-                        (isOrganizer || role == ParticipantType.STAFF)
+                        (isOrganizer || role == ParticipantType.STAFF || isModerator)
                 if (canSeeAttendance) {
                     DropdownMenuItem(
                         onClick = {
@@ -505,13 +663,6 @@ fun ThreeDotMenu(
                         (isPending && isUpcoming) || isRejected || (isApproved && isUpcoming)
 
                     if (canModify) {
-                        if (canSeeAttendance) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 15.dp),
-                                color = Color.Black,
-                                thickness = 0.8.dp
-                            )
-                        }
                         DropdownMenuItem(
                             onClick = {
                                 expanded = false
@@ -539,18 +690,13 @@ fun ThreeDotMenu(
                     }
                 }
 
-                if (isOrganizer && !isRemoved) {
+                if ((isOrganizer || isModerator) && !isRemoved) {
                     val canDelete =
                         (event.status == EventApprovalStatus.PENDING && isUpcoming) ||
                                 isRejected ||
                                 (isApproved && isUpcoming)
 
                     if (canDelete) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 15.dp),
-                            color = Color.Black,
-                            thickness = 0.8.dp
-                        )
                         DropdownMenuItem(onClick = {
                             onIntent(UserIntent.ActionTitleChanged("Delete Event"))
                             onIntent(UserIntent.ActionErrorChanged("Are you sure you want to delete this event?"))
@@ -587,7 +733,7 @@ fun ThreeDotMenu(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
+fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event, isModerator: Boolean = false) {
     val density = LocalDensity.current
 
     val halfScreenHeightInPixels = LocalWindowInfo.current.containerSize.height / 2
@@ -617,7 +763,21 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = peekHeight)
-                    .background(Color.White)
+                    .then(
+                        if (isModerator) {
+                            Modifier.background(
+                                brush = Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0.0f to Color(0xFF7954AB),
+                                        0.43f to Color(0xFF312245),
+                                        1.0f to Color(0xFF312245)
+                                    )
+                                )
+                            )
+                        } else {
+                            Modifier.background(Color.White)
+                        }
+                    )
                     .padding(vertical = 8.dp, horizontal = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -628,7 +788,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         .clip(RoundedCornerShape(7.5.dp))
                         .align(Alignment.CenterHorizontally),
                     thickness = 5.dp,
-                    color = Color.Black,
+                    color = if (isModerator) Color.White else Color.Black,
                 )
                 Text(
                     event.title.uppercase(),
@@ -638,7 +798,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = if (isModerator) Color.White else Color.Black,
                         textAlign = TextAlign.Center,
                     )
                 )
@@ -664,7 +824,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         lineHeight = 17.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Normal,
-                        color = Color.Black,
+                        color = if (isModerator) Color.White else Color.Black,
                     ),
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
@@ -678,7 +838,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         lineHeight = 22.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Normal,
-                        color = Color.Black,
+                        color = if (isModerator) Color.White else Color.Black,
                     ),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -689,7 +849,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                     fontFamily = AppFonts.instrumentSans,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.Black
+                                    color = if (isModerator) Color.White else Color.Black,
                                 )
                             ) {
                                 append("${event.capacity.toAbbreviatedString()}\n")
@@ -700,7 +860,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                             fontSize = 12.sp,
                             lineHeight = 12.sp,
                             textAlign = TextAlign.Center,
-                            color = Color.Black,
+                            color = if (isModerator) Color.White else Color.Black,
                             fontWeight = FontWeight.Bold,
                         ), modifier = Modifier.weight(2.8f)
                     )
@@ -710,7 +870,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                     ) {
                         Image(
                             modifier = Modifier.height(36.dp),
-                            painter = painterResource(R.drawable.highlight_event),
+                            painter = painterResource(if (isModerator) R.drawable.highlight_event_moderator else R.drawable.highlight_event),
                             contentScale = ContentScale.FillHeight,
                             contentDescription = "Event Highlight Image"
                         )
@@ -720,7 +880,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 fontSize = 14.sp,
                                 lineHeight = 13.sp,
                                 textAlign = TextAlign.Center,
-                                color = Color.Black,
+                                color = if (isModerator) Color.White else Color.Black,
                                 fontWeight = FontWeight.ExtraBold,
                             )
                         )
@@ -733,7 +893,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                     fontFamily = AppFonts.instrumentSans,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF820006)
+                                    color = if (isModerator) Color(0xFFFC3436) else Color(0xFF820006)
                                 )
                             ) {
                                 append("${event.remainingSlots.toAbbreviatedString()}\n")
@@ -744,7 +904,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                             fontSize = 12.sp,
                             lineHeight = 12.sp,
                             textAlign = TextAlign.Center,
-                            color = Color.Black,
+                            color = if (isModerator) Color.White else Color.Black,
                             fontWeight = FontWeight.Bold,
                         ), modifier = Modifier.weight(2.8f)
                     )
@@ -760,7 +920,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         Icon(
                             modifier = Modifier.size(28.dp),
                             painter = painterResource(R.drawable.profile_icon),
-                            tint = Color.Black,
+                            tint = if (isModerator) Color.White else Color.Black,
                             contentDescription = "Profile Icon"
                         )
                         Spacer(Modifier.width(20.dp))
@@ -771,7 +931,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                         fontFamily = AppFonts.instrumentSans,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        color = if (isModerator) Color.White else Color.Black,
                                     )
                                 ) {
                                     append("Organizer\n")
@@ -785,7 +945,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp,
                                 textAlign = TextAlign.Start,
-                                color = Color.Black,
+                                color = if (isModerator) Color.White else Color.Black,
                                 fontWeight = FontWeight.Normal,
                             ),
                         )
@@ -795,7 +955,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         Icon(
                             modifier = Modifier.size(32.dp),
                             painter = painterResource(R.drawable.attendees),
-                            tint = Color.Black,
+                            tint = if (isModerator) Color.White else Color.Black,
                             contentDescription = "Departments Icon"
                         )
                         Spacer(Modifier.width(20.dp))
@@ -806,7 +966,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                         fontFamily = AppFonts.instrumentSans,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        color = if (isModerator) Color.White else Color.Black,
                                     )
                                 ) {
                                     append("Who can join?\n")
@@ -837,7 +997,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp,
                                 textAlign = TextAlign.Start,
-                                color = Color.Black,
+                                color = if (isModerator) Color.White else Color.Black,
                                 fontWeight = FontWeight.Normal,
                             ),
                         )
@@ -847,7 +1007,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                         Icon(
                             modifier = Modifier.size(32.dp),
                             painter = painterResource(R.drawable.description),
-                            tint = Color.Black,
+                            tint = if (isModerator) Color.White else Color.Black,
                             contentDescription = "Description Icon"
                         )
                         Spacer(Modifier.width(20.dp))
@@ -858,7 +1018,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                         fontFamily = AppFonts.instrumentSans,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color.Black
+                                        color = if (isModerator) Color.White else Color.Black,
                                     )
                                 ) {
                                     append("Description\n")
@@ -870,7 +1030,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp,
                                 textAlign = TextAlign.Start,
-                                color = Color.Black,
+                                color = if (isModerator) Color.White else Color.Black,
                                 fontWeight = FontWeight.Normal,
                             ),
                         )
@@ -881,7 +1041,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                             Icon(
                                 modifier = Modifier.size(30.dp),
                                 painter = painterResource(R.drawable.clear),
-                                tint = Color.Black,
+                                tint = if (isModerator) Color.White else Color.Black,
                                 contentDescription = "Comment Icon"
                             )
                             Spacer(Modifier.width(20.dp))
@@ -892,7 +1052,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                             fontFamily = AppFonts.instrumentSans,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.Black
+                                            color = if (isModerator) Color.White else Color.Black,
                                         )
                                     ) {
                                         append("Moderator's Comment\n")
@@ -906,7 +1066,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp,
                                     textAlign = TextAlign.Start,
-                                    color = Color.Black,
+                                    color = if (isModerator) Color.White else Color.Black,
                                     fontWeight = FontWeight.Normal,
                                 ),
                             )
@@ -916,5 +1076,85 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event) {
         },
         sheetDragHandle = {},
     ) { innerPadding ->
+    }
+}
+
+@Composable
+fun RejectionReasonContent(
+    selectedReason: String,
+    onReasonSelected: (String) -> Unit,
+    otherText: String,
+    onOtherTextChange: (String) -> Unit
+) {
+    val reasons = listOf("Inappropriate content", "Policy violation", "Others")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        reasons.forEach { reason ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onReasonSelected(reason) },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = (selectedReason == reason),
+                    onClick = { onReasonSelected(reason) },
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = Color.White,
+                        unselectedColor = Color.White.copy(alpha = 0.6f)
+                    )
+                )
+                Spacer(Modifier.width(8.dp))
+                if (reason == "Others") {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = "Others (specify)",
+                            color = Color.White,
+                            fontFamily = AppFonts.rethinkSans,
+                            fontSize = 14.sp
+                        )
+                        TextField(
+                            value = otherText,
+                            onValueChange = onOtherTextChange,
+                            enabled = selectedReason == "Others",
+                            placeholder = {
+                                Text(
+                                    "Enter reason...",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 12.sp
+                                )
+                            },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                disabledTextColor = Color.White.copy(alpha = 0.5f),
+
+                                focusedIndicatorColor = Color.White,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(fontSize = 14.sp)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = reason,
+                        color = Color.White,
+                        fontFamily = AppFonts.rethinkSans,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
     }
 }

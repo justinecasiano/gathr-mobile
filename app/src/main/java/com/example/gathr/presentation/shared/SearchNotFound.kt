@@ -22,17 +22,17 @@ import com.example.gathr.R
 import com.example.gathr.ui.theme.AppFonts
 
 @Composable
-fun SearchNotFound(modifier: Modifier = Modifier) {
+fun SearchNotFound(modifier: Modifier = Modifier, isModerator: Boolean = false) {
     Column(
         modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painterResource(R.drawable.not_found),
+            painterResource(R.drawable.not_found_moderator),
             contentDescription = "No result found",
             Modifier.size(110.dp),
-            contentScale = ContentScale.FillHeight
+            contentScale = ContentScale.FillHeight,
         )
         Text(
             "No result found",
@@ -40,7 +40,7 @@ fun SearchNotFound(modifier: Modifier = Modifier) {
                 fontFamily = AppFonts.rethinkSans,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = if (isModerator) Color.White else Color.Black,
             ),
         )
         Text(
@@ -49,7 +49,7 @@ fun SearchNotFound(modifier: Modifier = Modifier) {
                 fontFamily = AppFonts.rethinkSans,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = if (isModerator) Color.White else Color.Black,
             ),
         )
     }

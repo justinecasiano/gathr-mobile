@@ -5,23 +5,23 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.example.gathr.data.model.CreateEvent
+import com.example.gathr.data.model.UserRole
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.participant.QrScannerScreen
-import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserScreen
 import com.example.gathr.presentation.main.UserViewModel
-import com.example.gathr.presentation.moderator.ModeratorViewEventScreen
 import com.example.gathr.presentation.participant.AttendanceScreen
 import com.example.gathr.presentation.participant.CreateEventScreen
 import com.example.gathr.presentation.participant.EditProfileScreen
 import com.example.gathr.presentation.participant.UpdateEventScreen
-import com.example.gathr.presentation.participant.ParticipantViewEventScreen
+import com.example.gathr.presentation.shared.ViewEventScreen
 import com.example.gathr.presentation.participant.QrCodeScreen
 import com.example.gathr.presentation.participant.StaffScreen
 
@@ -36,8 +36,7 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                 MainEffect.NavigateBackUser -> backStack.removeLastOrNull()
                 MainEffect.NavigateUpdateEvent -> backStack.add(MainScreen.UpdateEvent)
                 MainEffect.NavigateCreateEvent -> backStack.add(MainScreen.CreateEvent)
-                MainEffect.NavigateParticipantViewEvent -> backStack.add(MainScreen.ParticipantViewEvent)
-                MainEffect.NavigateModeratorViewEvent -> backStack.add(MainScreen.ModeratorViewEvent)
+                MainEffect.ViewEvent -> backStack.add(MainScreen.ParticipantViewEvent)
                 MainEffect.NavigateEditProfile -> backStack.add(MainScreen.EditProfile)
                 MainEffect.NavigateAttendance -> backStack.add(MainScreen.ViewAttendance)
                 MainEffect.NavigateFeedback -> backStack.add(MainScreen.Feedback)
@@ -82,7 +81,7 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                 )
             }
             entry<MainScreen.ParticipantViewEvent> {
-                ParticipantViewEventScreen(
+                ViewEventScreen(
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()
@@ -127,15 +126,6 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()
-                    },
-                )
-            }
-            entry<MainScreen.ModeratorViewEvent> {
-                ModeratorViewEventScreen(
-                    viewModel = userViewModel,
-                    onNavigateBack = {
-                        backStack.removeLastOrNull()
-                        backStack.add(MainScreen.User)
                     },
                 )
             }

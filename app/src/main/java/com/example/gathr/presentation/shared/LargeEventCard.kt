@@ -76,6 +76,7 @@ fun LargeEventCard(
     role: String = "ATTENDEE",
     isETicket: Boolean = true,
     isRejectedOrRemoved: Boolean = false,
+    isModerator: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -128,7 +129,11 @@ fun LargeEventCard(
                                 color = Color.Black,
                                 shape = RoundedCornerShape(20.dp)
                             )
-                            .background(Color.White.copy(alpha = 0.9f))
+                            .background(
+                                if (isModerator) Color(0xFF312245).copy(alpha = 0.9f) else Color.White.copy(
+                                    alpha = 0.9f
+                                )
+                            )
                             .padding(vertical = 12.dp, horizontal = 18.dp)
                     ) {
                         val date = event.startTime.toLocalDateTime()
@@ -156,7 +161,7 @@ fun LargeEventCard(
                                 lineHeight = 26.sp,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                color = Color(0xFF232222)
+                                color = if (isModerator) Color.White else Color(0xFF232222)
                             )
                         )
                     }
@@ -195,7 +200,10 @@ fun LargeEventCard(
                             color = Color.Black,
                             shape = RoundedCornerShape(20.dp)
                         )
-                        .background(Color.White.copy(alpha = 0.9f))
+                        .background(
+                            if (isModerator) Color(0xFF312245).copy(alpha = 0.9f)
+                            else Color.White.copy(alpha = 0.9f)
+                        )
                         .padding(start = 5.dp, end = 5.dp)
                         .padding(vertical = 12.dp)
                         .align(Alignment.BottomEnd)
@@ -217,7 +225,7 @@ fun LargeEventCard(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF232222)
+                                    color = if (isModerator) Color.White else Color(0xFF232222)
                                 ),
                                 modifier = Modifier.padding(horizontal = 2.dp),
                                 maxLines = 4,
@@ -230,7 +238,9 @@ fun LargeEventCard(
                                             fontFamily = AppFonts.rethinkSans,
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF676767)
+                                            color = if (isModerator) Color.White else Color(
+                                                0xFF676767
+                                            )
                                         )
                                     ) {
                                         append("${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()} | ")
@@ -249,7 +259,9 @@ fun LargeEventCard(
                                 maxLines = 1,
                             )
                         }
-                        if (!isRejectedOrRemoved  && event.status != EventApprovalStatus.PENDING && event.computedStatus == EventComputedStatus.ONGOING) {
+                        if (!isRejectedOrRemoved && event.status != EventApprovalStatus.PENDING &&
+                            ((event.computedStatus == EventComputedStatus.ONGOING && isETicket || role == "ORGANIZER" || role == "STAFF") || (event.computedStatus != EventComputedStatus.ENDED && role == "ATTENDEE"))
+                        ) {
                             Spacer(Modifier.width(5.dp))
                             VerticalDivider(
                                 color = Color.Black,
@@ -321,7 +333,9 @@ fun LargeEventCard(
                                                     fontFamily = AppFonts.instrumentSans,
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Color(0xFF2A2A2A)
+                                                    color = if (isModerator) Color.White else Color(
+                                                        0xFF2A2A2A
+                                                    )
                                                 )
                                             ) {
                                                 append("${event.capacity.toAbbreviatedString()}\n")
@@ -334,7 +348,9 @@ fun LargeEventCard(
                                             fontWeight = FontWeight.Bold,
                                             lineHeight = 12.sp,
                                             textAlign = TextAlign.Center,
-                                            color = Color(0xFF2A2A2A)
+                                            color = if (isModerator) Color.White else Color(
+                                                0xFF2A2A2A
+                                            )
                                         ),
                                     )
                             }

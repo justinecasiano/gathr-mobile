@@ -45,6 +45,7 @@ import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventComputedStatus
 import com.example.gathr.data.model.ParticipantStatus
 import com.example.gathr.data.model.ParticipantType
+import com.example.gathr.data.model.UserRole
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
@@ -110,6 +111,7 @@ fun AttendanceContent(
     var searchText by remember { mutableStateOf("") }
 
     val event: Event = state.currentEvent!!
+    val role: UserRole = state.currentUser!!.role
     val participantList =
         state.currentAttendees.sortedByDescending { it.joinedAt }
     val isEventOngoing = event.computedStatus == EventComputedStatus.ONGOING
@@ -161,7 +163,7 @@ fun AttendanceContent(
             )
         },
         floatingActionButton = {
-            if (isEventOngoing) {
+            if (isEventOngoing && role != UserRole.MODERATOR) {
                 Box(Modifier.padding(end = 10.dp, bottom = 30.dp)) {
                     FloatingActionButton(
                         onClick = { onNavigate(MainEffect.NavigateQrScanner) },

@@ -48,6 +48,7 @@ import coil3.request.fallback
 import coil3.size.Size
 import com.example.gathr.R
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toPrettyString
@@ -58,7 +59,8 @@ fun SmallEventCard(
     event: Event,
     isDetailed: Boolean = false,
     cardWidth: Dp = 188.dp,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isModerator: Boolean = false
 ) {
     val width = if (isDetailed) cardWidth else 148.dp
 
@@ -69,36 +71,59 @@ fun SmallEventCard(
             .width(width)
     )
     {
-        AsyncImage(
-            modifier = Modifier
-                .padding(vertical = 4.dp)
-                .shadow(
-                    elevation = 6.dp,
-                    shape = RoundedCornerShape(20.dp),
-                    clip = false
-                )
-                .clip(RoundedCornerShape(20.dp))
-                .fillMaxWidth()
-                .height(width),
-            model = ImageRequest.Builder(LocalContext.current)
-                .size(Size.ORIGINAL)
-                .fallback(R.drawable.placeholder_landscape)
-                .data(event.backgroundImage)
-                .crossfade(true)
-                .listener(
-                    onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
-                    onError = { request, result ->
-                        Log.e(
-                            "IMAGE_LOAD",
-                            "FAILED: ${result.throwable.message}"
+        Box(Modifier.fillMaxWidth()) {
+            AsyncImage(
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        clip = false
+                    )
+                    .clip(RoundedCornerShape(20.dp))
+                    .fillMaxWidth()
+                    .height(width),
+                model = ImageRequest.Builder(LocalContext.current)
+                    .size(Size.ORIGINAL)
+                    .fallback(R.drawable.placeholder_landscape)
+                    .data(event.backgroundImage)
+                    .crossfade(true)
+                    .listener(
+                        onStart = { request -> Log.d("IMAGE_LOAD", "Image started loading") },
+                        onError = { request, result ->
+                            Log.e(
+                                "IMAGE_LOAD",
+                                "FAILED: ${result.throwable.message}"
+                            )
+                        }
+                    )
+                    .build(),
+                contentDescription = "Event Card Image",
+                contentScale = ContentScale.Crop,
+                error = painterResource(R.drawable.placeholder_landscape)
+            )
+            if (isModerator && event.status == EventApprovalStatus.PENDING && !event.isArchive)
+                Box(Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 12.dp, end = 8.dp)) {
+                    Box(
+                        Modifier
+                            .background(Color.White, shape = RoundedCornerShape(21.dp))
+                            .clip(RoundedCornerShape(21.dp))
+                            .padding(horizontal = 15.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = if (event.updatedAt != null) "Updated" else "New",
+                            style = TextStyle(
+                                fontFamily = AppFonts.rethinkSans,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF261A36)
+                            ),
                         )
                     }
-                )
-                .build(),
-            contentDescription = "Event Card Image",
-            contentScale = ContentScale.Crop,
-            error = painterResource(R.drawable.placeholder_landscape)
-        )
+                }
+        }
         Spacer(Modifier.height(10.dp))
         if (!isDetailed) {
             Text(
@@ -107,7 +132,7 @@ fun SmallEventCard(
                     fontFamily = AppFonts.rethinkSans,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF313131)
+                    color = if (isModerator) Color.White else Color(0xFF313131)
                 ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -119,7 +144,7 @@ fun SmallEventCard(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF676767)
+                            color = if (isModerator) Color.White else Color(0xFF676767)
                         )
                     ) {
                         append("${event.startTime.toPrettyString("MMM. d, yyyy")} | ")
@@ -146,7 +171,7 @@ fun SmallEventCard(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF313131)
+                            color = if (isModerator) Color.White else Color(0xFF313131)
                         )
                     ) {
                         append("${event.title}\n")
@@ -156,7 +181,7 @@ fun SmallEventCard(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF313131)
+                            color = if (isModerator) Color.White else Color(0xFF313131)
                         )
                     ) {
                         append("${event.location}\n")
@@ -166,7 +191,7 @@ fun SmallEventCard(
                             fontFamily = AppFonts.rethinkSans,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Normal,
-                            color = Color(0xFF676767)
+                            color = if (isModerator) Color.White else Color(0xFF676767)
                         )
                     ) {
                         append(

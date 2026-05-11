@@ -1,4 +1,4 @@
-package com.example.gathr.presentation.participant
+package com.example.gathr.presentation.moderator
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
@@ -42,23 +42,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.SearchTextField
-import com.example.gathr.data.model.DepartmentType
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
 import com.example.gathr.presentation.main.MainEffect
 import com.example.gathr.presentation.main.UserIntent
@@ -69,17 +68,16 @@ import com.example.gathr.presentation.shared.SmallEventCard
 import com.example.gathr.ui.theme.AppFonts
 import com.example.gathr.utils.toAbbreviatedString
 import com.example.gathr.utils.toPrettyString
-import com.example.gathr.utils.toTitleCase
 import kotlin.math.max
 
 @Composable
-fun ParticipantEventsScreen(
+fun ModeratorEventsScreen(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
-        ParticipantEventContent(
+        ModeratorEventsContent(
             state, onIntent, onNavigate
         )
 
@@ -103,7 +101,7 @@ data class Tab(
 )
 
 @Composable
-fun ParticipantEventContent(
+fun ModeratorEventsContent(
     state: UserState,
     onIntent: (UserIntent) -> Unit,
     onNavigate: (MainEffect) -> Unit
@@ -116,24 +114,11 @@ fun ParticipantEventContent(
     val searchText = state.eventsSearchText
     val selectedFilter = state.activeEventsFilter
     val isFilterActive = selectedFilter != null
+    val moderatorEvents =
+        state.moderatorEvents.filter { !it.isArchive && it.status == EventApprovalStatus.APPROVED }
 
-    val userDept = state.currentUser?.department ?: DepartmentType.ALL
-
-    val eventList: List<Event> = remember(state.joinableEvents, state.eventsSearchText, userDept) {
-        state.joinableEvents
-            .filter { joinableEvent ->
-                val event = joinableEvent
-                val allowedDepts = event.allowedDepartments
-
-                val isOpenToAll =
-                    allowedDepts.isNullOrEmpty() || allowedDepts.contains(DepartmentType.ALL)
-
-                val isUserDeptAllowed = allowedDepts?.contains(userDept) == true
-
-                val isAlumniAllowed = (state.currentUser?.isAlumni ?: false) && event.allowAlumni
-
-                isOpenToAll || isUserDeptAllowed || isAlumniAllowed
-            }
+    val eventList: List<Event> = remember(moderatorEvents, state.eventsSearchText) {
+        moderatorEvents
             .filter { event ->
                 if (searchText.isBlank()) {
                     true
@@ -173,8 +158,16 @@ fun ParticipantEventContent(
         Column(
             Modifier
                 .fillMaxHeight()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color(0xFF7954AB),
+                            0.4f to Color(0xFF312245),
+                            1.0f to Color(0xFF312245)
+                        )
+                    )
+                )
                 .padding(top = 30.dp)
-                .background(Color.White)
         ) {
             Box(Modifier.padding(horizontal = 20.dp)) {
                 SearchTextField(
@@ -182,6 +175,7 @@ fun ParticipantEventContent(
                     onValueChange = { onIntent(UserIntent.EventsSearchTextChanged(it)) },
                     onClearValue = { onIntent(UserIntent.EventsSearchTextChanged("")) },
                     placeholderText = "Search for events",
+                    isModerator = true
                 )
             }
             Spacer(Modifier.height(20.dp))
@@ -199,7 +193,7 @@ fun ParticipantEventContent(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.Black,
+                                    color = Color.White,
                                 ),
                             )
                             Spacer(Modifier.height(10.dp))
@@ -218,7 +212,8 @@ fun ParticipantEventContent(
                                             onNavigate(MainEffect.ViewEvent)
                                         },
                                         cardWidth = 160.dp,
-                                        isDetailed = true
+                                        isDetailed = true,
+                                        isModerator = true
                                     )
                                 }
                             }
@@ -231,7 +226,8 @@ fun ParticipantEventContent(
                     SearchNotFound(
                         Modifier
                             .padding(horizontal = 20.dp)
-                            .offset(y = (-70).dp)
+                            .offset(y = (-70).dp),
+                        isModerator = true
                     )
                 }
             } else {
@@ -242,7 +238,6 @@ fun ParticipantEventContent(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .background(Color.White)
                         .drawBehind {
                             val strokeWidth = 1.dp.toPx()
                             val y = size.height - strokeWidth / 2
@@ -284,44 +279,15 @@ fun ParticipantEventContent(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF473163)
+                                    color = Color.White
                                 ),
                             )
                         }
                     }
                 }
-                LazyColumn {
+                LazyColumn(Modifier.background(Color(0xFF312245))) {
                     item {
                         Spacer(Modifier.height(10.dp))
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 20.dp)
-                        ) {
-                            Image(
-                                modifier = Modifier.width(388.dp),
-                                painter = painterResource(R.drawable.events_banner),
-                                contentDescription = "Event Banner",
-                                contentScale = ContentScale.FillWidth
-                            )
-                            val user = state.currentUser!!
-                            Text(
-                                "Welcome to Gathr,\n${user.firstName.toTitleCase()}",
-                                style = TextStyle(
-                                    fontFamily = AppFonts.instrumentSans,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    textAlign = TextAlign.Start,
-                                    color = Color.White
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .fillMaxWidth(0.65f)
-                                    .align(Alignment.CenterStart)
-                                    .padding(start = 30.dp, top = 5.dp)
-                            )
-                        }
                         Column(Modifier.padding(horizontal = 20.dp)) {
                             if (popularEvent != null) {
                                 Spacer(Modifier.height(10.dp))
@@ -332,7 +298,7 @@ fun ParticipantEventContent(
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         textAlign = TextAlign.Start,
-                                        color = Color.Black
+                                        color = Color.White
                                     ),
                                 )
                                 Spacer(Modifier.height(10.dp))
@@ -343,7 +309,8 @@ fun ParticipantEventContent(
                                         onNavigate(MainEffect.ViewEvent)
                                     },
                                     isETicket = false,
-                                    onTextButtonClick = {}
+                                    onTextButtonClick = {},
+                                    isModerator = true
                                 )
                             }
                         }
@@ -366,14 +333,14 @@ fun ParticipantEventContent(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     textAlign = TextAlign.Start,
-                                    color = Color(0xFF232222)
+                                    color = Color.White
                                 ),
                             )
                             Spacer(Modifier.width(15.dp))
                             Icon(
                                 painter = painterResource(id = R.drawable.right_arrow),
                                 contentDescription = "View upcoming events",
-                                tint = Color.Black,
+                                tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -396,6 +363,7 @@ fun ParticipantEventContent(
                                         onIntent(UserIntent.CurrentEventChanged(event))
                                         onNavigate(MainEffect.ViewEvent)
                                     },
+                                    isModerator = true
                                 )
                             }
                             item {
@@ -422,14 +390,14 @@ fun ParticipantEventContent(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     textAlign = TextAlign.Start,
-                                    color = Color(0xFF232222)
+                                    color = Color.White
                                 ),
                             )
                             Spacer(Modifier.width(15.dp))
                             Icon(
                                 painter = painterResource(id = R.drawable.right_arrow),
                                 contentDescription = "View ongoing events",
-                                tint = Color.Black,
+                                tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -452,6 +420,7 @@ fun ParticipantEventContent(
                                         onIntent(UserIntent.CurrentEventChanged(event))
                                         onNavigate(MainEffect.ViewEvent)
                                     },
+                                    isModerator = true
                                 )
                             }
                             item {
@@ -478,14 +447,14 @@ fun ParticipantEventContent(
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     textAlign = TextAlign.Start,
-                                    color = Color(0xFF232222)
+                                    color = Color.White
                                 ),
                             )
                             Spacer(Modifier.width(15.dp))
                             Icon(
                                 painter = painterResource(id = R.drawable.right_arrow),
                                 contentDescription = "View ended events",
-                                tint = Color.Black,
+                                tint = Color.White,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -508,6 +477,7 @@ fun ParticipantEventContent(
                                         onIntent(UserIntent.CurrentEventChanged(event))
                                         onNavigate(MainEffect.ViewEvent)
                                     },
+                                    isModerator = true
                                 )
                             }
                             item {
@@ -542,7 +512,7 @@ fun ParticipantEventContent(
 }
 
 @Composable
-fun ParticipantFilterScreen(
+private fun ParticipantFilterScreen(
     title: String,
     eventList: List<Event>,
     onBack: () -> Unit,
@@ -552,12 +522,17 @@ fun ParticipantFilterScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color(0xFF312245))
             .clickable(enabled = true, onClick = {}, interactionSource = null, indication = null)
     ) {
         Box(
             Modifier
                 .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFF7954AB), Color(0xFF312245))
+                    ),
+                )
                 .drawBehind {
                     val strokeWidth = 1.dp.toPx()
                     val y = size.height - strokeWidth / 2
@@ -579,7 +554,7 @@ fun ParticipantFilterScreen(
                     modifier = Modifier
                         .size(37.dp)
                         .align(Alignment.CenterStart),
-                    tint = Color.Black,
+                    tint = Color.White,
                     painter = painterResource(R.drawable.arrow_back),
                     contentDescription = "Back"
                 )
@@ -591,7 +566,7 @@ fun ParticipantFilterScreen(
                     fontFamily = AppFonts.rethinkSans,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = Color.White,
                 ),
                 modifier = Modifier.align(Alignment.Center)
             )
@@ -615,7 +590,8 @@ fun ParticipantFilterScreen(
                         onNavigate(MainEffect.ViewEvent)
                     },
                     cardWidth = 160.dp,
-                    isDetailed = true
+                    isDetailed = true,
+                    isModerator = true
                 )
             }
         }

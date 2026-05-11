@@ -1,9 +1,7 @@
 package com.example.gathr.presentation.main
 
 import LocalCacheManager
-import android.net.Uri
 import android.util.Log
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gathr.data.model.CreateEvent
@@ -23,7 +21,6 @@ import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.EventParticipantRepository
 import com.example.gathr.data.repository.NotificationRepository
 import com.example.gathr.data.repository.UserRepository
-import com.example.gathr.presentation.participant.CreateEventScreen
 import com.example.gathr.utils.NetworkConnectivityService
 import com.example.gathr.utils.Utils
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +37,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.time.Instant
 import java.util.UUID
 
 class UserViewModel(
@@ -81,6 +79,7 @@ class UserViewModel(
             _state.update {
                 it.copy(
                     currentUser = cachedState.currentUser,
+                    moderatorEvents = cachedState.moderatorEvents,
                     managedEvents = cachedState.managedEvents,
                     joinableEvents = cachedState.joinableEvents.filter { event -> event.status == EventApprovalStatus.APPROVED },
                     joinedEvents = cachedState.joinedEvents.filter { event -> event.status == EventApprovalStatus.APPROVED },
@@ -97,11 +96,13 @@ class UserViewModel(
             _state.update { currentState ->
                 currentState.copy(
                     currentUser = cachedState.currentUser,
+                    moderatorEvents = cachedState.moderatorEvents,
                     managedEvents = cachedState.managedEvents,
                     joinableEvents = cachedState.joinableEvents.filter { event -> event.status == EventApprovalStatus.APPROVED },
                     joinedEvents = cachedState.joinedEvents.filter { event -> event.status == EventApprovalStatus.APPROVED },
                     notifications = cachedState.notifications,
                     dataFetchStatus = currentState.dataFetchStatus.copy(
+                        moderatorEvents = FetchStatus.DONE,
                         managedEvents = FetchStatus.DONE,
                         joinableEvents = FetchStatus.DONE,
                         joinedEvents = FetchStatus.DONE,
@@ -120,6 +121,7 @@ class UserViewModel(
         val currentState = _state.value
         viewModelScope.launch {
             val cache = UserCache(
+                moderatorEvents = currentState.moderatorEvents,
                 managedEvents = currentState.managedEvents,
                 joinableEvents = currentState.joinableEvents,
                 joinedEvents = currentState.joinedEvents,
@@ -146,9 +148,14 @@ class UserViewModel(
 
     private fun refreshSpecificEvent(eventId: Long) {
         val user = _state.value.currentUser ?: return
+        val isModerator = user.role == UserRole.MODERATOR
 
         viewModelScope.launch {
-            val result = eventParticipantRepository.fetchSingleEvent(eventId, user.id)
+            val result =
+                if (isModerator) eventParticipantRepository.fetchSingleEventForModerator(eventId) else eventParticipantRepository.fetchSingleEvent(
+                    eventId,
+                    user.id
+                )
 
             if (result is ApiResult.Success) {
                 val freshEvent = result.data
@@ -167,7 +174,7 @@ class UserViewModel(
                         updateListWithEvent(currentState.joinedEvents, freshEvent, isJoinedEligible)
 
                     val isJoinableEligible =
-                        !freshEvent.isRegistered && freshEvent.userRole == ParticipantType.ATTENDEE
+                        !freshEvent.isRegistered && freshEvent.userRole == ParticipantType.ATTENDEE || freshEvent.userRole == ParticipantType.ORGANIZER
                     Log.d("FRESH_EVENT_IS_JOINABLE", isJoinableEligible.toString())
 
                     val newJoinable = updateListWithEvent(
@@ -194,8 +201,17 @@ class UserViewModel(
                         currentState.managedEvents.filter { it.event.id != eventId }
                     }
 
+                    val newModeratorList = if (user.role == UserRole.MODERATOR) {
+                        if (currentState.moderatorEvents.any { it.id == eventId }) {
+                            currentState.moderatorEvents.map { if (it.id == eventId) freshEvent else it }
+                        } else {
+                            currentState.moderatorEvents + freshEvent
+                        }
+                    } else currentState.moderatorEvents
+
                     currentState.copy(
                         currentEvent = newCurrent,
+                        moderatorEvents = newModeratorList,
                         joinedEvents = newJoined.filter { event -> event.status == EventApprovalStatus.APPROVED },
                         joinableEvents = newJoinable.filter { event -> event.status == EventApprovalStatus.APPROVED },
                         managedEvents = newManaged
@@ -221,14 +237,21 @@ class UserViewModel(
     }
 
     fun startPolling() {
+        val user = _state.value.currentUser ?: return
         pollingJob?.cancel()
+
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 delay(120_000L)
-                fetchManagedEvents()
-                fetchJoinableEvents()
-                fetchJoinedEvents()
                 fetchNotifications()
+
+                if (user.role == UserRole.MODERATOR) {
+                    fetchModeratorEvents()
+                } else if (user.role == UserRole.PARTICIPANT) {
+                    fetchManagedEvents()
+                    fetchJoinableEvents()
+                    fetchJoinedEvents()
+                }
             }
         }
     }
@@ -267,6 +290,7 @@ class UserViewModel(
             is UserIntent.MarkAttendance -> markAttendance()
             is UserIntent.MarkNotificationAsRead -> markNotificationAsRead(intent.value)
             is UserIntent.MarkAllNotificationsAsRead -> markAllNotificationsAsRead()
+            is UserIntent.ReviewEvent -> reviewEvent(intent.eventId, intent.status, intent.comment)
 
             is UserIntent.SearchStaffChanged -> {
                 _state.update {
@@ -283,6 +307,7 @@ class UserViewModel(
 
             is UserIntent.IsLoadingChanged -> _state.update { it.copy(isLoading = intent.value) }
 
+            is UserIntent.FetchModeratorEvents -> fetchModeratorEvents()
             is UserIntent.FetchManagedEvents -> fetchManagedEvents()
             is UserIntent.FetchJoinableEvents -> fetchJoinableEvents()
             is UserIntent.FetchJoinedEvents -> fetchJoinedEvents()
@@ -340,6 +365,36 @@ class UserViewModel(
                     staffSelectedTabIndex = intent.value
                 )
             }
+        }
+    }
+
+    private fun fetchModeratorEvents() {
+        viewModelScope.launch {
+            val state = _state.value
+
+            _state.update { it.copy(dataFetchStatus = it.dataFetchStatus.copy(moderatorEvents = FetchStatus.LOADING)) }
+
+            val result = eventParticipantRepository.fetchModeratorEvents()
+            var moderatorEvents: List<Event> = emptyList()
+            var actionError = ""
+
+            when (result) {
+                is ApiResult.Success -> moderatorEvents = result.data
+                is ApiResult.Error -> actionError = result.message
+            }
+
+            if (moderatorEvents.isNotEmpty() || (state.managedEvents.isEmpty() && moderatorEvents.isEmpty())) {
+                _state.update {
+                    it.copy(
+                        moderatorEvents = moderatorEvents,
+                        dataFetchStatus = it.dataFetchStatus.copy(moderatorEvents = FetchStatus.DONE)
+                    )
+                }
+                onFetchSuccess()
+            }
+
+            Log.d("FETCH_MODERATOR_EVENTS", moderatorEvents.toString())
+            Log.d("FETCH_MODERATOR_EVENTS_ERROR", actionError)
         }
     }
 
@@ -676,6 +731,58 @@ class UserViewModel(
         }
     }
 
+    private fun reviewEvent(eventId: Long, status: EventApprovalStatus, comment: String?) {
+        val moderator = _state.value.currentUser ?: return
+        if (moderator.role != UserRole.MODERATOR) return
+
+        viewModelScope.launch {
+            handleIntent(UserIntent.IsLoadingChanged(true))
+
+            val result = eventParticipantRepository.updateEventStatus(
+                eventId = eventId,
+                moderatorId = moderator.id,
+                status = status,
+                comment = comment
+            )
+
+            when (result) {
+                is ApiResult.Success -> {
+                    _state.update { currentState ->
+                        val updatedList = currentState.moderatorEvents.map {
+                            if (it.id == eventId) it.copy(
+                                status = status,
+                                comment = comment,
+                                approvedBy = moderator.id,
+                                approvedAt = if (status == EventApprovalStatus.APPROVED) Instant.now() else it.approvedAt
+                            ) else it
+                        }
+                        currentState.copy(moderatorEvents = updatedList)
+                    }
+
+                    handleIntent(UserIntent.ActionTitleChanged("Review Success"))
+                    handleIntent(UserIntent.ActionErrorChanged("Event has been ${status.name.lowercase()}."))
+                    handleIntent(UserIntent.ActionOnConfirmClicked {
+                        handleIntent(UserIntent.BackClicked)
+                        val tab = if (status == EventApprovalStatus.REJECTED) 2 else 1
+                        handleIntent(UserIntent.MyEventsSelectedTabChanged(tab))
+                        handleIntent(UserIntent.ActionOnClear)
+                        viewModelScope.launch {
+                            delay(300)
+                            _state.update { currentState -> currentState.copy(currentEvent = null) }
+                        }
+                    })
+                    onFetchSuccess()
+                }
+
+                is ApiResult.Error -> {
+                    handleIntent(UserIntent.ActionTitleChanged("Error"))
+                    handleIntent(UserIntent.ActionErrorChanged(result.message))
+                }
+            }
+            handleIntent(UserIntent.IsLoadingChanged(false))
+        }
+    }
+
     private fun registerEvent() {
         val currentState = _state.value
         val user = currentState.currentUser!!
@@ -792,8 +899,8 @@ class UserViewModel(
 
     private fun deleteEvent() {
         val currentState = _state.value
-        val user = currentState.currentUser!!
         val event = currentState.currentEvent!!
+        val userId = event.createdBy
 
         if (event.computedStatus != EventComputedStatus.UPCOMING && event.status == EventApprovalStatus.APPROVED) {
             handleIntent(UserIntent.ActionTitleChanged("Error"))
@@ -805,7 +912,7 @@ class UserViewModel(
         viewModelScope.launch {
             handleIntent(UserIntent.IsLoadingChanged(true))
             val result =
-                eventParticipantRepository.deleteEvent(event.id, user.id, event.backgroundImage)
+                eventParticipantRepository.deleteEvent(event.id, userId, event.backgroundImage)
             var actionError = ""
 
             when (result) {
