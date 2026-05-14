@@ -77,6 +77,10 @@ fun AttendanceScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.handleIntent(UserIntent.FetchAttendance)
+    }
+
     Box(Modifier.fillMaxSize()) {
         AttendanceContent(
             state = state,
@@ -86,17 +90,6 @@ fun AttendanceScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
 
         if (state.isLoading) {
             LoadingOverlay()
-        }
-        when {
-            state.actionError.isNotBlank() -> {
-                Alert(
-                    title = state.actionTitle.ifBlank { "Error" },
-                    message = state.actionError,
-                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
-                    confirmButtonText = "Ok",
-                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
-                )
-            }
         }
     }
 }

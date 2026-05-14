@@ -39,6 +39,9 @@ android {
     namespace = "com.example.gathr"
     compileSdk = 36
 
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         applicationId = "com.example.gathr"
         minSdk = 26
@@ -47,6 +50,18 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val properties = Properties()
+        val propertiesFile = rootProject.file("local.properties")
+        if (propertiesFile.exists()) {
+            properties.load(propertiesFile.inputStream())
+            println("DEBUG: Supabase URL found: ${properties.getProperty("SUPABASE_URL")}")
+        } else {
+            println("DEBUG: local.properties NOT FOUND at ${propertiesFile.absolutePath}")
+        }
+
+        buildConfigField("String", "SUPABASE_URL", "\"${properties.getProperty("SUPABASE_URL") ?: ""}\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"${properties.getProperty("SUPABASE_KEY") ?: ""}\"")
+        buildConfigField("String", "QR_PAYLOAD_KEY", "\"${properties.getProperty("QR_PAYLOAD_KEY") ?: ""}\"")
     }
 
     signingConfigs {

@@ -310,7 +310,8 @@ fun ViewEventContent(
     var eventStatus = event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
     var eventDateTime = "${
         event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-    } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
+    } | ${event.startTime.toSimpleTime()} to ${
+        event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
     } | ${event.endTime.toSimpleTime()}"
 
     if (!isModerator) {
@@ -335,18 +336,18 @@ fun ViewEventContent(
                 buttonOutlineColor = Color(0xFF820006)
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } | ${event.startTime.toSimpleTime()} to\n${
+                } | ${event.startTime.toSimpleTime()} to ${
                     event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
                 } | ${event.endTime.toSimpleTime()}"
             }
         }
 
         if (!isRemoved && isRegistered) {
-            if (Instant.now().isAfter(event.endTime)) {
+            if (event.computedStatus == EventComputedStatus.ENDED) {
                 eventStatus = "EVENT ENDED"
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } | ${event.startTime.toSimpleTime()} to\n${
+                } | ${event.startTime.toSimpleTime()} to ${
                     event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
                 } | ${event.endTime.toSimpleTime()}"
 
@@ -354,11 +355,11 @@ fun ViewEventContent(
                 buttonColor = Color(0xFF7B55A3)
                 buttonOutlineColor = Color(0xFF4C2576)
                 onButtonClick = { onNavigate(MainEffect.NavigateFeedback) }
-            } else if (Instant.now().isAfter(event.startTime)) {
+            } else if (event.computedStatus == EventComputedStatus.ONGOING) {
                 eventStatus = "ONGOING EVENT"
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } | ${event.startTime.toSimpleTime()} to\n${
+                } | ${event.startTime.toSimpleTime()} to ${
                     event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
                 } | ${event.endTime.toSimpleTime()}"
 
@@ -370,7 +371,6 @@ fun ViewEventContent(
         }
 
         if (role == ParticipantType.ORGANIZER || role == ParticipantType.STAFF) {
-            Log.d("INSIDE ORGANIZER OR STAFF", "User Role is $role")
             buttonText = "TRACK ATTENDANCE"
             buttonColor = Color(0xFF7B55A3)
             onButtonClick = { onNavigate(MainEffect.NavigateAttendance) }
@@ -845,7 +845,11 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event, isModerator: 
                 )
 
                 Text(
-                    "${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to\n${event.endTime.toPrettyString("MMMM d, yyyy")} | ${event.endTime.toSimpleTime()}",
+                    "${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to\n${
+                        event.endTime.toPrettyString(
+                            "MMMM d, yyyy"
+                        )
+                    } | ${event.endTime.toSimpleTime()}",
                     style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 12.sp,

@@ -3,6 +3,7 @@ package com.example.gathr.data.model
 import com.example.gathr.utils.EventApprovalStatusSerializer
 import com.example.gathr.utils.EventComputedStatusSerializer
 import com.example.gathr.utils.JavaInstantSerializer
+import com.example.gathr.utils.ParticipantStatusSerializer
 import com.example.gathr.utils.ParticipantTypeSerializer
 import com.example.gathr.utils.ResponseStatusSerializer
 import com.example.gathr.utils.UuidSerializer
@@ -105,6 +106,10 @@ data class Event(
 
     @SerialName("is_archive")
     val isArchive: Boolean,
+
+    @SerialName("participant_status")
+    @Serializable(with = ParticipantStatusSerializer::class)
+    val participantStatus: ParticipantStatus? = null,
 
     @SerialName("response_status")
     @Serializable(with = ResponseStatusSerializer::class)

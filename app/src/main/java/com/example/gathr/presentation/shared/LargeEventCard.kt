@@ -236,7 +236,7 @@ fun LargeEventCard(
                                     withStyle(
                                         style = SpanStyle(
                                             fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 12.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isModerator) Color.White else Color(
                                                 0xFF676767
@@ -248,7 +248,7 @@ fun LargeEventCard(
                                     withStyle(
                                         style = SpanStyle(
                                             fontFamily = AppFonts.rethinkSans,
-                                            fontSize = 12.sp,
+                                            fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF558042)
                                         )
@@ -267,7 +267,7 @@ fun LargeEventCard(
                                 color = Color.Black,
                                 modifier = Modifier
                                     .fillMaxHeight()
-                                    .padding(vertical = 4.dp) //
+                                    .padding(vertical = 4.dp)
                             )
                             TextButton(
                                 modifier = Modifier

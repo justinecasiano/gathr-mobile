@@ -10,19 +10,19 @@ import java.time.Instant
 data class CreateEvent(
     val id: Long? = null,
     val staffs: List<CreateStaff> = emptyList(),
-    val title: String = "This is a test event",
-    val description: String = "this is for a test event",
+    val title: String = "",
+    val description: String = "",
     val backgroundImage: String? = null,
     val oldBackgroundImageUrl: String? = null,
     val backgroundImageSizeBytes: Long = 0,
-    val capacity: Int? = 1000,
-    val location: String = "jan lang sa tabi",
+    val capacity: Int? = 10,
+    val location: String = "",
     val allowedDepartments: List<DepartmentType> = listOf(DepartmentType.ALL),
     var allowAlumni: Boolean = false,
     @Serializable(with = JavaInstantSerializer::class)
-    val startDateAndTime: Instant = Instant.now().plusSeconds(3600),
+    val startDateAndTime: Instant = Instant.now(),
     @Serializable(with = JavaInstantSerializer::class)
-    val endDateAndTime: Instant = Instant.now().plusSeconds(36000),
+    val endDateAndTime: Instant = Instant.now(),
     val createEventValidationState: CreateEventValidationState = CreateEventValidationState(),
     val createEventStep: CreateEventStep = CreateEventStep.BASIC_INFO,
 )

@@ -9,6 +9,7 @@ import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.FormSubmission
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Participant
+import com.example.gathr.data.model.ParticipantStatus
 import com.example.gathr.data.model.ParticipantType
 import com.example.gathr.data.model.User
 import com.example.gathr.data.remote.ApiResult
@@ -18,6 +19,7 @@ import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
@@ -38,6 +40,7 @@ import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
@@ -244,27 +247,22 @@ class EventParticipantRepositoryImpl(
 
     override suspend fun markAttendance(eventId: Long, userId: UUID): ApiResult<Unit> {
         return try {
-            val updateParticipant = buildJsonObject {
-                put("status", "PRESENT")
-                put("check_in", Instant.now().toString())
-            }
-
-            supabase.from("participants").update(updateParticipant) {
+            val response = supabase.from("participants").update(
+                update = {
+                    set("status", ParticipantStatus.CHECKED_IN)
+                    set("check_in", Instant.now().toString())
+                }
+            ) {
                 filter {
                     eq("event_id", eventId)
-                    eq("user_id", userId)
+                    eq("user_id", userId.toString())
                     eq("status", "REGISTERED")
                 }
             }
             ApiResult.Success(Unit)
         } catch (e: Exception) {
-            val errorMessage = when (e) {
-                is RestException -> "Database error has occurred"
-                is HttpRequestException -> "Network Error: Check your internet connection."
-                else -> "An unexpected error occurred"
-            }
-            Log.e("CANCEL_EVENT", "Operation failed", e)
-            ApiResult.Error(errorMessage)
+            Log.e("MARK_ATTENDANCE", "Error: ${e.message}")
+            ApiResult.Error("Check-in failed: User may already be checked in or is not registered.")
         }
     }
 

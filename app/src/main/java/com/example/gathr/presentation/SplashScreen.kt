@@ -82,6 +82,7 @@ fun SplashScreen(
                 userViewModel.handleIntent(UserIntent.FetchModeratorEvents)
             }
         } else {
+            delay(2000)
             onLoaded(false)
         }
     }

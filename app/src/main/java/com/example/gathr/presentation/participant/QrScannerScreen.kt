@@ -69,11 +69,13 @@ import com.example.gathr.R
 import com.example.gathr.core.ui.Alert
 import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.data.model.Event
+import com.example.gathr.data.model.ParticipantStatus
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
 import com.example.gathr.presentation.main.UserState
 import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.ui.theme.AppFonts
+import com.example.gathr.utils.Utils
 import com.example.gathr.utils.toTitleCase
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -112,17 +114,6 @@ fun QrScannerScreen(viewModel: UserViewModel, onNavigateBack: () -> Unit) {
         if (state.isLoading) {
             LoadingOverlay()
         }
-        when {
-            state.actionError.isNotBlank() -> {
-                Alert(
-                    title = state.actionTitle.ifBlank { "Error" },
-                    message = state.actionError,
-                    onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
-                    confirmButtonText = "Ok",
-                    onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
-                )
-            }
-        }
     }
 }
 
@@ -133,12 +124,23 @@ fun QrScannerContent(state: UserState, onIntent: (UserIntent) -> Unit) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     var camera: Camera? by remember { mutableStateOf(null) }
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
             cameraPermissionState.launchPermissionRequest()
+        }
+    }
+
+    LaunchedEffect(state.actionError) {
+        if (state.actionError.isNotBlank()) {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(
+                message = state.actionError,
+                duration = SnackbarDuration.Short
+            )
+            onIntent(UserIntent.ActionOnClear)
         }
     }
 
@@ -241,47 +243,40 @@ fun QrScannerContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                     onQrCodeScanned = { qrValue ->
                         scope.launch {
                             try {
-                                val jsonParser = Json {
-                                    ignoreUnknownKeys = true
-                                    isLenient = true
+                                val payload = Utils.verifySignedPayload(qrValue)
+
+                                if (payload == null) {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("❌ Invalid QR Code signature")
+                                    return@launch
                                 }
 
-                                val value = jsonParser.decodeFromString<ParticipantPayload>(qrValue)
+                                if (payload.eventId != event.id) {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    snackbarHostState.showSnackbar("❌ Ticket is for another event")
+                                    return@launch
+                                }
 
-                                if (value.eventId != event.id) {
+                                val existingAttendee =
+                                    state.currentAttendees.find { it.userId.toString() == payload.userId }
+
+                                if (existingAttendee?.participantStatus == ParticipantStatus.CHECKED_IN) {
+                                    snackbarHostState.currentSnackbarData?.dismiss()
                                     snackbarHostState.showSnackbar(
-                                        message = "Ticket is invalid",
-                                        duration = SnackbarDuration.Indefinite,
+                                        message = "⚠️ ${existingAttendee.fullName} is already checked in",
+                                        duration = SnackbarDuration.Short
                                     )
                                     return@launch
                                 }
 
-                                onIntent(UserIntent.IsLoadingChanged(true))
-                                onIntent(UserIntent.ScanParticipantChanged(value))
+                                onIntent(UserIntent.ScanParticipantChanged(payload))
                                 onIntent(UserIntent.MarkAttendance)
 
-//                                withTimeout(1200L) {
-//                                    snackbarHostState.showSnackbar(
-//                                        message = "QR Scanned: $value",
-//                                        duration = SnackbarDuration.Indefinite,
-//                                    )
-//                                }
-                            } catch (e: TimeoutCancellationException) {
-                                snackbarHostState.currentSnackbarData?.dismiss()
-                            } catch (e: SerializationException) {
-                                withTimeout(1200L) {
-                                    snackbarHostState.showSnackbar(
-                                        message = "Ticket is invalid",
-                                        duration = SnackbarDuration.Indefinite,
-                                    )
-                                }
-                            } catch (e: IllegalArgumentException) {
-                                withTimeout(1200L) {
-                                    snackbarHostState.showSnackbar(
-                                        message = "An unknown error occured",
-                                        duration = SnackbarDuration.Indefinite,
-                                    )
-                                }
+                            } catch (e: Exception) {
+                                Log.e("Scanner", "Scanning error", e)
+                                snackbarHostState.showSnackbar("An unexpected error occurred")
+                            } finally {
+                                onIntent(UserIntent.IsLoadingChanged(false))
                             }
                         }
                     },

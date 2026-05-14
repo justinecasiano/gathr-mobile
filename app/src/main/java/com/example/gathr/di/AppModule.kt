@@ -1,6 +1,7 @@
 package com.example.gathr.di
 
 import LocalCacheManager
+import android.util.Log
 import com.example.gathr.data.repository.AuthRepository
 import com.example.gathr.data.repository.AuthRepositoryImpl
 import com.example.gathr.data.repository.EventParticipantRepository
@@ -31,17 +32,17 @@ import okhttp3.OkHttp
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import com.example.gathr.BuildConfig
 
 @OptIn(SupabaseInternal::class)
 val appModule = module {
     single { NetworkConnectivityService(androidContext()) }
     single { LocalCacheManager(androidContext()) }
 
-
     single {
         createSupabaseClient(
-            supabaseUrl = "https://gjhijvulvzqbmqafragh.supabase.co",
-            supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqaGlqdnVsdnpxYm1xYWZyYWdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5MzcxODEsImV4cCI6MjA3ODUxMzE4MX0.mhdtm8zL8Tr8w_X0YB2QhjnRTvyicOkXd4KQvrtzAzU"
+            supabaseUrl = BuildConfig.SUPABASE_URL,
+            supabaseKey = BuildConfig.SUPABASE_KEY
         ) {
             install(Auth)
             install(Postgrest)

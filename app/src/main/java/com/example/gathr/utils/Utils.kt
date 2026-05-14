@@ -39,8 +39,56 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
 import java.time.Duration
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import com.example.gathr.BuildConfig
+import com.example.gathr.presentation.participant.ParticipantPayload
 
 object Utils {
+    private const val QR_SECRET_KEY = BuildConfig.QR_PAYLOAD_KEY
+
+    fun generateSignedPayload(userId: String, eventId: Long): String {
+        val timestamp = System.currentTimeMillis()
+        val rawData = "$userId|$eventId|$timestamp"
+
+        val sha256HMAC = Mac.getInstance("HmacSHA256")
+        val secretKey = SecretKeySpec(QR_SECRET_KEY.toByteArray(), "HmacSHA256")
+        sha256HMAC.init(secretKey)
+
+        val hash = sha256HMAC.doFinal(rawData.toByteArray()).joinToString("") {
+            "%02x".format(it)
+        }
+
+        return "$rawData|$hash"
+    }
+
+    fun verifySignedPayload(qrValue: String): ParticipantPayload? {
+        return try {
+            val parts = qrValue.split("|")
+            if (parts.size != 4) return null
+
+            val userId = parts[0]
+            val eventId = parts[1]
+            val timestamp = parts[2]
+            val receivedHash = parts[3]
+
+            val rawData = "$userId|$eventId|$timestamp"
+            val sha256HMAC = Mac.getInstance("HmacSHA256")
+            val secretKey = SecretKeySpec(QR_SECRET_KEY.toByteArray(), "HmacSHA256")
+            sha256HMAC.init(secretKey)
+
+            val expectedHash = sha256HMAC.doFinal(rawData.toByteArray()).joinToString("") {
+                "%02x".format(it)
+            }
+
+            if (expectedHash == receivedHash) {
+                ParticipantPayload(eventId.toLong(), userId)
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun saveBitmapToGallery(
         context: Context,
         bitmap: Bitmap,

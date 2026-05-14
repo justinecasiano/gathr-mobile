@@ -321,6 +321,7 @@ class UserViewModel(
             is UserIntent.FetchEventToUpdate -> fetchEventToUpdate()
             is UserIntent.FetchAvailableStaff -> viewModelScope.launch { fetchAvailableStaff() }
             is UserIntent.FetchNotifications -> fetchNotifications()
+            is UserIntent.FetchAttendance-> fetchAttendance()
 
             is UserIntent.CancelEvent -> cancelEvent()
             is UserIntent.RegisterEvent -> registerEvent()
@@ -667,33 +668,33 @@ class UserViewModel(
 
     private fun markAttendance() {
         val currentState = _state.value
-        val participant = currentState.scanParticipant!!
+        val payload = currentState.scanParticipant ?: return
+        val currentEvent = currentState.currentEvent ?: return
+
+        if (currentEvent.computedStatus != EventComputedStatus.ONGOING) {
+            val msg = if (currentEvent.computedStatus == EventComputedStatus.UPCOMING)
+                "Event hasn't started yet." else "This event has already ended."
+            _state.update { it.copy(actionTitle = "Invalid Time", actionError = msg) }
+            return
+        }
 
         viewModelScope.launch {
+            handleIntent(UserIntent.IsLoadingChanged(true))
             val result = eventParticipantRepository.markAttendance(
-                participant.eventId, UUID.fromString(participant.userId)
+                payload.eventId, UUID.fromString(payload.userId)
             )
-            var actionError = ""
 
-            when (result) {
-                is ApiResult.Success -> {}
-                is ApiResult.Error -> actionError = result.message
-            }
+            _state.update { currentState ->
+                val message = when (result) {
+                    is ApiResult.Success -> "✓ Marked user's attendance as checked-in"
+                    is ApiResult.Error -> "❌ ${result.message}"
+                }
+                Log.d("MARK_ATTENDANCE", message)
 
-            _state.update {
-                it.copy(actionError = actionError)
-            }
-
-            Log.d("MARK_ATTENDANCE", actionError)
-
-            if (actionError.isBlank()) {
-                handleIntent(UserIntent.IsLoadingChanged(false))
-                handleIntent(UserIntent.ActionTitleChanged("Mark Attendance"))
-                handleIntent(UserIntent.ActionErrorChanged("User is marked as present"))
-            } else {
-                handleIntent(UserIntent.ActionTitleChanged("Mark Attendance Failed"))
-                handleIntent(UserIntent.ActionErrorChanged("An unknown error occurred"))
-                handleIntent(UserIntent.IsLoadingChanged(false))
+                currentState.copy(
+                    actionError = message,
+                    isLoading = false
+                )
             }
         }
     }

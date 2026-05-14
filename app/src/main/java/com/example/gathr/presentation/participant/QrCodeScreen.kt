@@ -73,6 +73,8 @@ import com.example.gathr.core.ui.LoadingOverlay
 import com.example.gathr.core.ui.LocalCaptureTrigger
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.Participant
+import com.example.gathr.data.model.ParticipantStatus
+import com.example.gathr.data.model.ResponseStatus
 import com.example.gathr.data.model.User
 import com.example.gathr.presentation.main.UserEffect
 import com.example.gathr.presentation.main.UserIntent
@@ -86,8 +88,10 @@ import com.example.gathr.utils.dummyEvents
 import com.example.gathr.utils.toPrettyString
 import com.example.gathr.utils.toSimpleTime
 import com.example.gathr.utils.toTitleCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.Instant
@@ -125,6 +129,22 @@ fun QrCodeScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
                     confirmButtonText = "Ok",
                     onConfirmClicked = { viewModel.handleIntent(UserIntent.ActionErrorChanged("")) },
+                )
+            }
+
+            (state.currentEvent!!).participantStatus == ParticipantStatus.CHECKED_IN -> {
+                Alert(
+                    title = "Invalid Ticket",
+                    message = "This QR code has already been scanned for entry.",
+                    onDismissRequest = {
+                        viewModel.handleIntent(UserIntent.ActionOnClear)
+                        onNavigateBack()
+                    },
+                    confirmButtonText = "Go back",
+                    onConfirmClicked = {
+                        viewModel.handleIntent(UserIntent.ActionOnClear)
+                        onNavigateBack()
+                    },
                 )
             }
         }
@@ -314,7 +334,12 @@ fun QrCodeContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                                                                 event.startTime.toPrettyString(
                                                                     pattern = "MMM'.' d, yyyy"
                                                                 )
-                                                            } || ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+                                                            } | ${event.startTime.toSimpleTime()} to\n" +
+                                                                    "${
+                                                                        event.endTime.toPrettyString(
+                                                                            pattern = "MMM'.' d, yyyy"
+                                                                        )
+                                                                    } | ${event.endTime.toSimpleTime()}"
                                                         )
                                                     }
                                                 }, style = TextStyle(
@@ -337,11 +362,10 @@ fun QrCodeContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                                                 .clip(RoundedCornerShape(20.dp)),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            val payload = buildJsonObject {
-                                                put("event_id", event.id)
-                                                put("user_id", user.id.toString())
+                                            val securePayload = remember(user.id, event.id) {
+                                                Utils.generateSignedPayload(user.id.toString(), event.id)
                                             }
-                                            QrCodeDisplay(payload.toString())
+                                            QrCodeDisplay(securePayload)
                                         }
                                         Column(
                                             Modifier
@@ -428,13 +452,16 @@ fun QrCodeDisplay(text: String) {
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(text) {
-        qrBitmap = generateQrBitmap(text, margin = 3)
+        val bitmap = withContext(Dispatchers.Default) {
+            generateQrBitmap(text, margin = 3)
+        }
+        qrBitmap = bitmap
     }
 
     qrBitmap?.let {
         Image(
             bitmap = it.asImageBitmap(),
-            contentDescription = "QR Code for an event",
+            contentDescription = "QR Code",
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
