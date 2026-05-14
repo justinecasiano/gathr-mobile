@@ -20,6 +20,7 @@ import com.example.gathr.presentation.main.UserViewModel
 import com.example.gathr.presentation.participant.AttendanceScreen
 import com.example.gathr.presentation.participant.CreateEventScreen
 import com.example.gathr.presentation.participant.EditProfileScreen
+import com.example.gathr.presentation.participant.FeedbackScreen
 import com.example.gathr.presentation.participant.UpdateEventScreen
 import com.example.gathr.presentation.shared.ViewEventScreen
 import com.example.gathr.presentation.participant.QrCodeScreen
@@ -107,6 +108,14 @@ fun MainNavigation(userViewModel: UserViewModel, onLogout: () -> Unit) {
             }
             entry<MainScreen.QrScanner> {
                 QrScannerScreen(
+                    viewModel = userViewModel,
+                    onNavigateBack = {
+                        backStack.removeLastOrNull()
+                    },
+                )
+            }
+            entry<MainScreen.Feedback> {
+                FeedbackScreen(
                     viewModel = userViewModel,
                     onNavigateBack = {
                         backStack.removeLastOrNull()

@@ -165,6 +165,8 @@ class SignUpViewModel(
 
     private fun validateBasicInfo() {
         val currentState = _state.value
+        val firstNameError = Utils.validateInput("firstname", currentState.firstName)
+        val lastNameError= Utils.validateInput("lastname", currentState.lastName)
         var emailError = Utils.validateInput("email", currentState.email)
         var usernameError = Utils.validateInput("username", currentState.username)
 
@@ -173,6 +175,8 @@ class SignUpViewModel(
 
         _state.update {
             it.copy(
+                firstNameError  = firstNameError,
+                lastNameError = lastNameError,
                 emailError = emailError,
                 usernameError = usernameError,
                 passwordValidation = passwordValidationErrors,
@@ -180,7 +184,7 @@ class SignUpViewModel(
             )
         }
 
-        if (!(emailError.isBlank() && usernameError.isBlank()
+        if (!(emailError.isBlank() && usernameError.isBlank() && firstNameError.isBlank() && lastNameError.isBlank()
                     && !passwordValidationErrors.hasValidationErrors && !passwordValidationErrors.hasConfirmPasswordError)
         ) {
             handleIntent(SignUpIntent.IsLoadingChanged(false))

@@ -18,6 +18,8 @@ data class SignUpState(
     val signUpError: String = "",
 
     val emailError: String = "",
+    val firstNameError: String = "",
+    val lastNameError: String = "",
     val usernameError: String = "",
     val confirmPasswordError: String = "",
     val passwordValidation: PasswordValidationState = PasswordValidationState(),

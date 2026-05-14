@@ -208,11 +208,13 @@ fun ViewEventScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     onConfirmClicked = {
-                        viewModel.handleIntent(UserIntent.ReviewEvent(
-                            eventId = event.id,
-                            status = EventApprovalStatus.APPROVED,
-                            comment = ""
-                        ))
+                        viewModel.handleIntent(
+                            UserIntent.ReviewEvent(
+                                eventId = event.id,
+                                status = EventApprovalStatus.APPROVED,
+                                comment = ""
+                            )
+                        )
                         viewModel.handleIntent(UserIntent.ActionOnClear)
                     },
                     isModerator = true
@@ -245,12 +247,15 @@ fun ViewEventScreen(
                     onDismissRequest = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     onCancelClicked = { viewModel.handleIntent(UserIntent.ActionOnClear) },
                     onConfirmClicked = {
-                        val finalComment = if (selectedReason == "Others") otherReasonText else selectedReason
-                        viewModel.handleIntent(UserIntent.ReviewEvent(
-                            eventId = event.id,
-                            status = EventApprovalStatus.REJECTED,
-                            comment = finalComment
-                        ))
+                        val finalComment =
+                            if (selectedReason == "Others") otherReasonText else selectedReason
+                        viewModel.handleIntent(
+                            UserIntent.ReviewEvent(
+                                eventId = event.id,
+                                status = EventApprovalStatus.REJECTED,
+                                comment = finalComment
+                            )
+                        )
                         viewModel.handleIntent(UserIntent.ActionOnClear)
                     },
                     content = {
@@ -303,7 +308,10 @@ fun ViewEventContent(
     val eventStatusColor =
         if (isUpcoming && !isRegistered) Color.Black.copy(0.8f) else Color(0xFF9FC090)
     var eventStatus = event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-    var eventDateTime = "${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+    var eventDateTime = "${
+        event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
+    } | ${event.startTime.toSimpleTime()} to\n${event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
+    } | ${event.endTime.toSimpleTime()}"
 
     if (!isModerator) {
         if (role == ParticipantType.ATTENDEE) {
@@ -327,7 +335,9 @@ fun ViewEventContent(
                 buttonOutlineColor = Color(0xFF820006)
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+                } | ${event.startTime.toSimpleTime()} to\n${
+                    event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
+                } | ${event.endTime.toSimpleTime()}"
             }
         }
 
@@ -336,17 +346,21 @@ fun ViewEventContent(
                 eventStatus = "EVENT ENDED"
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+                } | ${event.startTime.toSimpleTime()} to\n${
+                    event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
+                } | ${event.endTime.toSimpleTime()}"
 
                 buttonText = "GIVE FEEDBACK"
                 buttonColor = Color(0xFF7B55A3)
                 buttonOutlineColor = Color(0xFF4C2576)
-                onButtonClick = {}
+                onButtonClick = { onNavigate(MainEffect.NavigateFeedback) }
             } else if (Instant.now().isAfter(event.startTime)) {
                 eventStatus = "ONGOING EVENT"
                 eventDateTime = "${
                     event.startTime.toPrettyString(pattern = "MMM'.' d, yyyy").uppercase()
-                } |\n${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}"
+                } | ${event.startTime.toSimpleTime()} to\n${
+                    event.endTime.toPrettyString(pattern = " MMM '.' d, yyyy").uppercase()
+                } | ${event.endTime.toSimpleTime()}"
 
                 buttonText = "SHOW QR"
                 buttonColor = Color(0xFF7B986E)
@@ -483,7 +497,7 @@ fun ViewEventContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(modifier = Modifier.fillMaxWidth(if (isModerator)0.4f else 0.49f)) {
+                Box(modifier = Modifier.fillMaxWidth(if (isModerator) 0.4f else 0.49f)) {
                     Text(
                         buildAnnotatedString {
                             withStyle(
@@ -831,7 +845,7 @@ fun BottomScreenSheet(modifier: Modifier = Modifier, event: Event, isModerator: 
                 )
 
                 Text(
-                    "${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to ${event.endTime.toSimpleTime()}",
+                    "${event.startTime.toPrettyString("MMMM d, yyyy")} | ${event.startTime.toSimpleTime()} to\n${event.endTime.toPrettyString("MMMM d, yyyy")} | ${event.endTime.toSimpleTime()}",
                     style = TextStyle(
                         fontFamily = AppFonts.rethinkSans,
                         fontSize = 12.sp,

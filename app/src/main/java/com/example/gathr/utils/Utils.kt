@@ -29,7 +29,12 @@ import java.time.Instant
 import java.util.EnumMap
 import androidx.core.net.toUri
 import com.example.gathr.data.model.CreateEventValidationState
+import com.example.gathr.data.model.FormEditorValues
+import com.example.gathr.data.model.FormSubmission
+import com.example.gathr.data.model.QuestionResponse
 import com.example.gathr.presentation.main.ProfileValidationState
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -127,7 +132,21 @@ object Utils {
     }
 
     fun validateInput(type: String, value: String): String {
+        val nameRegex = Regex("^[A-Za-z\\s-]{1,50}$")
+
         return when (type) {
+            "firstname", "lastname" -> {
+                if (value.isBlank()) {
+                    "This field is required"
+                } else if (value.length > 50) {
+                    "Maximum limit of 50 characters exceeded"
+                } else if (!nameRegex.matches(value)) {
+                    "${if (type == "firstname") "First" else "Last"} name can only contain letters, spaces, or hyphens"
+                } else {
+                    ""
+                }
+            }
+
             "email" -> {
                 if (value.isBlank()) "This field is required"
                 else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(value)
@@ -255,8 +274,17 @@ object Utils {
     }
 
     fun validateProfile(firstName: String, lastName: String, displayName: String): ProfileValidationState {
-        val fNameError = if (firstName.isBlank()) "First name is required" else ""
-        val lNameError = if (lastName.isBlank()) "Last name is required" else ""
+        val fNameError = when {
+            firstName.isBlank() -> "First name is required"
+            firstName.length > 50 -> "First name cannot exceed 50 characters"
+            else -> ""
+        }
+
+        val lNameError = when {
+            lastName.isBlank() -> "Last name is required"
+            lastName.length > 50 -> "Last name cannot exceed 50 characters"
+            else -> ""
+        }
 
         val usernameRegex = Regex("^[a-zA-Z0-9_]{3,20}$")
         val dNameError = when {
@@ -270,6 +298,28 @@ object Utils {
             lastNameError = lNameError,
             displayNameError = dNameError,
             hasErrors = fNameError.isNotBlank() || lNameError.isNotBlank() || dNameError.isNotBlank()
+        )
+    }
+
+    fun prepareSubmission(
+        eventId: String,
+        form: FormEditorValues?,
+        answers: Map<String, Any>
+    ): FormSubmission {
+        val responses = answers.map { (qId, value) ->
+            val jsonAnswer = when (value) {
+                is String -> JsonPrimitive(value)
+                is Number -> JsonPrimitive(value)
+                is List<*> -> JsonArray(value.map { JsonPrimitive(it.toString()) })
+                else -> JsonPrimitive(value.toString())
+            }
+            QuestionResponse(qId, jsonAnswer)
+        }
+
+        return FormSubmission(
+            eventId = eventId,
+            responses = responses,
+            submittedAt = Instant.now().toString()
         )
     }
 

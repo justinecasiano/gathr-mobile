@@ -3,6 +3,7 @@ package com.example.gathr.presentation.main
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.FormSubmission
 import com.example.gathr.presentation.participant.ParticipantPayload
 
 sealed interface UserIntent {
@@ -39,6 +40,7 @@ sealed interface UserIntent {
         val status: EventApprovalStatus,
         val comment: String?
     ) : UserIntent
+    data class SubmitFeedback(val submission: FormSubmission) : UserIntent
 
     data object FetchModeratorEvents: UserIntent
     data object FetchManagedEvents : UserIntent

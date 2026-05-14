@@ -10,6 +10,7 @@ import com.example.gathr.data.model.CreateStaff
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
 import com.example.gathr.data.model.EventComputedStatus
+import com.example.gathr.data.model.FormSubmission
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Notification
 import com.example.gathr.data.model.Participant
@@ -36,6 +37,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.time.Instant
 import java.util.UUID
@@ -218,6 +222,8 @@ class UserViewModel(
                     )
                 }
                 onFetchSuccess()
+            } else if (result is ApiResult.Error) {
+                Log.d("FRESH_EVENT_ERROR", result.message)
             }
         }
     }
@@ -291,6 +297,7 @@ class UserViewModel(
             is UserIntent.MarkNotificationAsRead -> markNotificationAsRead(intent.value)
             is UserIntent.MarkAllNotificationsAsRead -> markAllNotificationsAsRead()
             is UserIntent.ReviewEvent -> reviewEvent(intent.eventId, intent.status, intent.comment)
+            is UserIntent.SubmitFeedback -> submitFeedback(intent.submission)
 
             is UserIntent.SearchStaffChanged -> {
                 _state.update {
@@ -776,6 +783,44 @@ class UserViewModel(
 
                 is ApiResult.Error -> {
                     handleIntent(UserIntent.ActionTitleChanged("Error"))
+                    handleIntent(UserIntent.ActionErrorChanged(result.message))
+                }
+            }
+            handleIntent(UserIntent.IsLoadingChanged(false))
+        }
+    }
+
+    private fun submitFeedback(submission: FormSubmission) {
+        val currentState = _state.value
+        val currentUser = currentState.currentUser ?: return
+        val eventId = submission.eventId.toLong()
+
+        viewModelScope.launch {
+            handleIntent(UserIntent.IsLoadingChanged(true))
+
+            val rating = submission.responses
+                .find { it.questionId == "mandatory-rating" }?.answer
+                ?.jsonPrimitive?.intOrNull
+
+            val comment = submission.responses
+                .find { it.questionId == "mandatory-comment" }?.answer
+                ?.jsonPrimitive?.contentOrNull
+
+            val result = eventParticipantRepository.submitFeedback(
+                eventId = eventId,
+                userId = currentUser.id,
+                submission = submission,
+                rating = rating,
+                comment = comment
+            )
+
+            when (result) {
+                is ApiResult.Success -> {
+                    refreshSpecificEvent(eventId)
+                }
+
+                is ApiResult.Error -> {
+                    handleIntent(UserIntent.ActionTitleChanged("Submission Failed"))
                     handleIntent(UserIntent.ActionErrorChanged(result.message))
                 }
             }

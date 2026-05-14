@@ -6,6 +6,7 @@ import androidx.core.net.toUri
 import com.example.gathr.data.model.CreateEvent
 import com.example.gathr.data.model.Event
 import com.example.gathr.data.model.EventApprovalStatus
+import com.example.gathr.data.model.FormSubmission
 import com.example.gathr.data.model.ManagedEvent
 import com.example.gathr.data.model.Participant
 import com.example.gathr.data.model.ParticipantType
@@ -36,6 +37,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
@@ -71,6 +73,14 @@ interface EventParticipantRepository {
         eventId: Long,
         moderatorId: UUID,
         status: EventApprovalStatus,
+        comment: String?
+    ): ApiResult<Unit>
+
+    suspend fun submitFeedback(
+        eventId: Long,
+        userId: UUID,
+        submission: FormSubmission,
+        rating: Int?,
         comment: String?
     ): ApiResult<Unit>
 }
@@ -636,6 +646,36 @@ class EventParticipantRepositoryImpl(
         } catch (e: Exception) {
             Log.e("MODERATOR_ACTION", "Failed to update event status", e)
             ApiResult.Error(e.message ?: "Failed to update event status")
+        }
+    }
+
+    override suspend fun submitFeedback(
+        eventId: Long,
+        userId: UUID,
+        submission: FormSubmission,
+        rating: Int?,
+        comment: String?
+    ): ApiResult<Unit> {
+        return try {
+            val updates = buildJsonObject {
+                put("feedback_submission", Json.encodeToJsonElement(submission))
+                put("feedback_submitted_at", Instant.now().toString())
+                put("response_status", "ANSWERED")
+                put("status", "PRESENT")
+                put("rating", rating)
+                put("comment", comment)
+            }
+
+            supabase.from("participants").update(updates) {
+                filter {
+                    eq("event_id", eventId)
+                    eq("user_id", userId.toString())
+                }
+            }
+            ApiResult.Success(Unit)
+        } catch (e: Exception) {
+            Log.e("SUBMIT_FEEDBACK", "Failed", e)
+            ApiResult.Error(e.message ?: "Failed to submit feedback")
         }
     }
 }

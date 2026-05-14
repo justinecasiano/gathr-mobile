@@ -152,17 +152,19 @@ private fun SignUpContent(
                             Box(modifier = Modifier.fillMaxWidth(0.48f)) {
                                 CustomTextField(
                                     text = state.firstName,
-                                    isError = if (!submittedOnce) null else state.firstName.isBlank(),
+                                    isError = if (!submittedOnce) null else state.firstNameError.isNotBlank(),
                                     onValueChange = { onIntent(SignUpIntent.FirstNameChanged(it)) },
                                     labelText = "First Name",
+                                    supportingText = state.firstNameError
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             CustomTextField(
                                 text = state.lastName,
-                                isError = if (!submittedOnce) null else state.lastName.isBlank(),
+                                isError = if (!submittedOnce) null else state.lastNameError.isNotBlank(),
                                 onValueChange = { onIntent(SignUpIntent.LastNameChanged(it)) },
                                 labelText = "Last Name",
+                                supportingText = state.lastNameError
                             )
                         }
                         Spacer(modifier = Modifier.height(5.dp))

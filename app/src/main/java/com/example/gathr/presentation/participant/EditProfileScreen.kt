@@ -324,6 +324,7 @@ fun EditProfileContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                         value = firstName,
                         onValueChange = { firstName = it },
                         label = "First Name",
+                        maxChar=50,
                         isError = submittedOnce && errors.firstNameError.isNotBlank(),
                         supportingText = errors.firstNameError
                     )
@@ -332,13 +333,14 @@ fun EditProfileContent(state: UserState, onIntent: (UserIntent) -> Unit) {
                         value = lastName,
                         onValueChange = { lastName = it },
                         label = "Last Name",
+                        maxChar=50,
                         isError = submittedOnce && errors.lastNameError.isNotBlank(),
                         supportingText = errors.lastNameError
                     )
                     Spacer(Modifier.height(10.dp))
                     CounterTextField(
                         value = displayName,
-                        onValueChange = { if (it.length <= 20) displayName = it },
+                        onValueChange = { displayName = it },
                         label = "Username",
                         maxChar = 20,
                         prefix = "@",

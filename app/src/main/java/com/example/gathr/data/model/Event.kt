@@ -4,6 +4,7 @@ import com.example.gathr.utils.EventApprovalStatusSerializer
 import com.example.gathr.utils.EventComputedStatusSerializer
 import com.example.gathr.utils.JavaInstantSerializer
 import com.example.gathr.utils.ParticipantTypeSerializer
+import com.example.gathr.utils.ResponseStatusSerializer
 import com.example.gathr.utils.UuidSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -104,6 +105,13 @@ data class Event(
 
     @SerialName("is_archive")
     val isArchive: Boolean,
+
+    @SerialName("response_status")
+    @Serializable(with = ResponseStatusSerializer::class)
+    val responseStatus: ResponseStatus? = null,
+
+    @SerialName("feedback_submission")
+    val feedbackSubmission: JsonElement? = null,
 )
 
 enum class EventApprovalStatus {

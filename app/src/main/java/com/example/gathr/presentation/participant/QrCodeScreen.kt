@@ -1,5 +1,6 @@
 package com.example.gathr.presentation.participant
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.foundation.Image
@@ -31,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -138,6 +140,18 @@ fun QrCodeContent(state: UserState, onIntent: (UserIntent) -> Unit) {
     val context = LocalContext.current
     var captureFunction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val scope = rememberCoroutineScope()
+
+    val activity = context as? Activity
+    DisposableEffect(Unit) {
+        val params = activity?.window?.attributes
+        val originalBrightness = params?.screenBrightness ?: -1f
+        params?.screenBrightness = 1f
+        activity?.window?.attributes = params
+        onDispose {
+            params?.screenBrightness = originalBrightness
+            activity?.window?.attributes = params
+        }
+    }
 
     Scaffold(topBar = {
         Box(Modifier.background(Color(0xFFF6F6F6))) {
