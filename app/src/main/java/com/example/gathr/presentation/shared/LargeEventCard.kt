@@ -225,6 +225,7 @@ fun LargeEventCard(
                                     fontFamily = AppFonts.rethinkSans,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
                                     color = if (isModerator) Color.White else Color(0xFF232222)
                                 ),
                                 modifier = Modifier.padding(horizontal = 2.dp),

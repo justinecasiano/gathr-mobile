@@ -31,6 +31,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,7 +80,11 @@ fun InstantDateTimePicker(
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = value?.toEpochMilli()
+            initialSelectedDateMillis = value?.atZone(ZoneId.of("Asia/Manila"))
+                ?.toLocalDate()
+                ?.atStartOfDay(ZoneOffset.UTC)
+                ?.toInstant()
+                ?.toEpochMilli()
         )
 
         DatePickerDialog(
@@ -88,9 +93,7 @@ fun InstantDateTimePicker(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            tempDate = Instant.ofEpochMilli(millis)
-                                .atZone(ZoneId.of("Asia/Manila"))
-                                .toLocalDate()
+                            tempDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                             showDatePicker = false
                             showTimePicker = true
                         }

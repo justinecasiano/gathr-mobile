@@ -299,7 +299,7 @@ fun FeedbackContent(
                         )
                     )
                 }
-            } else if (event.feedbackForm == null) {
+            } else if (event.feedbackForm == null || !event.isFormActive) {
                 Column(
                     Modifier
                         .fillMaxHeight()
